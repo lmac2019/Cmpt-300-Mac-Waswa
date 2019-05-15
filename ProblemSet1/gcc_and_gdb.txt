@@ -1,0 +1,55 @@
+2(a) The -E option means output the preprocessed source code of the given file. The pre-processor replaces all the preprocessing directives with the content of the header files that the directives reference.
+
+2(b) This command creates an object file. The name of the file is hello.o and is the result of compilation and assembling of the file hello.c into machine code.
+
+2(c) The result is an executable file called a.out.
+
+2(d) The error message printed is: "undefined reference to `main'". This error comes about as a result of not having a main function which is the entry point for any C program. Without a main function an executable file cannot be generated.
+
+2(e) No error messages. Before commenting out main an object file and an executable file can be generated from the source file hello.c. After commenting out main an object file can still be generated however an executable cannot since that requires a main function. The -c flag creates an object file whereas if that is ommitted an executable file is generated.
+
+
+3(a) The error message says segmentation fault. This error means the program tried to read from or write to a memory location it was not allowed to.
+
+3(b) The name of the function within which the segmentation fault occurs is strtol_l_internal.
+
+3(c) The library function we call in hello.c that causes the error is atoi.
+
+3(d) argc = 1 and argv = (char **) 0x7fffffffe018. The value argv is a memory address that references the first element in a vector of strings.
+
+3(e) info local displays information about the local variables in the current stack frame. info args displays information about the function arguments in the current stack frame.
+
+3(f) The result is a null pointer, i.e. a reference which cannot be dereferenced. The segmentation fault occurs because a null pointer refers to a memory address that cannot be accessed (by dereferencing).
+
+
+4(a) 
+x = (int *) 0x0. The value x is a null pointer.
+y = 0. The value y is the integer 0.
+*x cannot be accesed since it is a dereferenced null pointer which throws a segementation fault error.
+*y cannot be accessed since y is not a pointer.
+&x = (int **) 0x7fffffffdf38. This is the memory address of the pointer x.
+&y = (int *) 0x7fffffffdf34. This is the memory address of the variable y.
+
+4(b)
+x = (int *) 0x7fffffffdf34. This has changed because x has been set to reference the variable y and so is no longer a null pointer.
+y = 1. This has changed because x was set to reference this variable's memory address and the variable's value was changed to 1 by that reference.
+*x = 1. This has changed because x was set to reference the variable y and y's value was changed to 1 through this reference.
+
+4(c)
+x = (int *) 0x7fff0000000a. This has changed because the operation *(x + 1) = 10 modifies the contents of x to contain the number 10.
+y = 1. This has not changed
+*x cannot be accessed since the new memory address that x references is not one that has been allowed to be used by the program.
+*y cannot be accessed since y is not a pointer.
+&x = (int **) 0x7fffffffdf38. This is the memory address of the pointer x.
+&y = (int *) 0x7fffffffdf34. This is the memory address of the variable y.
+
+4(d)
+x = (int *) 0x7fffffffdf34. This has changed because x now references variable y and so it contains the memory address of variable y.
+y = -8936. This has changed because y was assigned the value of the memory address stored in variable x which happens to be variable y's memory address which as an integer is represented as -8936.
+*x = -8936. This has changed because x now references variable y and so dereferencing x gives you the value contained in variable y which is -8936.
+*y cannot be accessed because y is not a pointer.
+&x = (int **) 0x7fffffffdf38. This is the memory address of the pointer x.
+&y = (int *) 0x7fffffffdf34. This is the memory address of the variable y.
+
+4(e)
+-Wall adds extra warnings on things that can be easily avoided or modified and are commonly encountered potential sources of errors.
