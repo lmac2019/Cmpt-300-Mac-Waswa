@@ -1,0 +1,19 @@
+1. xemacs & - Run xemacs as a background process so that the current shell is still usable.
+
+2. cd - Change the current directory to the root directory.
+
+3. cat ~/.bashrc > tmpfile.txt - Output contents of .bashrc in the root directory into the file tmpfile.txt in the current directory.
+
+4. ln -s tmpfile.txt ~/tmp-alias - Create a symbolic link in the root directory called tmp-alias which points to tmpfile.txt in the current directory.
+
+5. ls -al - List full information of all contents of the current directory including those that start with . 
+
+6. chmod a+rwx tmpfile.txt - Modify the permissions for the file tmpfile.txt in the current directory to allow all users to read, write and execute tmpfile.txt.
+
+7. grep bash /etc/passwd - Print any lines that contain bash in the file passwd in a folder etc in the root directory.
+
+8. ps -ef | more - Print full process information of all users such that it fits in the current terminal window and can be navigated by the keyboard direction keys.
+
+9. man 2 chown - Search for chown in section 2 of the man pages.
+
+10. gcc test.c 2 > error-msg - Compile test.c to produce an executable a.out and any errors are printed in the file error-msg.
