@@ -5,11 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/*
- * The following are simple tests to help you.
- * You should develop more extensive tests to try and find bugs.
- */
 int main () {
+  printf("Starting tests for mystring...\n\n");
+
   /*
    * Tests for mystrlen
    */
@@ -172,7 +170,7 @@ int main () {
 		free (duplicate);
   }
 
-	printf ("\nPassed all tests!!!\n\n");
+  printf("\nExecution finished.\n\n");
 
-	return 0;
+  return 0;
 }

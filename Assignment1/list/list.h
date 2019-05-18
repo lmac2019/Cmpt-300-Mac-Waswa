@@ -1,6 +1,13 @@
 #ifndef LIST_H
 #define LIST_H
 
+/* nodeStruct definition */
+
+struct nodeStruct {
+  int item;
+  struct nodeStruct *next;
+};
+
 /* Function prototypes */
 
 struct nodeStruct *List_createNode(int item);
