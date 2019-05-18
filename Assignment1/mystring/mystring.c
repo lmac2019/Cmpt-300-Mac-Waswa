@@ -75,19 +75,17 @@ int mystrcmp (const char* s1, const char* s2) {
  * The space for the new string is obtained using malloc.
  * If the new string can not be created, a null pointer is returned.
  * Returns:  a pointer to a new string (the duplicate)
- 	     or null If the new string could not be created for
-	     any reason such as insufficient memory.
+ * or null If the new string could not be created for
+ * any reason such as insufficient memory.
  */
 char* mystrdup (const char* s1) {
 	int len = mystrlen(s1);
-	char *dup;
-
 	if (len == 0) {
 		return NULL;
 	}
 
-	dup = (char *)malloc((len+1)*sizeof(char));
-	mystrcpy(dup,s1);
+	char* duplicate = (char*) malloc((len + 1) * sizeof(char));
+	mystrcpy(duplicate, s1);
 
-	return dup;
+	return duplicate;
 }

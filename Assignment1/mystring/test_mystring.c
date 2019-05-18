@@ -11,7 +11,7 @@
  */
 int main () {
   /*
-   * Tests for mystrlen()
+   * Tests for mystrlen
    */
   assert(mystrlen("cmpt 300") == 8);
 	assert(mystrlen("\0") == 0);
@@ -32,46 +32,46 @@ int main () {
 	assert(mystrlen("cmpt") == 4);
 
   /*
-   * Tests for mystrcpy()
+   * Tests for mystrcpy
    */
   const int SIZE = 100;
-  char buffer[SIZE];
+  char copy_buffer[SIZE];
   char* original;
 
   original = "I am testing my string functions!";
-  mystrcpy(buffer, original);
-  assert(strcmp(buffer, original) == 0);
+  mystrcpy(copy_buffer, original);
+  assert(strcmp(copy_buffer, original) == 0);
 
   original = "Iamtestingmystringfunctions!";
-  mystrcpy(buffer, original);
-  assert(strcmp(buffer, original) == 0);
+  mystrcpy(copy_buffer, original);
+  assert(strcmp(copy_buffer, original) == 0);
 
   original = " I am testing my string functions!";
-  mystrcpy(buffer, original);
-  assert(strcmp(buffer, original) == 0);
+  mystrcpy(copy_buffer, original);
+  assert(strcmp(copy_buffer, original) == 0);
 
   original = "I am testing my string functions! ";
-  mystrcpy(buffer, original);
-  assert(strcmp(buffer, original) == 0);
+  mystrcpy(copy_buffer, original);
+  assert(strcmp(copy_buffer, original) == 0);
 
   original = " I am testing my string functions! ";
-  mystrcpy(buffer, original);
-  assert(strcmp(buffer, original) == 0);
+  mystrcpy(copy_buffer, original);
+  assert(strcmp(copy_buffer, original) == 0);
 
   original = "I am testing my string functions!\0";
-  mystrcpy(buffer, original);
-  assert(strcmp(buffer, original) == 0);
+  mystrcpy(copy_buffer, original);
+  assert(strcmp(copy_buffer, original) == 0);
 
   original = "I am testing my \0string functions!\0";
-  mystrcpy(buffer, original);
-  assert(strcmp(buffer, original) == 0);
+  mystrcpy(copy_buffer, original);
+  assert(strcmp(copy_buffer, original) == 0);
 
   original = "I";
-  mystrcpy(buffer, original);
-  assert(strcmp(buffer, original) == 0);
+  mystrcpy(copy_buffer, original);
+  assert(strcmp(copy_buffer, original) == 0);
 
   /*
-   * Tests for mystrcmp()
+   * Tests for mystrcmp
    */
 	assert(mystrcmp("I love coding", "I love coding") == 0);
 	assert(mystrcmp("I love codin", "I love coding") == -1);
@@ -95,14 +95,81 @@ int main () {
 	assert(mystrcmp("play", "plan") == 1);
 
   /*
-   * Tests for mystrdup()
+   * Tests for mystrdup
    */
-	char *dupStr = mystrdup(buffer);
-	assert (!strcmp(buffer, dupStr));
-	assert (buffer != dupStr);
+  char* duplicate;
 
-	if (dupStr != NULL) {
-		free (dupStr);
+  original = "I am testing my string functions!";
+  duplicate = mystrdup(original);
+	assert (!strcmp(original, duplicate));
+	assert (original != duplicate);
+
+	if (duplicate != NULL) {
+		free (duplicate);
+  }
+
+  original = "Iamtestingmystringfunctions!";
+  duplicate = mystrdup(original);
+	assert (!strcmp(original, duplicate));
+	assert (original != duplicate);
+
+	if (duplicate != NULL) {
+		free (duplicate);
+  }
+
+
+  original = " I am testing my string functions!";
+  duplicate = mystrdup(original);
+	assert (!strcmp(original, duplicate));
+	assert (original != duplicate);
+
+	if (duplicate != NULL) {
+		free (duplicate);
+  }
+
+  original = "I am testing my string functions! ";
+  duplicate = mystrdup(original);
+	assert (!strcmp(original, duplicate));
+	assert (original != duplicate);
+
+	if (duplicate != NULL) {
+		free (duplicate);
+  }
+
+  original = " I am testing my string functions! ";
+  duplicate = mystrdup(original);
+	assert (!strcmp(original, duplicate));
+	assert (original != duplicate);
+
+	if (duplicate != NULL) {
+		free (duplicate);
+  }
+
+  original = "I am testing my string functions!\0";
+  duplicate = mystrdup(original);
+	assert (!strcmp(original, duplicate));
+	assert (original != duplicate);
+
+	if (duplicate != NULL) {
+		free (duplicate);
+  }
+
+  original = "I am testing my \0string functions!\0";
+  duplicate = mystrdup(original);
+	assert (!strcmp(original, duplicate));
+	assert (original != duplicate);
+
+	if (duplicate != NULL) {
+		free (duplicate);
+  }
+
+  original = "I";
+  duplicate = mystrdup(original);
+	assert (!strcmp(original, duplicate));
+	assert (original != duplicate);
+
+	if (duplicate != NULL) {
+		free (duplicate);
   }
 
 	printf ("\nPassed all tests!!!\n\n");
