@@ -60,9 +60,22 @@ int List_countNodes (struct nodeStructPtr head) {
   return num_nodes;
 }
 
-// struct nodeStructPtr List_findNode (struct nodeStructPtr head, int item) {
+/*
+ * Return the first node holding the value item, return NULL if none found
+ */
+struct nodeStructPtr List_findNode (struct nodeStructPtr head, int item) {
+  if (head == NULL) {
+    return NULL;
+  }
 
-// }
+  for (struct nodeStructPtr current = head; current != NULL; current = current->next) {
+    if (current->item == item) {
+      return current;
+    }
+  }
+
+  return NULL;
+}
 
 void List_deleteNode (struct nodeStructPtr* headRef, struct nodeStructPtr node) {
 
