@@ -8,5 +8,4 @@ char* mystrcpy (char *dst, const  char *src);
 int   mystrcmp (const char *s1, const char *s2);
 char* mystrdup (const char *src);
 
-
 #endif
