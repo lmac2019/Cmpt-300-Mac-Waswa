@@ -42,6 +42,22 @@ int main () {
   mystrcpy(buffer, original);
   assert(strcmp(buffer, original) == 0);
 
+  original = "Iamtestingmystringfunctions!";
+  mystrcpy(buffer, original);
+  assert(strcmp(buffer, original) == 0);
+
+  original = " I am testing my string functions!";
+  mystrcpy(buffer, original);
+  assert(strcmp(buffer, original) == 0);
+
+  original = "I am testing my string functions! ";
+  mystrcpy(buffer, original);
+  assert(strcmp(buffer, original) == 0);
+
+  original = " I am testing my string functions! ";
+  mystrcpy(buffer, original);
+  assert(strcmp(buffer, original) == 0);
+
   original = "I am testing my string functions!\0";
   mystrcpy(buffer, original);
   assert(strcmp(buffer, original) == 0);
