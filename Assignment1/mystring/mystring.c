@@ -14,12 +14,13 @@
  *  not including the terminating character '\0'.
  *  Returns: length of s.
  */
-int mystrlen (const char *s)
-{
+int mystrlen (const char* s) {
 	int len = 0;
-	while(s[len] != '\0'){
+
+	while (s[len] != '\0') {
 		len++;
 	}
+
 	return len;
 }
 
@@ -28,17 +29,20 @@ int mystrlen (const char *s)
  *  character '\0') to the array pointed to by dst.
  *  Returns: a  pointer to the destination string dst.
  */
-char  *mystrcpy (char *dst, const char *src)
-{
+char* mystrcpy (char* dst, const char* src) {
 	int len = 0;
-	if(dst == NULL){
+
+	if (dst == NULL) {
 		return NULL;
 	}
-	while(src[len] != '\0'){
+
+	while (src[len] != '\0') {
 		dst[len] = src[len];
 		len++;
 	}
+
 	dst[len] = '\0';
+
 	return dst;
 }
 
@@ -49,18 +53,27 @@ char  *mystrcpy (char *dst, const char *src)
  *  	0 if s1 == s2
  *  	1 if s1 > s2
  */
-int mystrcmp(const char *s1, const char *s2)
-{
+int mystrcmp (const char* s1, const char* s2) {
 	int len = 0;
-	while(s1[len] != '\0'){
-		if(s1[len] < s2[len]){
+
+  while (s1[len] != '\0' && s2[len] != '\0') {
+    if (s1[len] < s2[len]) {
 			return -1;
 		}
-		if(s1[len] > s2[len]){
+
+		if (s1[len] > s2[len]) {
 			return 1;
 		}
+
 		len++;
 	}
+
+  if (mystrlen(s1) < mystrlen(s2)) {
+    return -1;
+  } else if (mystrlen(s1) > mystrlen(s2)) {
+    return 1;
+  }
+
 	return 0;
 }
 
@@ -72,14 +85,16 @@ int mystrcmp(const char *s1, const char *s2)
  	     or null If the new string could not be created for
 	     any reason such as insufficient memory.
  */
-char *mystrdup(const char *s1)
-{
+char* mystrdup (const char* s1) {
 	int len = mystrlen(s1);
 	char *dup;
-	if(len == 0){
+
+	if (len == 0) {
 		return NULL;
 	}
+
 	dup = (char *)malloc((len+1)*sizeof(char));
 	mystrcpy(dup,s1);
+
 	return dup;
 }
