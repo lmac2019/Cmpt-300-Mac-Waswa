@@ -1,5 +1,4 @@
 #include "mystring.h"
-#include <stdio.h>
 #include <stdlib.h>
 
 /*
@@ -14,7 +13,7 @@
  *  not including the terminating character '\0'.
  *  Returns: length of s.
  */
-int mystrlen (const char* s) {
+int mystrlen (const charPtr s) {
 	int len = 0;
 
 	while (s[len] != '\0') {
@@ -29,7 +28,7 @@ int mystrlen (const char* s) {
  *  character '\0') to the array pointed to by dst.
  *  Returns: a  pointer to the destination string dst.
  */
-char* mystrcpy (char* dst, const char* src) {
+charPtr mystrcpy (charPtr dst, const charPtr src) {
 	if (dst == NULL) {
 		return NULL;
 	}
@@ -50,7 +49,7 @@ char* mystrcpy (char* dst, const char* src) {
  *  	0 if s1 == s2
  *  	1 if s1 > s2
  */
-int mystrcmp (const char* s1, const char* s2) {
+int mystrcmp (const charPtr s1, const charPtr s2) {
   for (int len = 0; s1[len] != '\0' && s2[len] != '\0'; len++) {
     if (s1[len] < s2[len]) {
 			return -1;
@@ -78,13 +77,13 @@ int mystrcmp (const char* s1, const char* s2) {
  * or null If the new string could not be created for
  * any reason such as insufficient memory.
  */
-char* mystrdup (const char* s1) {
+charPtr mystrdup (const charPtr s1) {
 	int len = mystrlen(s1);
 	if (len == 0) {
 		return NULL;
 	}
 
-	char* duplicate = (char*) malloc((len + 1) * sizeof(char));
+	charPtr duplicate = (charPtr) malloc((len + 1) * sizeof(char));
 	mystrcpy(duplicate, s1);
 
 	return duplicate;

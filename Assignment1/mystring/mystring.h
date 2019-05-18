@@ -1,11 +1,14 @@
 #ifndef MYSTRING_H   
 #define MYSTRING_H
 
+/* charPtr definition */
+#define charPtr char*
+
 /* Function prototypes */
 
-int   mystrlen (const char *s);
-char* mystrcpy (char *dst, const  char *src);
-int   mystrcmp (const char *s1, const char *s2);
-char* mystrdup (const char *src);
+int   mystrlen (const charPtr s);
+charPtr mystrcpy (charPtr dst, const  charPtr src);
+int   mystrcmp (const charPtr s1, const charPtr s2);
+charPtr mystrdup (const charPtr src);
 
 #endif

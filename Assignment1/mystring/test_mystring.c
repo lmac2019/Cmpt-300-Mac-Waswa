@@ -1,12 +1,12 @@
 #include "mystring.h"
-#include <assert.h>
-#include <sys/types.h>
-#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+#include <sys/types.h>
 
 int main () {
-  printf("Starting tests for mystring...\n\n");
+  printf("Starting tests for mystring...\n");
 
   /*
    * Tests for mystrlen
@@ -34,7 +34,7 @@ int main () {
    */
   const int SIZE = 100;
   char copy_buffer[SIZE];
-  char* original;
+  charPtr original;
 
   original = "I am testing my string functions!";
   mystrcpy(copy_buffer, original);
@@ -95,12 +95,12 @@ int main () {
   /*
    * Tests for mystrdup
    */
-  char* duplicate;
+  charPtr duplicate;
 
   original = "I am testing my string functions!";
   duplicate = mystrdup(original);
-	assert (!strcmp(original, duplicate));
-	assert (original != duplicate);
+	assert(!strcmp(original, duplicate));
+	assert(original != duplicate);
 
 	if (duplicate != NULL) {
 		free (duplicate);
@@ -108,8 +108,8 @@ int main () {
 
   original = "Iamtestingmystringfunctions!";
   duplicate = mystrdup(original);
-	assert (!strcmp(original, duplicate));
-	assert (original != duplicate);
+	assert(!strcmp(original, duplicate));
+	assert(original != duplicate);
 
 	if (duplicate != NULL) {
 		free (duplicate);
@@ -118,8 +118,8 @@ int main () {
 
   original = " I am testing my string functions!";
   duplicate = mystrdup(original);
-	assert (!strcmp(original, duplicate));
-	assert (original != duplicate);
+	assert(!strcmp(original, duplicate));
+	assert(original != duplicate);
 
 	if (duplicate != NULL) {
 		free (duplicate);
@@ -127,8 +127,8 @@ int main () {
 
   original = "I am testing my string functions! ";
   duplicate = mystrdup(original);
-	assert (!strcmp(original, duplicate));
-	assert (original != duplicate);
+	assert(!strcmp(original, duplicate));
+	assert(original != duplicate);
 
 	if (duplicate != NULL) {
 		free (duplicate);
@@ -136,8 +136,8 @@ int main () {
 
   original = " I am testing my string functions! ";
   duplicate = mystrdup(original);
-	assert (!strcmp(original, duplicate));
-	assert (original != duplicate);
+	assert(!strcmp(original, duplicate));
+	assert(original != duplicate);
 
 	if (duplicate != NULL) {
 		free (duplicate);
@@ -145,8 +145,8 @@ int main () {
 
   original = "I am testing my string functions!\0";
   duplicate = mystrdup(original);
-	assert (!strcmp(original, duplicate));
-	assert (original != duplicate);
+	assert(!strcmp(original, duplicate));
+	assert(original != duplicate);
 
 	if (duplicate != NULL) {
 		free (duplicate);
@@ -154,8 +154,8 @@ int main () {
 
   original = "I am testing my \0string functions!\0";
   duplicate = mystrdup(original);
-	assert (!strcmp(original, duplicate));
-	assert (original != duplicate);
+	assert(!strcmp(original, duplicate));
+	assert(original != duplicate);
 
 	if (duplicate != NULL) {
 		free (duplicate);
@@ -163,14 +163,14 @@ int main () {
 
   original = "I";
   duplicate = mystrdup(original);
-	assert (!strcmp(original, duplicate));
-	assert (original != duplicate);
+	assert(!strcmp(original, duplicate));
+	assert(original != duplicate);
 
 	if (duplicate != NULL) {
 		free (duplicate);
   }
 
-  printf("\nExecution finished.\n\n");
+  printf("Execution finished.\n");
 
   return 0;
 }

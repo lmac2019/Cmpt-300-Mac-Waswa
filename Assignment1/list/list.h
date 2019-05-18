@@ -5,17 +5,21 @@
 
 struct nodeStruct {
   int item;
-  struct nodeStruct *next;
+  struct nodeStruct* next;
 };
+
+/* nodeStructPtr definition */
+
+#define nodeStructPtr nodeStruct*
 
 /* Function prototypes */
 
-struct nodeStruct *List_createNode(int item);
-void List_insertHead(struct nodeStruct **headRef, struct nodeStruct *node);
-void List_insertTail(struct nodeStruct **headRef, struct nodeStruct *node);
-int List_countNodes(struct nodeStruct *head);
-struct nodeStruct *List_findNode(struct nodeStruct *head, int item);
-void List_deleteNode(struct nodeStruct **headRef, struct nodeStruct *node);
-void List_sort(struct nodeStruct **headRef);
+struct nodeStructPtr List_createNode (int item);
+void List_insertHead (struct nodeStructPtr* headRef, struct nodeStructPtr node);
+void List_insertTail (struct nodeStructPtr* headRef, struct nodeStructPtr node);
+int List_countNodes (struct nodeStructPtr head);
+struct nodeStructPtr List_findNode (struct nodeStructPtr head, int item);
+void List_deleteNode (struct nodeStructPtr* headRef, struct nodeStructPtr node);
+void List_sort (struct nodeStructPtr* headRef);
 
 #endif
