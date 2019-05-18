@@ -36,95 +36,23 @@ int main () {
    */
   const int SIZE = 100;
   char buffer[SIZE];
-  mystrcpy(buffer, "I am testing my string functions!");
-  assert(strcmp(buffer, "I am testing my string functions!") == 0);
-  
   char* original;
 
-  original = "cmpt300";
-  char copy[strlen(original)];
-  mystrcpy(copy, original);
-  assert(strcmp(copy, original) == 0);
+  original = "I am testing my string functions!";
+  mystrcpy(buffer, original);
+  assert(strcmp(buffer, original) == 0);
 
-  original = "\0";
-  char copy[strlen(original)];
-  mystrcpy(copy, original);
-  assert(strcmp(copy, original) == 0);
+  original = "I am testing my string functions!\0";
+  mystrcpy(buffer, original);
+  assert(strcmp(buffer, original) == 0);
 
-  original = "c\0";
-  char copy[strlen(original)];
-  mystrcpy(copy, original);
-  assert(strcmp(copy, original) == 0);
+  original = "I am testing my \0string functions!\0";
+  mystrcpy(buffer, original);
+  assert(strcmp(buffer, original) == 0);
 
-  original = " c\0";
-  char copy[strlen(original)];
-  mystrcpy(copy, original);
-  assert(strcmp(copy, original) == 0);
-
-  original = "c \0";
-  char copy[strlen(original)];
-  mystrcpy(copy, original);
-  assert(strcmp(copy, original) == 0);
-
-  original = "c\0 ";
-  char copy[strlen(original)];
-  mystrcpy(copy, original);
-  assert(strcmp(copy, original) == 0);
-
-  original = " c\0 ";
-  char copy[strlen(original)];
-  mystrcpy(copy, original);
-  assert(strcmp(copy, original) == 0);
-
-  original = "";
-  char copy[strlen(original)];
-  mystrcpy(copy, original);
-  assert(strcmp(copy, original) == 0);
-
-  original = " ";
-  char copy[strlen(original)];
-  mystrcpy(copy, original);
-  assert(strcmp(copy, original) == 0);
-
-  original = "c";
-  char copy[strlen(original)];
-  mystrcpy(copy, original);
-  assert(strcmp(copy, original) == 0);
-
-  original = "c ";
-  char copy[strlen(original)];
-  mystrcpy(copy, original);
-  assert(strcmp(copy, original) == 0);
-
-  original = " c";
-  char copy[strlen(original)];
-  mystrcpy(copy, original);
-  assert(strcmp(copy, original) == 0);
-
-  original = " c ";
-  char copy[strlen(original)];
-  mystrcpy(copy, original);
-  assert(strcmp(copy, original) == 0);
-
-  original = "cmpt ";
-  char copy[strlen(original)];
-  mystrcpy(copy, original);
-  assert(strcmp(copy, original) == 0);
-
-  original = " cmpt";
-  char copy[strlen(original)];
-  mystrcpy(copy, original);
-  assert(strcmp(copy, original) == 0);
-
-  original = " cmpt ";
-  char copy[strlen(original)];
-  mystrcpy(copy, original);
-  assert(strcmp(copy, original) == 0);
-
-  original = "cmpt";
-  char copy[strlen(original)];
-  mystrcpy(copy, original);
-  assert(strcmp(copy, original) == 0);
+  original = "I";
+  mystrcpy(buffer, original);
+  assert(strcmp(buffer, original) == 0);
 
   /*
    * Tests for mystrcmp()
@@ -142,7 +70,7 @@ int main () {
 		free (dupStr);
   }
 
-	printf ("\nPassed all tests!!!\n");
+	printf ("\nPassed all tests!!!\n\n");
 
 	return 0;
 }

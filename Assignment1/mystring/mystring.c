@@ -31,7 +31,6 @@ int mystrlen (const char* s) {
  */
 char* mystrcpy (char* dst, const char* src) {
 	int len = 0;
-
 	if (dst == NULL) {
 		return NULL;
 	}
