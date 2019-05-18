@@ -74,6 +74,25 @@ int main () {
    * Tests for mystrcmp()
    */
 	assert(mystrcmp("I love coding", "I love coding") == 0);
+	assert(mystrcmp("I love codin", "I love coding") == -1);
+	assert(mystrcmp("I love coding", "I love codin") == 1);
+	assert(mystrcmp("app", "app") == 0);
+	assert(mystrcmp("apple", "app") == 1);
+	assert(mystrcmp("app", "apple") == -1);
+	assert(mystrcmp("a", "b") == -1);
+	assert(mystrcmp("b", "a") == 1);
+	assert(mystrcmp("", "a") == -1);
+	assert(mystrcmp("a", "") == 1);
+	assert(mystrcmp("", "") == 0);
+	assert(mystrcmp("cat", "cat") == 0);
+	assert(mystrcmp("cat", "fat") == -1);
+	assert(mystrcmp("fat", "cat") == 1);
+	assert(mystrcmp("boat", "boat") == 0);
+	assert(mystrcmp("boat", "brat") == -1);
+	assert(mystrcmp("brat", "boat") == 1);
+	assert(mystrcmp("play", "play") == 0);
+	assert(mystrcmp("plan", "play") == -1);
+	assert(mystrcmp("play", "plan") == 1);
 
   /*
    * Tests for mystrdup()

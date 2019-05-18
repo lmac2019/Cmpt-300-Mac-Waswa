@@ -30,17 +30,15 @@ int mystrlen (const char* s) {
  *  Returns: a  pointer to the destination string dst.
  */
 char* mystrcpy (char* dst, const char* src) {
-	int len = 0;
 	if (dst == NULL) {
 		return NULL;
 	}
 
-	while (src[len] != '\0') {
+	for (int len = 0; src[len] != '\0'; len++) {
 		dst[len] = src[len];
-		len++;
 	}
 
-	dst[len] = '\0';
+	dst[mystrlen(src)] = '\0';
 
 	return dst;
 }
@@ -53,9 +51,7 @@ char* mystrcpy (char* dst, const char* src) {
  *  	1 if s1 > s2
  */
 int mystrcmp (const char* s1, const char* s2) {
-	int len = 0;
-
-  while (s1[len] != '\0' && s2[len] != '\0') {
+  for (int len = 0; s1[len] != '\0' && s2[len] != '\0'; len++) {
     if (s1[len] < s2[len]) {
 			return -1;
 		}
@@ -63,8 +59,6 @@ int mystrcmp (const char* s1, const char* s2) {
 		if (s1[len] > s2[len]) {
 			return 1;
 		}
-
-		len++;
 	}
 
   if (mystrlen(s1) < mystrlen(s2)) {
