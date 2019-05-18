@@ -26,6 +26,8 @@ int main (int argc, char **argv) {
    */
   struct nodeStructPtr head;
   struct nodeStructPtr firstNode;
+  struct nodeStructPtr secondNode;
+  struct nodeStructPtr thirdNode;
 
   head = NULL;
   firstNode = List_createNode(0);
@@ -36,6 +38,22 @@ int main (int argc, char **argv) {
   firstNode = List_createNode(0);
   List_insertHead(&head, firstNode);
   assert(head->item == 0);
+
+  head = List_createNode(0);
+  secondNode = List_createNode(2);
+  head->next = secondNode;
+  firstNode = List_createNode(1);
+  List_insertHead(&head, firstNode);
+  assert(head->item == 1);
+
+  head = List_createNode(0);
+  secondNode = List_createNode(2);
+  head->next = secondNode;
+  thirdNode = List_createNode(2);
+  secondNode->next = thirdNode;
+  firstNode = List_createNode(-1);
+  List_insertHead(&head, firstNode);
+  assert(head->item == -1);
 
   /*
    * Tests for List_insertTail
