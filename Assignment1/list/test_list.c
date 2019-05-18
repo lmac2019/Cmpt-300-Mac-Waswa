@@ -28,6 +28,7 @@ int main (int argc, char **argv) {
   struct nodeStructPtr firstNode;
   struct nodeStructPtr secondNode;
   struct nodeStructPtr thirdNode;
+  struct nodeStructPtr fourthNode;
 
   head = NULL;
   firstNode = List_createNode(0);
@@ -58,10 +59,62 @@ int main (int argc, char **argv) {
   /*
    * Tests for List_insertTail
    */
+  head = NULL;
+  firstNode = List_createNode(0);
+  List_insertTail(&head, firstNode);
+  assert(head->item == 0);
+
+  firstNode = List_createNode(1);
+  head = firstNode;
+  secondNode = List_createNode(2);
+  firstNode->next = secondNode;
+  thirdNode = List_createNode(3);
+  List_insertTail(&head, thirdNode);
+  assert(head->next->next->item == 3);
+
+  firstNode = List_createNode(1);
+  head = firstNode;
+  secondNode = List_createNode(2);
+  firstNode->next = secondNode;
+  thirdNode = List_createNode(3);
+  secondNode->next = thirdNode;
+  fourthNode = List_createNode(4);
+  List_insertTail(&head, fourthNode);
+  assert(head->next->next->next->item == 4);
 
   /*
    * Tests for List_countNodes
    */
+  head = NULL;
+  assert(List_countNodes(head) == 0);
+  
+  firstNode = List_createNode(0);
+  head = firstNode;
+  assert(List_countNodes(head) == 1);
+
+  firstNode = List_createNode(1);
+  head = firstNode;
+  secondNode = List_createNode(2);
+  firstNode->next = secondNode;
+  assert(List_countNodes(head) == 2);
+
+  firstNode = List_createNode(1);
+  head = firstNode;
+  secondNode = List_createNode(2);
+  firstNode->next = secondNode;
+  thirdNode = List_createNode(3);
+  secondNode->next = thirdNode;
+  assert(List_countNodes(head) == 3);
+
+  firstNode = List_createNode(1);
+  head = firstNode;
+  secondNode = List_createNode(2);
+  firstNode->next = secondNode;
+  thirdNode = List_createNode(3);
+  secondNode->next = thirdNode;
+  fourthNode = List_createNode(4);
+  thirdNode->next = fourthNode;
+  assert(List_countNodes(head) == 4);
 
   /*
    * Tests for List_findNode

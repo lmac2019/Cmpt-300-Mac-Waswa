@@ -27,13 +27,38 @@ void List_insertHead (struct nodeStructPtr* headRef, struct nodeStructPtr node) 
   (*headRef)->next = tempPtr;
 }
 
+/*
+ * Insert node after the tail of the list.
+ */
 void List_insertTail (struct nodeStructPtr* headRef, struct nodeStructPtr node) {
+  if (*headRef == NULL) {
+    *headRef = node;
+    return;
+  }
 
+  struct nodeStructPtr current;
+  for (current = *headRef; current->next != NULL; current = current->next) {
+  }
+
+  current->next = node;
 }
 
-// int List_countNodes (struct nodeStructPtr head) {
+/*
+ * Count number of nodes in the list.
+ * Return 0 if the list is empty, i.e., head == NULL
+ */
+int List_countNodes (struct nodeStructPtr head) {
+  if (head == NULL) {
+    return 0;
+  }
 
-// }
+  int num_nodes = 0;
+  for (struct nodeStructPtr current = head; current != NULL; current = current->next) {
+    num_nodes++;
+  }
+
+  return num_nodes;
+}
 
 // struct nodeStructPtr List_findNode (struct nodeStructPtr head, int item) {
 
