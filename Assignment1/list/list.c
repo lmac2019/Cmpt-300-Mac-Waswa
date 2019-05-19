@@ -85,13 +85,7 @@ struct nodeStructPtr List_findNode (struct nodeStructPtr head, int item) {
  * should be set to NULL.
  */
 void List_deleteNode (struct nodeStructPtr* headRef, struct nodeStructPtr node) {
-  struct nodeStructPtr current;
-  for (current = *headRef; current->next != node; current = current->next) {
-  }
-
-  struct nodeStructPtr tempPtr = current->next->next;
-  free (current->next);
-  current->next = tempPtr;
+ 
 }
 
 /*

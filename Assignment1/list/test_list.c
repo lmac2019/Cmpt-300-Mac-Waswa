@@ -12,11 +12,11 @@ int main (int argc, char **argv) {
    */
   struct nodeStructPtr createdNode;
 
-  createdNode = List_createNode(0);
-  assert(createdNode->item == 0);
-
   createdNode = List_createNode(-100);
   assert(createdNode->item == -100);
+
+  createdNode = List_createNode(0);
+  assert(createdNode->item == 0);
 
   createdNode = List_createNode(100);
   assert(createdNode->item == 100);
@@ -32,14 +32,14 @@ int main (int argc, char **argv) {
   struct nodeStructPtr fifthNode;
 
   head = NULL;
-  firstNode = List_createNode(0);
+  firstNode = List_createNode(1);
   List_insertHead(&head, firstNode);
-  assert(head->item == 0);
+  assert(head->item == 1);
 
-  head = List_createNode(1);
-  firstNode = List_createNode(0);
+  head = List_createNode(0);
+  firstNode = List_createNode(1);
   List_insertHead(&head, firstNode);
-  assert(head->item == 0);
+  assert(head->item == 1);
 
   head = List_createNode(0);
   secondNode = List_createNode(2);
