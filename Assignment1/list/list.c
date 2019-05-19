@@ -77,8 +77,21 @@ struct nodeStructPtr List_findNode (struct nodeStructPtr head, int item) {
   return NULL;
 }
 
+/*
+ * Delete node from the list and free memory allocated to it.
+ * This function assumes that node has been properly set to a valid node 
+ * in the list. For example, the client code may have found it by calling 
+ * List_findNode(). If the list contains only one node, the head of the list 
+ * should be set to NULL.
+ */
 void List_deleteNode (struct nodeStructPtr* headRef, struct nodeStructPtr node) {
+  struct nodeStructPtr current;
+  for (current = head; current->next != node; current = current->next) {
+  }
 
+  struct nodeStructPtr tempPtr = current->next->next;
+  free (current->next);
+  current->next = tempPtr;
 }
 
 void List_sort (struct nodeStructPtr* headRef) {
