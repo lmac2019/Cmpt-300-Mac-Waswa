@@ -86,7 +86,7 @@ struct nodeStructPtr List_findNode (struct nodeStructPtr head, int item) {
  */
 void List_deleteNode (struct nodeStructPtr* headRef, struct nodeStructPtr node) {
   struct nodeStructPtr current;
-  for (current = head; current->next != node; current = current->next) {
+  for (current = *headRef; current->next != node; current = current->next) {
   }
 
   struct nodeStructPtr tempPtr = current->next->next;
@@ -94,6 +94,10 @@ void List_deleteNode (struct nodeStructPtr* headRef, struct nodeStructPtr node) 
   current->next = tempPtr;
 }
 
+/*
+ * Sort the list in ascending order based on the item field.
+ * Any sorting algorithm is fine.
+ */
 void List_sort (struct nodeStructPtr* headRef) {
 
 }

@@ -29,6 +29,7 @@ int main (int argc, char **argv) {
   struct nodeStructPtr secondNode;
   struct nodeStructPtr thirdNode;
   struct nodeStructPtr fourthNode;
+  struct nodeStructPtr fifthNode;
 
   head = NULL;
   firstNode = List_createNode(0);
@@ -119,6 +120,24 @@ int main (int argc, char **argv) {
   /*
    * Tests for List_findNode
    */
+  firstNode = List_createNode(1);
+  head = firstNode;
+  secondNode = List_createNode(2);
+  firstNode->next = secondNode;
+  thirdNode = List_createNode(3);
+  secondNode->next = thirdNode;
+  fourthNode = List_createNode(4);
+  thirdNode->next = fourthNode;
+  fifthNode = List_createNode(5);
+
+  assert(List_findNode(head, firstNode->item) == firstNode);
+  assert(List_findNode(head, secondNode->item) == secondNode);
+  assert(List_findNode(head, thirdNode->item) == thirdNode);
+  assert(List_findNode(head, fourthNode->item) == fourthNode);
+  assert(List_findNode(head, fifthNode->item) == NULL);
+
+  head = NULL;
+  assert(List_findNode(head, fifthNode->item) == NULL);
 
   /*
    * Tests for List_deleteNode
