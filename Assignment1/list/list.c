@@ -79,19 +79,49 @@ struct nodeStructPtr List_findNode (struct nodeStructPtr head, int item) {
 
 /*
  * Delete node from the list and free memory allocated to it.
- * This function assumes that node has been properly set to a valid node 
- * in the list. For example, the client code may have found it by calling 
- * List_findNode(). If the list contains only one node, the head of the list 
+ * This function assumes that node has been properly set to a valid node
+ * in the list. For example, the client code may have found it by calling
+ * List_findNode(). If the list contains only one node, the head of the list
  * should be set to NULL.
  */
-void List_deleteNode (struct nodeStructPtr* headRef, struct nodeStructPtr node) {
- 
-}
+ void List_deleteNode (struct nodeStructPtr* headRef, struct nodeStructPtr node) {
+   if(List_findNode(*headRef,node->item) == NULL){
+     return;
+   }
+   struct nodeStructPtr temp = *headRef;
+   if(*headRef == node){
+     *headRef = temp -> next;
+     free(temp);
+     return;
+   }
+   for (temp = *headRef; temp != NULL; temp = temp->next) {
+     if (temp->next == node) {
+       temp->next = temp->next->next;
+       free(temp->next);
+     }
+   }
 
-/*
- * Sort the list in ascending order based on the item field.
- * Any sorting algorithm is fine.
- */
-void List_sort (struct nodeStructPtr* headRef) {
 
-}
+ }
+
+ /*
+  * Sort the list in ascending order based on the item field.
+  * Any sorting algorithm is fine.
+  */
+ void List_sort (struct nodeStructPtr* headRef) {
+   struct nodeStructPtr temp = *headRef;
+   int swap;
+   int bubble = 1;
+   while(bubble){
+   bubble = 0;
+   for (temp = *headRef; temp->next != NULL; temp = temp->next) {
+   if(temp->item > temp->next->item){
+   swap = temp->item;
+   temp->item = temp->next->item;
+   temp->next->item = swap;
+   bubble = 1;
+   }
+   }
+ }
+
+ }
