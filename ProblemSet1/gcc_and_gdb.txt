@@ -22,10 +22,10 @@
 3(f) The result is a null pointer, i.e. a reference which cannot be dereferenced. The segmentation fault occurs because a null pointer refers to a memory address that cannot be accessed (by dereferencing).
 
 
-4(a) 
+4(a)
 x = (int *) 0x0. The value x is a null pointer.
 y = 0. The value y is the integer 0.
-*x cannot be accesed since it is a dereferenced null pointer which throws a segementation fault error.
+*x cannot be accessed since it is a dereferenced null pointer which throws a segementation fault error.
 *y cannot be accessed since y is not a pointer.
 &x = (int **) 0x7fffffffdf38. This is the memory address of the pointer x.
 &y = (int *) 0x7fffffffdf34. This is the memory address of the variable y.
@@ -36,7 +36,7 @@ y = 1. This has changed because x was set to reference this variable's memory ad
 *x = 1. This has changed because x was set to reference the variable y and y's value was changed to 1 through this reference.
 
 4(c)
-x = (int *) 0x7fff0000000a. This has changed because the operation *(x + 1) = 10 modifies the contents of x to contain the number 10.
+x = (int *) 0x7fff0000000a. This has changed because the operation *(x + 1) = 10 since (x+1) = &x it modifies the contents of x from &y to 10.
 y = 1. This has not changed
 *x cannot be accessed since the new memory address that x references is not one that has been allowed to be used by the program.
 *y cannot be accessed since y is not a pointer.
