@@ -22,9 +22,9 @@ void List_insertHead (struct nodeStructPtr* headRef, struct nodeStructPtr node) 
     return;
   }
 
-  struct nodeStructPtr tempPtr = *headRef;
+  struct nodeStructPtr tempNodePtr = *headRef;
   *headRef = node;
-  (*headRef)->next = tempPtr;
+  (*headRef)->next = tempNodePtr;
 }
 
 /*
@@ -36,11 +36,11 @@ void List_insertTail (struct nodeStructPtr* headRef, struct nodeStructPtr node) 
     return;
   }
 
-  struct nodeStructPtr current;
-  for (current = *headRef; current->next != NULL; current = current->next) {
+  struct nodeStructPtr currentNodePtr;
+  for (currentNodePtr = *headRef; currentNodePtr->next != NULL; currentNodePtr = currentNodePtr->next) {
   }
 
-  current->next = node;
+  currentNodePtr->next = node;
 }
 
 /*
@@ -53,7 +53,7 @@ int List_countNodes (struct nodeStructPtr head) {
   }
 
   int num_nodes = 0;
-  for (struct nodeStructPtr current = head; current != NULL; current = current->next) {
+  for (struct nodeStructPtr currentNodePtr = head; currentNodePtr != NULL; currentNodePtr = currentNodePtr->next) {
     num_nodes++;
   }
 
@@ -68,9 +68,9 @@ struct nodeStructPtr List_findNode (struct nodeStructPtr head, int item) {
     return NULL;
   }
 
-  for (struct nodeStructPtr current = head; current != NULL; current = current->next) {
-    if (current->item == item) {
-      return current;
+  for (struct nodeStructPtr currentNodePtr = head; currentNodePtr != NULL; currentNodePtr = currentNodePtr->next) {
+    if (currentNodePtr->item == item) {
+      return currentNodePtr;
     }
   }
 
@@ -85,23 +85,23 @@ struct nodeStructPtr List_findNode (struct nodeStructPtr head, int item) {
  * should be set to NULL.
  */
  void List_deleteNode (struct nodeStructPtr* headRef, struct nodeStructPtr node) {
-   if(List_findNode(*headRef,node->item) == NULL){
+   if (List_findNode(*headRef, node->item) == NULL) {
      return;
    }
-   struct nodeStructPtr temp = *headRef;
-   if(*headRef == node){
-     *headRef = temp -> next;
-     free(temp);
+
+   struct nodeStructPtr currentNodePtr = *headRef;
+   if (*headRef == node) {
+     *headRef = currentNodePtr->next;
+     free(currentNodePtr);
      return;
    }
-   for (temp = *headRef; temp != NULL; temp = temp->next) {
-     if (temp->next == node) {
-       temp->next = temp->next->next;
-       free(temp->next);
+
+   for (currentNodePtr = *headRef; currentNodePtr != NULL; currentNodePtr = currentNodePtr->next) {
+     if (currentNodePtr->next == node) {
+       currentNodePtr->next = currentNodePtr->next->next;
+       free(currentNodePtr->next);
      }
    }
-
-
  }
 
  /*
