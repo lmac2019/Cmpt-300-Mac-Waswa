@@ -142,74 +142,108 @@ int main (int argc, char **argv) {
   /*
    * Tests for List_deleteNode
    */
-   firstNode = List_createNode(0);
-   head = firstNode;
-   List_deleteNode(&head,firstNode);
-   assert(head == NULL);
 
-   firstNode = List_createNode(0);
-   secondNode = List_createNode(1);
-   head = firstNode;
-   List_deleteNode(&head,secondNode);
-   assert(head == head);
+  // * Remove first node in a linked list with one node
+  firstNode = List_createNode(0);
+  head = firstNode;
+  List_deleteNode(&head, firstNode);
+  assert(List_findNode(head, firstNode->item) == NULL);
+  assert(head == NULL);
 
-   firstNode = List_createNode(0);
-   head = firstNode;
-   secondNode = List_createNode(1);
-   List_insertTail(&head,secondNode);
-   List_deleteNode(&head,firstNode);
-   assert(head == secondNode);
+  // * Remove first node in a linked list with two nodes
+  firstNode = List_createNode(0);
+  head = firstNode;
+  secondNode = List_createNode(1);
+  List_insertTail(&head, secondNode);
+  List_deleteNode(&head, firstNode);
+  assert(List_findNode(head, firstNode->item) == NULL);
+  assert(List_findNode(head, secondNode->item) == secondNode);
+  assert(head == secondNode);
+  assert(secondNode->next == NULL);
 
-   firstNode = List_createNode(0);
-   head = firstNode;
-   secondNode = List_createNode(1);
-   thirdNode = List_createNode(2);
-   List_insertTail(&head,secondNode);
-   List_insertTail(&head,thirdNode);
-   List_deleteNode(&head,secondNode);
-   assert(head == firstNode);
-   assert(head->next == thirdNode);
+  // * Remove second node in a linked list with two nodes
+  firstNode = List_createNode(0);
+  head = firstNode;
+  secondNode = List_createNode(1);
+  List_insertTail(&head, secondNode);
+  List_deleteNode(&head, secondNode);
+  assert(List_findNode(head, firstNode->item) == firstNode);
+  assert(List_findNode(head, secondNode->item) == NULL);
+  assert(head == firstNode);
+  assert(firstNode->next == NULL);
 
-   firstNode = List_createNode(0);
-   head = firstNode;
-   secondNode = List_createNode(1);
-   thirdNode = List_createNode(2);
-   List_insertTail(&head,secondNode);
-   List_insertTail(&head,thirdNode);
-   List_deleteNode(&head,thirdNode);
-   assert(head == firstNode);
-   assert(head->next == secondNode);
-   assert(head->next->next == NULL);
+  // * Remove first node in a linked list with three nodes
+  firstNode = List_createNode(0);
+  head = firstNode;
+  secondNode = List_createNode(1);
+  List_insertTail(&head, secondNode);
+  thirdNode = List_createNode(2);
+  List_insertTail(&head, thirdNode);
+  List_deleteNode(&head, firstNode);
+  assert(List_findNode(head, firstNode->item) == NULL);
+  assert(List_findNode(head, secondNode->item) == secondNode);
+  assert(List_findNode(head, thirdNode->item) == thirdNode);
+  assert(head == secondNode);
+  assert(head->next == thirdNode);
+  assert(thirdNode->next == NULL);
 
+  // * Remove second node in a linked list with three nodes
+  firstNode = List_createNode(0);
+  head = firstNode;
+  secondNode = List_createNode(1);
+  List_insertTail(&head, secondNode);
+  thirdNode = List_createNode(2);
+  List_insertTail(&head, thirdNode);
+  List_deleteNode(&head, secondNode);
+  assert(List_findNode(head, firstNode->item) == firstNode);
+  assert(List_findNode(head, secondNode->item) == NULL);
+  assert(List_findNode(head, thirdNode->item) == thirdNode);
+  assert(head == firstNode);
+  assert(firstNode->next == thirdNode);
+  assert(thirdNode->next == NULL);
 
+  // * Remove third node in a linked list with three nodes
+  firstNode = List_createNode(0);
+  head = firstNode;
+  secondNode = List_createNode(1);
+  List_insertTail(&head, secondNode);
+  thirdNode = List_createNode(2);
+  List_insertTail(&head, thirdNode);
+  List_deleteNode(&head, thirdNode);
+  assert(List_findNode(head, firstNode->item) == firstNode);
+  assert(List_findNode(head, secondNode->item) == secondNode);
+  assert(List_findNode(head, thirdNode->item) == NULL);
+  assert(head == firstNode);
+  assert(firstNode->next == secondNode);
+  assert(secondNode->next == NULL);
 
   /*
-   * Tests for List_sort
-   */
-   firstNode = List_createNode(1);
-   head = firstNode;
-   secondNode = List_createNode(0);
-   List_insertTail(&head,secondNode);
-   List_sort(&head);
-   assert(head->item == 0);
-   assert(head->next->item == 1);
+  * Tests for List_sort
+  */
+  firstNode = List_createNode(1);
+  head = firstNode;
+  secondNode = List_createNode(0);
+  List_insertTail(&head,secondNode);
+  List_sort(&head);
+  assert(head->item == 0);
+  assert(head->next->item == 1);
 
-   firstNode = List_createNode(3);
-   head = firstNode;
-   secondNode = List_createNode(1);
-   thirdNode = List_createNode(2);
-   fourthNode = List_createNode(15);
-   fifthNode = List_createNode(0);
-   List_insertTail(&head,secondNode);
-   List_insertTail(&head,thirdNode);
-   List_insertTail(&head,fourthNode);
-   List_insertTail(&head,fifthNode);
-   List_sort(&head);
-   assert(head->item == 0);
-   assert(head->next->item == 1);
-   assert(head->next->next->item == 2);
-   assert(head->next->next->next->item == 3);
-   assert(head->next->next->next->next->item == 15);
+  firstNode = List_createNode(3);
+  head = firstNode;
+  secondNode = List_createNode(1);
+  thirdNode = List_createNode(2);
+  fourthNode = List_createNode(15);
+  fifthNode = List_createNode(0);
+  List_insertTail(&head,secondNode);
+  List_insertTail(&head,thirdNode);
+  List_insertTail(&head,fourthNode);
+  List_insertTail(&head,fifthNode);
+  List_sort(&head);
+  assert(head->item == 0);
+  assert(head->next->item == 1);
+  assert(head->next->next->item == 2);
+  assert(head->next->next->next->item == 3);
+  assert(head->next->next->next->next->item == 15);
 
 
   printf("Execution finished.\n");
