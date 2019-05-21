@@ -245,6 +245,14 @@ int main (int argc, char **argv) {
   assert(head->next->next->next->item == 3);
   assert(head->next->next->next->next->item == 15);
 
+  // * Free memory
+  // free(fifthNode);
+  // free(fourthNode);
+  // free(thirdNode);
+  // free(secondNode);
+  // free(firstNode);
+  // free(head);
+
   printf("Execution finished.\n");
 
   return 0;
