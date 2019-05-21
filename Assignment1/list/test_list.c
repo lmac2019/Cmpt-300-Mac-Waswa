@@ -245,7 +245,6 @@ int main (int argc, char **argv) {
   assert(head->next->next->next->item == 3);
   assert(head->next->next->next->next->item == 15);
 
-
   printf("Execution finished.\n");
 
   return 0;
