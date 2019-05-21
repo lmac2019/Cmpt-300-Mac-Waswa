@@ -105,17 +105,17 @@ void List_deleteNode (struct nodeStructPtr* headRef, struct nodeStructPtr node) 
   * Any sorting algorithm is fine.
   */
 void List_sort (struct nodeStructPtr* headRef) {
-  struct nodeStructPtr temp = *headRef;
+  struct nodeStructPtr tempNodePtr = *headRef;
   int swap;
   int bubble = 1;
 
   while (bubble) {
     bubble = 0;
-    for (temp = *headRef; temp->next != NULL; temp = temp->next) {
-      if(temp->item > temp->next->item) {
-        swap = temp->item;
-        temp->item = temp->next->item;
-        temp->next->item = swap;
+    for (tempNodePtr = *headRef; tempNodePtr->next != NULL; tempNodePtr = tempNodePtr->next) {
+      if (tempNodePtr->item > tempNodePtr->next->item) {
+        swap = tempNodePtr->item;
+        tempNodePtr->item = tempNodePtr->next->item;
+        tempNodePtr->next->item = swap;
         bubble = 1;
       }
     }
