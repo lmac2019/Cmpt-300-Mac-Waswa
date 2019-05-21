@@ -84,40 +84,40 @@ struct nodeStructPtr List_findNode (struct nodeStructPtr head, int item) {
  * List_findNode(). If the list contains only one node, the head of the list
  * should be set to NULL.
  */
- void List_deleteNode (struct nodeStructPtr* headRef, struct nodeStructPtr node) {
-   struct nodeStructPtr currentNodePtr = *headRef;
-   if (*headRef == node) {
-     *headRef = currentNodePtr->next;
-     free(currentNodePtr);
-     return;
-   }
+void List_deleteNode (struct nodeStructPtr* headRef, struct nodeStructPtr node) {
+  struct nodeStructPtr currentNodePtr = *headRef;
+  if (*headRef == node) {
+    *headRef = currentNodePtr->next;
+    free(currentNodePtr);
+    return;
+  }
 
-   for (currentNodePtr = *headRef; currentNodePtr != NULL; currentNodePtr = currentNodePtr->next) {
-     if (currentNodePtr->next == node) {
-       currentNodePtr->next = currentNodePtr->next->next;
-       free(currentNodePtr->next);
-     }
-   }
- }
+  for (currentNodePtr = *headRef; currentNodePtr != NULL; currentNodePtr = currentNodePtr->next) {
+    if (currentNodePtr->next == node) {
+      currentNodePtr->next = currentNodePtr->next->next;
+      free(currentNodePtr->next);
+    }
+  }
+}
 
  /*
   * Sort the list in ascending order based on the item field.
   * Any sorting algorithm is fine.
   */
- void List_sort (struct nodeStructPtr* headRef) {
-   struct nodeStructPtr temp = *headRef;
-   int swap;
-   int bubble = 1;
-   while(bubble){
-   bubble = 0;
-   for (temp = *headRef; temp->next != NULL; temp = temp->next) {
-   if(temp->item > temp->next->item){
-   swap = temp->item;
-   temp->item = temp->next->item;
-   temp->next->item = swap;
-   bubble = 1;
-   }
-   }
- }
+void List_sort (struct nodeStructPtr* headRef) {
+  struct nodeStructPtr temp = *headRef;
+  int swap;
+  int bubble = 1;
 
- }
+  while (bubble) {
+    bubble = 0;
+    for (temp = *headRef; temp->next != NULL; temp = temp->next) {
+      if(temp->item > temp->next->item) {
+        swap = temp->item;
+        temp->item = temp->next->item;
+        temp->next->item = swap;
+        bubble = 1;
+      }
+    }
+  }
+}
