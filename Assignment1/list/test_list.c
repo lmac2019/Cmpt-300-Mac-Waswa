@@ -220,38 +220,65 @@ int main (int argc, char **argv) {
   /*
   * Tests for List_sort
   */
+  head = NULL;
+  List_sort(&head);
+  assert(head == NULL);
+
+  firstNode = List_createNode(1);
+  head = firstNode;
+  List_sort(&head);
+  assert(head->item == 1);
+  assert(head->next == NULL);
+
   firstNode = List_createNode(1);
   head = firstNode;
   secondNode = List_createNode(0);
-  List_insertTail(&head,secondNode);
+  List_insertTail(&head, secondNode);
   List_sort(&head);
   assert(head->item == 0);
   assert(head->next->item == 1);
 
+  firstNode = List_createNode(-20);
+  head = firstNode;
+  secondNode = List_createNode(0);
+  List_insertTail(&head, secondNode);
+  thirdNode = List_createNode(5);
+  List_insertTail(&head, thirdNode);
+  List_sort(&head);
+  assert(head->item == -20);
+  assert(head->next->item == 0);
+  assert(head->next->next->item == 5);
+
+  firstNode = List_createNode(2);
+  head = firstNode;
+  secondNode = List_createNode(0);
+  List_insertTail(&head, secondNode);
+  thirdNode = List_createNode(6);
+  List_insertTail(&head, thirdNode);
+  fourthNode = List_createNode(5);
+  List_insertTail(&head, fourthNode);
+  List_sort(&head);
+  assert(head->item == 0);
+  assert(head->next->item == 2);
+  assert(head->next->next->item == 5);
+  assert(head->next->next->next->item == 6);
+
   firstNode = List_createNode(3);
   head = firstNode;
   secondNode = List_createNode(1);
+  List_insertTail(&head, secondNode);
   thirdNode = List_createNode(2);
+  List_insertTail(&head, thirdNode);
   fourthNode = List_createNode(15);
+  List_insertTail(&head, fourthNode);
   fifthNode = List_createNode(0);
-  List_insertTail(&head,secondNode);
-  List_insertTail(&head,thirdNode);
-  List_insertTail(&head,fourthNode);
-  List_insertTail(&head,fifthNode);
+  List_insertTail(&head, fifthNode);
   List_sort(&head);
   assert(head->item == 0);
   assert(head->next->item == 1);
   assert(head->next->next->item == 2);
   assert(head->next->next->next->item == 3);
   assert(head->next->next->next->next->item == 15);
-
-  // * Free memory
-  // free(fifthNode);
-  // free(fourthNode);
-  // free(thirdNode);
-  // free(secondNode);
-  // free(firstNode);
-  // free(head);
 
   printf("Execution finished.\n");
 

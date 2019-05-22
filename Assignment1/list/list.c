@@ -105,6 +105,10 @@ void List_deleteNode (struct nodeStructPtr* headRef, struct nodeStructPtr node) 
   * Any sorting algorithm is fine.
   */
 void List_sort (struct nodeStructPtr* headRef) {
+  if (*headRef == NULL) {
+    return;
+  }
+
   const int STOP_SORTING = 0;
   const int KEEP_SORTING = 1;
 
