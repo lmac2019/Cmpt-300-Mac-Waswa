@@ -91,6 +91,10 @@ int main () {
 	assert(mystrcmp("play", "play") == 0);
 	assert(mystrcmp("plan", "play") == -1);
 	assert(mystrcmp("play", "plan") == 1);
+	assert(mystrcmp("A", "a") == -1);
+	assert(mystrcmp("a", "A") == 1);
+	assert(mystrcmp("Apple", "apple") == -1);
+	assert(mystrcmp("apple", "Apple") == 1);
 
   /*
    * Tests for mystrdup
