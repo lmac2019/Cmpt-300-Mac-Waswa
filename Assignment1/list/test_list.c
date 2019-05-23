@@ -167,7 +167,6 @@ int main (int argc, char **argv) {
   List_insertTail(&head, secondNode);
   List_deleteNode(&head, secondNode);
   assert(List_findNode(head, firstNode->item) == firstNode);
-  printf("The item stored on the deleted node was 22, now is %d\n", secondNode->item);
   assert(List_findNode(head, secondNode->item) == NULL);
   assert(head == firstNode);
   assert(firstNode->next == NULL);
@@ -196,7 +195,6 @@ int main (int argc, char **argv) {
   List_insertTail(&head, thirdNode);
   List_deleteNode(&head, secondNode);
   assert(List_findNode(head, firstNode->item) == firstNode);
-  printf("The item stored on the deleted node was 10, now is %d\n", secondNode->item);
   assert(List_findNode(head, secondNode->item) == NULL);
   assert(List_findNode(head, thirdNode->item) == thirdNode);
   assert(head == firstNode);
@@ -213,7 +211,6 @@ int main (int argc, char **argv) {
   List_deleteNode(&head, thirdNode);
   assert(List_findNode(head, firstNode->item) == firstNode);
   assert(List_findNode(head, secondNode->item) == secondNode);
-  printf("The item stored on the deleted node was 24, now is %d\n", thirdNode->item);
   assert(List_findNode(head, thirdNode->item) == NULL);
   assert(head == firstNode);
   assert(firstNode->next == secondNode);
