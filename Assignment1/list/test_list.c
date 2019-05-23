@@ -249,29 +249,32 @@ int main (int argc, char **argv) {
 
   // * Remove first node in a linked list with two nodes
   firstNodePtr = List_createNode(102);
+  itemToBeRemoved = firstNodePtr->item;
   List_insertTail(&head, firstNodePtr);
   List_insertTail(&head, secondNodePtr);
   List_deleteNode(&head, firstNodePtr);
-  assert(List_findNode(head, firstNodePtr->item) == NULL);
+  assert(List_findNode(head, itemToBeRemoved) == NULL);
   assert(List_findNode(head, secondNodePtr->item) == secondNodePtr);
   assert(head == secondNodePtr);
   assert(secondNodePtr->next == NULL);
 
   // * Remove last node in a linked list with two nodes
   firstNodePtr = List_createNode(111);
+  itemToBeRemoved = secondNodePtr->item;
   List_insertHead(&head, firstNodePtr);
   List_deleteNode(&head, secondNodePtr);
   assert(List_findNode(head, firstNodePtr->item) == firstNodePtr);
-  assert(List_findNode(head, secondNodePtr->item) == NULL);
+  assert(List_findNode(head, itemToBeRemoved) == NULL);
   assert(head == firstNodePtr);
   assert(firstNodePtr->next == NULL);
 
   // * Remove first node in a linked list with three nodes
+  itemToBeRemoved = firstNodePtr->item;
   secondNodePtr = List_createNode(32);
   List_insertTail(&head, secondNodePtr);
   List_insertTail(&head, thirdNodePtr);
   List_deleteNode(&head, firstNodePtr);
-  assert(List_findNode(head, firstNodePtr->item) == NULL);
+  assert(List_findNode(head, itemToBeRemoved) == NULL);
   assert(List_findNode(head, secondNodePtr->item) == secondNodePtr);
   assert(List_findNode(head, thirdNodePtr->item) == thirdNodePtr);
   assert(head == secondNodePtr);
@@ -279,11 +282,12 @@ int main (int argc, char **argv) {
   assert(thirdNodePtr->next == NULL);
 
   // * Remove middle node in a linked list with three nodes
+  itemToBeRemoved = secondNodePtr->item;
   firstNodePtr = List_createNode(19);
   List_insertHead(&head, firstNodePtr);
   List_deleteNode(&head, secondNodePtr);
   assert(List_findNode(head, firstNodePtr->item) == firstNodePtr);
-  assert(List_findNode(head, secondNodePtr->item) == NULL);
+  assert(List_findNode(head, itemToBeRemoved) == NULL);
   assert(List_findNode(head, thirdNodePtr->item) == thirdNodePtr);
   assert(head == firstNodePtr);
   assert(firstNodePtr->next == thirdNodePtr);
@@ -291,11 +295,12 @@ int main (int argc, char **argv) {
 
   // * Remove last node in a linked list with three nodes
   secondNodePtr = List_createNode(119);
+  itemToBeRemoved = secondNodePtr->item;
   List_insertTail(&head, secondNodePtr);
   List_deleteNode(&head, secondNodePtr);
   assert(List_findNode(head, firstNodePtr->item) == firstNodePtr);
   assert(List_findNode(head, thirdNodePtr->item) == thirdNodePtr);
-  assert(List_findNode(head, secondNodePtr->item) == NULL);
+  assert(List_findNode(head, itemToBeRemoved) == NULL);
   assert(head == firstNodePtr);
   assert(firstNodePtr->next == thirdNodePtr);
   assert(thirdNodePtr->next == NULL);
