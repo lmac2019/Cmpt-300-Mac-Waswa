@@ -14,15 +14,25 @@ int main (int argc, char **argv) {
   createdNode = List_createNode(-100);
   assert(createdNode->item == -100);
 
+  // * Free memory for createdNode
+  free(createdNode);
+
   createdNode = List_createNode(0);
   assert(createdNode->item == 0);
+
+  // * Free memory for createdNode
+  free(createdNode);
+
+  createdNode = List_createNode(3);
+  assert(createdNode->item == 3);
+
+  // * Free memory for createdNode
+  free(createdNode);
 
   createdNode = List_createNode(100);
   assert(createdNode->item == 100);
 
-  /*
-   * Free memory for createdNode
-   */
+  // * Free memory for createdNode
   free(createdNode);
   
   /*
