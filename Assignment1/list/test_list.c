@@ -393,7 +393,6 @@ int main (int argc, char **argv) {
   assert(head->item == -20);
   assert(head->next->item == 1);
   assert(head->next->next->item == 43);
-  // head -> thirdNodePtr(-20) -> firstNodePtr(1) -> secondNodePtr(43)
 
   // * Free memory for firstNodePtr, secondNodePtr and thirdNodePtr
   List_deleteNode(&head, firstNodePtr);
