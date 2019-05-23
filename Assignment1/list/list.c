@@ -1,6 +1,4 @@
 #include "list.h"
-#include <stdio.h>
-#include <stdlib.h>
 
 /*
  * Allocate memory for a node of type struct nodeStruct and initialize
@@ -92,11 +90,13 @@ void List_deleteNode (struct nodeStructPtr* headRef, struct nodeStructPtr node) 
     return;
   }
 
-  for (currentNodePtr = *headRef; currentNodePtr != NULL; currentNodePtr = currentNodePtr->next) {
-    if (currentNodePtr->next == node) {
-      currentNodePtr->next = currentNodePtr->next->next;
-      free(currentNodePtr->next);
-    }
+  for (currentNodePtr = *headRef; currentNodePtr != NULL && currentNodePtr->next != node; currentNodePtr = currentNodePtr->next) {
+  }
+
+  if (currentNodePtr->next == node) {
+    struct nodeStructPtr tempNodePtr = node;
+    currentNodePtr->next = node->next;
+    free(tempNodePtr);
   }
 }
 

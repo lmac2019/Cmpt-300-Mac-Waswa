@@ -1,5 +1,4 @@
 #include "mystring.h"
-#include <stdlib.h>
 
 /*
  *   Implement the following functions:

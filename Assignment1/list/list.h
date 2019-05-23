@@ -1,6 +1,11 @@
 #ifndef LIST_H
 #define LIST_H
 
+/* Include necessary external libraries */
+
+#include <stdio.h>
+#include <stdlib.h>
+
 /* nodeStruct definition */
 
 struct nodeStruct {

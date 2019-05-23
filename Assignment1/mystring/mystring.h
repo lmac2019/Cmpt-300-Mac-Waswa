@@ -1,7 +1,12 @@
 #ifndef MYSTRING_H   
 #define MYSTRING_H
 
+/* Include neccessary external libraries */
+
+#include <stdlib.h>
+
 /* charPtr definition */
+
 #define charPtr char*
 
 /* Function prototypes */
