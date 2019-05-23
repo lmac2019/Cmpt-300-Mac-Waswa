@@ -233,16 +233,18 @@ int main (int argc, char **argv) {
   thirdNodePtr = List_createNode(43);
 
   // * Remove first node in a linked list with one node (added to the tail)
+  int itemToBeRemoved = firstNodePtr->item;
   List_insertTail(&head, firstNodePtr);
   List_deleteNode(&head, firstNodePtr);
-  assert(List_findNode(head, firstNodePtr->item) == NULL);
+  assert(List_findNode(head, itemToBeRemoved) == NULL);
   assert(head == NULL);
 
   // * Remove first node in a linked list with one node (added to the head)
   firstNodePtr = List_createNode(100);
+  itemToBeRemoved = firstNodePtr->item;
   List_insertHead(&head, firstNodePtr);
   List_deleteNode(&head, firstNodePtr);
-  assert(List_findNode(head, firstNodePtr->item) == NULL);
+  assert(List_findNode(head, itemToBeRemoved) == NULL);
   assert(head == NULL);
 
   // * Remove first node in a linked list with two nodes
