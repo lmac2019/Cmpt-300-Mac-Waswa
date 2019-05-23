@@ -143,16 +143,16 @@ int main (int argc, char **argv) {
    */
 
   // * Remove first node in a linked list with one node
-  firstNode = List_createNode(0);
+  firstNode = List_createNode(20);
   head = firstNode;
   List_deleteNode(&head, firstNode);
   assert(List_findNode(head, firstNode->item) == NULL);
   assert(head == NULL);
 
   // * Remove first node in a linked list with two nodes
-  firstNode = List_createNode(0);
+  firstNode = List_createNode(10);
   head = firstNode;
-  secondNode = List_createNode(1);
+  secondNode = List_createNode(14);
   List_insertTail(&head, secondNode);
   List_deleteNode(&head, firstNode);
   assert(List_findNode(head, firstNode->item) == NULL);
@@ -161,22 +161,23 @@ int main (int argc, char **argv) {
   assert(secondNode->next == NULL);
 
   // * Remove second node in a linked list with two nodes
-  firstNode = List_createNode(0);
+  firstNode = List_createNode(11);
   head = firstNode;
-  secondNode = List_createNode(1);
+  secondNode = List_createNode(22);
   List_insertTail(&head, secondNode);
   List_deleteNode(&head, secondNode);
   assert(List_findNode(head, firstNode->item) == firstNode);
-  // assert(List_findNode(head, secondNode->item) == NULL);
+  printf("The item stored on the deleted node was 22, now is %d\n", secondNode->item);
+  assert(List_findNode(head, secondNode->item) == NULL);
   assert(head == firstNode);
   assert(firstNode->next == NULL);
 
   // * Remove first node in a linked list with three nodes
-  firstNode = List_createNode(0);
+  firstNode = List_createNode(13);
   head = firstNode;
-  secondNode = List_createNode(1);
+  secondNode = List_createNode(32);
   List_insertTail(&head, secondNode);
-  thirdNode = List_createNode(2);
+  thirdNode = List_createNode(35);
   List_insertTail(&head, thirdNode);
   List_deleteNode(&head, firstNode);
   assert(List_findNode(head, firstNode->item) == NULL);
@@ -187,31 +188,33 @@ int main (int argc, char **argv) {
   assert(thirdNode->next == NULL);
 
   // * Remove second node in a linked list with three nodes
-  firstNode = List_createNode(0);
+  firstNode = List_createNode(19);
   head = firstNode;
-  secondNode = List_createNode(1);
+  secondNode = List_createNode(10);
   List_insertTail(&head, secondNode);
-  thirdNode = List_createNode(2);
+  thirdNode = List_createNode(23);
   List_insertTail(&head, thirdNode);
   List_deleteNode(&head, secondNode);
   assert(List_findNode(head, firstNode->item) == firstNode);
-  // assert(List_findNode(head, secondNode->item) == NULL);
+  printf("The item stored on the deleted node was 10, now is %d\n", secondNode->item);
+  assert(List_findNode(head, secondNode->item) == NULL);
   assert(List_findNode(head, thirdNode->item) == thirdNode);
   assert(head == firstNode);
   assert(firstNode->next == thirdNode);
   assert(thirdNode->next == NULL);
 
   // * Remove third node in a linked list with three nodes
-  firstNode = List_createNode(0);
+  firstNode = List_createNode(21);
   head = firstNode;
-  secondNode = List_createNode(1);
+  secondNode = List_createNode(19);
   List_insertTail(&head, secondNode);
-  thirdNode = List_createNode(2);
+  thirdNode = List_createNode(24);
   List_insertTail(&head, thirdNode);
   List_deleteNode(&head, thirdNode);
   assert(List_findNode(head, firstNode->item) == firstNode);
   assert(List_findNode(head, secondNode->item) == secondNode);
-  // assert(List_findNode(head, thirdNode->item) == NULL);
+  printf("The item stored on the deleted node was 24, now is %d\n", thirdNode->item);
+  assert(List_findNode(head, thirdNode->item) == NULL);
   assert(head == firstNode);
   assert(firstNode->next == secondNode);
   assert(secondNode->next == NULL);
@@ -287,7 +290,6 @@ int main (int argc, char **argv) {
   free(thirdNode);
   free(secondNode);
   free(firstNode);
-  head = NULL;
 
   printf("Execution finished.\n");
 
