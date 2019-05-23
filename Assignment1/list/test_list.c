@@ -224,16 +224,10 @@ int main (int argc, char **argv) {
   free(secondNodePtr);
   free(firstNodePtr);
 
-  head = NULL;
-  assert(List_findNode(head, firstNodePtr->item) == NULL);
-  assert(List_findNode(head, secondNodePtr->item) == NULL);
-  assert(List_findNode(head, thirdNodePtr->item) == NULL);
-  assert(List_findNode(head, fourthNodePtr->item) == NULL);
-  assert(List_findNode(head, fifthNodePtr->item) == NULL);
-
   /*
    * Tests for List_deleteNode
    */
+  head = NULL;
   firstNodePtr = List_createNode(22);
   secondNodePtr = List_createNode(132);
   thirdNodePtr = List_createNode(43);
