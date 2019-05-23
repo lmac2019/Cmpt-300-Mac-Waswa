@@ -29,373 +29,375 @@ int main (int argc, char **argv) {
    * Tests for List_insertHead
    */
   struct nodeStructPtr head = NULL;
-  struct nodeStructPtr firstNode = List_createNode(22);
-  struct nodeStructPtr secondNode = List_createNode(132);
-  struct nodeStructPtr thirdNode = List_createNode(43);
-  struct nodeStructPtr fourthNode = List_createNode(-123);
-  struct nodeStructPtr fifthNode = List_createNode(-234);
+  struct nodeStructPtr firstNodePtr = List_createNode(22);
+  struct nodeStructPtr secondNodePtr = List_createNode(132);
+  struct nodeStructPtr thirdNodePtr = List_createNode(43);
+  struct nodeStructPtr fourthNodePtr = List_createNode(-123);
+  struct nodeStructPtr fifthNodePtr = List_createNode(-234);
 
   // * No nodes added to linked list
   assert(head == NULL);
 
-  // * firstNode added to head of linked list
-  List_insertHead(&head, firstNode);
-  assert(head == firstNode);
-  assert(firstNode->next == NULL);
+  // * firstNodePtr added to head of linked list
+  List_insertHead(&head, firstNodePtr);
+  assert(head == firstNodePtr);
+  assert(firstNodePtr->next == NULL);
 
-  // * secondNode added to head of linked list
-  List_insertHead(&head, secondNode);
-  assert(head == secondNode);
-  assert(secondNode->next == firstNode);
-  assert(firstNode->next == NULL);
+  // * secondNodePtr added to head of linked list
+  List_insertHead(&head, secondNodePtr);
+  assert(head == secondNodePtr);
+  assert(secondNodePtr->next == firstNodePtr);
+  assert(firstNodePtr->next == NULL);
 
-  // * thirdNode, fourthNode and fifthNode added to head of linked list sequentially
-  List_insertHead(&head, thirdNode);
-  List_insertHead(&head, fourthNode);
-  List_insertHead(&head, fifthNode);
-  assert(head == fifthNode);
-  assert(fifthNode->next == fourthNode);
-  assert(fourthNode->next == thirdNode);
-  assert(thirdNode->next == secondNode);
-  assert(secondNode->next == firstNode);
-  assert(firstNode->next == NULL);
+  // * thirdNodePtr, fourthNodePtr and fifthNodePtr added to head of linked list sequentially
+  List_insertHead(&head, thirdNodePtr);
+  List_insertHead(&head, fourthNodePtr);
+  List_insertHead(&head, fifthNodePtr);
+  assert(head == fifthNodePtr);
+  assert(fifthNodePtr->next == fourthNodePtr);
+  assert(fourthNodePtr->next == thirdNodePtr);
+  assert(thirdNodePtr->next == secondNodePtr);
+  assert(secondNodePtr->next == firstNodePtr);
+  assert(firstNodePtr->next == NULL);
 
-  // * Free memory for firstNode, secondNode, thirdNode, fourthNode and fifthNode
-  free(firstNode);
-  free(secondNode);
-  free(thirdNode);
-  free(fourthNode);
-  free(fifthNode);
+  // * Free memory for firstNodePtr, secondNodePtr, thirdNodePtr, fourthNodePtr and fifthNodePtr
+  free(firstNodePtr);
+  free(secondNodePtr);
+  free(thirdNodePtr);
+  free(fourthNodePtr);
+  free(fifthNodePtr);
 
   /*
    * Tests for List_insertTail
    */
   head = NULL;
-  firstNode = List_createNode(22);
-  secondNode = List_createNode(132);
-  thirdNode = List_createNode(43);
-  fourthNode = List_createNode(-123);
-  fifthNode = List_createNode(-234);
+  firstNodePtr = List_createNode(22);
+  secondNodePtr = List_createNode(132);
+  thirdNodePtr = List_createNode(43);
+  fourthNodePtr = List_createNode(-123);
+  fifthNodePtr = List_createNode(-234);
 
   // * No nodes added to linked list
   assert(head == NULL);
 
-  // * firstNode added to tail of linked list
-  List_insertTail(&head, firstNode);
-  assert(head == firstNode);
-  assert(firstNode->next == NULL);
+  // * firstNodePtr added to tail of linked list
+  List_insertTail(&head, firstNodePtr);
+  assert(head == firstNodePtr);
+  assert(firstNodePtr->next == NULL);
 
-  // * secondNode added to tail of linked list
-  List_insertTail(&head, secondNode);
-  assert(head == firstNode);
-  assert(firstNode->next == secondNode);
-  assert(secondNode->next == NULL);
+  // * secondNodePtr added to tail of linked list
+  List_insertTail(&head, secondNodePtr);
+  assert(head == firstNodePtr);
+  assert(firstNodePtr->next == secondNodePtr);
+  assert(secondNodePtr->next == NULL);
 
-  // * thirdNode, fourthNode, fifthNode added to tail of linked list sequentially
-  List_insertTail(&head, thirdNode);
-  List_insertTail(&head, fourthNode);
-  List_insertTail(&head, fifthNode);
-  assert(head == firstNode);
-  assert(firstNode->next == secondNode);
-  assert(secondNode->next == thirdNode);
-  assert(thirdNode->next == fourthNode);
-  assert(fourthNode->next == fifthNode);
-  assert(fifthNode->next == NULL);
+  // * thirdNodePtr, fourthNodePtr, fifthNodePtr added to tail of linked list sequentially
+  List_insertTail(&head, thirdNodePtr);
+  List_insertTail(&head, fourthNodePtr);
+  List_insertTail(&head, fifthNodePtr);
+  assert(head == firstNodePtr);
+  assert(firstNodePtr->next == secondNodePtr);
+  assert(secondNodePtr->next == thirdNodePtr);
+  assert(thirdNodePtr->next == fourthNodePtr);
+  assert(fourthNodePtr->next == fifthNodePtr);
+  assert(fifthNodePtr->next == NULL);
 
-  // * Free memory for firstNode, secondNode, thirdNode, fourthNode and fifthNode
-  free(fifthNode);
-  free(fourthNode);
-  free(thirdNode);
-  free(secondNode);
-  free(firstNode);
+  // * Free memory for firstNodePtr, secondNodePtr, thirdNodePtr, fourthNodePtr and fifthNodePtr
+  free(fifthNodePtr);
+  free(fourthNodePtr);
+  free(thirdNodePtr);
+  free(secondNodePtr);
+  free(firstNodePtr);
 
   /*
    * Tests for List_countNodes
    */
   head = NULL;
-  firstNode = List_createNode(22);
-  // secondNode = List_createNode(132);
-  // thirdNode = List_createNode(43);
-  // fourthNode = List_createNode(-123);
-  // fifthNode = List_createNode(-234);
+  firstNodePtr = List_createNode(22);
+  secondNodePtr = List_createNode(132);
+  thirdNodePtr = List_createNode(43);
+  fourthNodePtr = List_createNode(-123);
+  fifthNodePtr = List_createNode(-234);
 
   // * No nodes added to linked list
   assert(List_countNodes(head) == 0);
 
   // * One node added to linked list (added to tail)
-  List_insertTail(&head, firstNode);
+  List_insertTail(&head, firstNodePtr);
   assert(List_countNodes(head) == 1);
 
-  // * Free memory for firstNode
-  free(firstNode);
+  // * Free memory for firstNodePtr
+  free(firstNodePtr);
 
-  // firstNode = List_createNode(22);
+  head = NULL;
+  firstNodePtr = List_createNode(22);
 
-  // // * One node added to linked list (added to head)
-  // List_insertHead(&head, firstNode);
-  // assert(List_countNodes(head) == 1);
+  // * One node added to linked list (added to head)
+  List_insertHead(&head, firstNodePtr);
+  assert(List_countNodes(head) == 1);
 
-  // // * Two nodes added to linked list (added to head)
-  // List_insertHead(&head, secondNode);
-  // assert(List_countNodes(head) == 2);
+  // * Two nodes added to linked list (added to head)
+  List_insertHead(&head, secondNodePtr);
+  assert(List_countNodes(head) == 2);
 
-  // // * Free memory for firstNode and secondNode
-  // free(firstNode);
-  // free(secondNode);
+  // * Free memory for firstNodePtr and secondNodePtr
+  free(firstNodePtr);
+  free(secondNodePtr);
 
-  // firstNode = List_createNode(22);
-  // secondNode = List_createNode(132);
+  head = NULL;
+  firstNodePtr = List_createNode(22);
+  secondNodePtr = List_createNode(132);
 
-  // // * Two nodes added to linked list (added to tail)
-  // List_insertTail(&head, firstNode);
-  // List_insertTail(&head, secondNode);
-  // assert(List_countNodes(head) == 2);
+  // * Two nodes added to linked list (added to tail)
+  List_insertTail(&head, firstNodePtr);
+  List_insertTail(&head, secondNodePtr);
+  assert(List_countNodes(head) == 2);
 
-  // // * Free memory for secondNode and firstNode
-  // free(secondNode);
-  // free(firstNode);
+  // * Free memory for secondNodePtr and firstNodePtr
+  free(secondNodePtr);
+  free(firstNodePtr);
+  
+  head = NULL;
+  firstNodePtr = List_createNode(22);
+  secondNodePtr = List_createNode(132);
 
-  // firstNode = List_createNode(22);
-  // secondNode = List_createNode(132);
+  // * Two nodes added to linked list (first one added to tail, second one added to head)
+  List_insertTail(&head, firstNodePtr);
+  List_insertHead(&head, secondNodePtr);
+  assert(List_countNodes(head) == 2);
 
-  // // * Two nodes added to linked list (first one added to tail, second one added to head)
-  // List_insertTail(&head, firstNode);
-  // List_insertHead(&head, secondNode);
-  // assert(List_countNodes(head) == 2);
+  // * Free memory for firstNodePtr and secondNodePtr
+  free(firstNodePtr);
+  free(secondNodePtr);
+  
+  head = NULL;
+  firstNodePtr = List_createNode(22);
+  secondNodePtr = List_createNode(132);
 
-  // // * Free memory for firstNode and secondNode
-  // free(firstNode);
-  // free(secondNode);
+  // * Two nodes added to linked list (first one added to head, second one added to tail)
+  List_insertHead(&head, firstNodePtr);
+  List_insertTail(&head, secondNodePtr);
+  assert(List_countNodes(head) == 2);
 
-  // firstNode = List_createNode(22);
-  // secondNode = List_createNode(132);
+  // * Free memory for secondNodePtr and firstNodePtr
+  free(secondNodePtr);
+  free(firstNodePtr);
 
-  // // * Two nodes added to linked list (first one added to head, second one added to tail)
-  // List_insertHead(&head, firstNode);
-  // List_insertTail(&head, secondNode);
-  // assert(List_countNodes(head) == 2);
+  head = NULL;
 
-  // // * Free memory for secondNode and firstNode
-  // free(secondNode);
-  // free(firstNode);
+  // * Three nodes added to linked list (added to tail)
+  List_insertTail(&head, thirdNodePtr);
+  List_insertTail(&head, fourthNodePtr);
+  List_insertTail(&head, fifthNodePtr);
+  assert(List_countNodes(head) == 3);
 
-  // // * Three nodes added to linked list (added to tail)
-  // List_insertTail(&head, thirdNode);
-  // List_insertTail(&head, fourthNode);
-  // List_insertTail(&head, fifthNode);
-  // assert(List_countNodes(head) == 3);
+  // * Free memory for fifthNodePtr, fourthNodePtr and thirdNodePtr
+  free(fifthNodePtr);
+  free(fourthNodePtr);
+  free(thirdNodePtr);
 
-  // // * Free memory for fifthNode, fourthNode and thirdNode
-  // free(fifthNode);
-  // free(fourthNode);
-  // free(thirdNode);
+  /*
+   * Tests for List_findNode
+   */
+  head = NULL;
+  firstNodePtr = List_createNode(22);
+  secondNodePtr = List_createNode(132);
+  thirdNodePtr = List_createNode(43);
+  fourthNodePtr = List_createNode(-123);
+  fifthNodePtr = List_createNode(-456);
 
-  // /*
-  //  * Tests for List_findNode
-  //  */
-  // head = NULL;
-  // firstNode = List_createNode(22);
-  // secondNode = List_createNode(132);
-  // thirdNode = List_createNode(43);
-  // fourthNode = List_createNode(-123);
+  // * Four nodes added sequentially to the tail
+  List_insertTail(&head, firstNodePtr);
+  List_insertTail(&head, secondNodePtr);
+  List_insertTail(&head, thirdNodePtr);
+  List_insertTail(&head, fourthNodePtr);
+  assert(List_findNode(head, firstNodePtr->item) == firstNodePtr);
+  assert(List_findNode(head, secondNodePtr->item) == secondNodePtr);
+  assert(List_findNode(head, thirdNodePtr->item) == thirdNodePtr);
+  assert(List_findNode(head, fourthNodePtr->item) == fourthNodePtr);
+  assert(List_findNode(head, fifthNodePtr->item) == NULL);
 
-  // // * Four nodes added sequentially to the tail
-  // List_insertTail(&head, firstNode);
-  // List_insertTail(&head, secondNode);
-  // List_insertTail(&head, thirdNode);
-  // List_insertTail(&head, fourthNode);
-  // assert(List_findNode(head, firstNode->item) == firstNode);
-  // assert(List_findNode(head, secondNode->item) == secondNode);
-  // assert(List_findNode(head, thirdNode->item) == thirdNode);
-  // assert(List_findNode(head, fourthNode->item) == fourthNode);
-  // assert(List_findNode(head, fifthNode->item) == NULL);
+  // * Free memory for fifthNodePtr, fourthNodePtr, thirdNodePtr, secondNodePtr and firstNodePtr
+  free(fifthNodePtr);
+  free(fourthNodePtr);
+  free(thirdNodePtr);
+  free(secondNodePtr);
+  free(firstNodePtr);
 
-  // // * Free memory for fourthNode, thirdNode, secondNode and firstNode
-  // free(fourthNode);
-  // free(thirdNode);
-  // free(secondNode);
-  // free(firstNode);
+  head = NULL;
+  assert(List_findNode(head, firstNodePtr->item) == NULL);
+  assert(List_findNode(head, secondNodePtr->item) == NULL);
+  assert(List_findNode(head, thirdNodePtr->item) == NULL);
+  assert(List_findNode(head, fourthNodePtr->item) == NULL);
+  assert(List_findNode(head, fifthNodePtr->item) == NULL);
 
-  // head = NULL;
-  // assert(List_findNode(head, firstNode->item) == NULL);
-  // assert(List_findNode(head, secondNode->item) == NULL);
-  // assert(List_findNode(head, thirdNode->item) == NULL);
-  // assert(List_findNode(head, fourthNode->item) == NULL);
-  // assert(List_findNode(head, fifthNode->item) == NULL);
+  /*
+   * Tests for List_deleteNode
+   */
+  firstNodePtr = List_createNode(22);
+  secondNodePtr = List_createNode(132);
+  thirdNodePtr = List_createNode(43);
 
-  // /*
-  //  * Tests for List_deleteNode
-  //  */
-  // firstNode = List_createNode(22);
-  // secondNode = List_createNode(132);
-  // thirdNode = List_createNode(43);
+  // * Remove first node in a linked list with one node (added to the tail)
+  List_insertTail(&head, firstNodePtr);
+  List_deleteNode(&head, firstNodePtr);
+  assert(List_findNode(head, firstNodePtr->item) == NULL);
+  assert(head == NULL);
 
-  // // * Remove first node in a linked list with one node (added to the tail)
-  // List_insertTail(&head, firstNode);
-  // List_deleteNode(&head, firstNode);
-  // assert(List_findNode(head, firstNode->item) == NULL);
-  // assert(head == NULL);
+  // * Remove first node in a linked list with one node (added to the head)
+  firstNodePtr = List_createNode(100);
+  List_insertHead(&head, firstNodePtr);
+  List_deleteNode(&head, firstNodePtr);
+  assert(List_findNode(head, firstNodePtr->item) == NULL);
+  assert(head == NULL);
 
-  // // * Remove first node in a linked list with one node (added to the head)
-  // firstNode = List_createNode(100);
-  // List_insertHead(&head, firstNode);
-  // List_deleteNode(&head, firstNode);
-  // assert(List_findNode(head, firstNode->item) == NULL);
-  // assert(head == NULL);
+  // * Remove first node in a linked list with two nodes
+  firstNodePtr = List_createNode(102);
+  List_insertTail(&head, firstNodePtr);
+  List_insertTail(&head, secondNodePtr);
+  List_deleteNode(&head, firstNodePtr);
+  assert(List_findNode(head, firstNodePtr->item) == NULL);
+  assert(List_findNode(head, secondNodePtr->item) == secondNodePtr);
+  assert(head == secondNodePtr);
+  assert(secondNodePtr->next == NULL);
 
-  // // * Remove first node in a linked list with two nodes
-  // firstNode = List_createNode(102);
-  // List_insertTail(&head, firstNode);
-  // List_insertTail(&head, secondNode);
-  // List_deleteNode(&head, firstNode);
-  // assert(List_findNode(head, firstNode->item) == NULL);
-  // assert(List_findNode(head, secondNode->item) == secondNode);
-  // assert(head == secondNode);
-  // assert(secondNode->next == NULL);
+  // * Remove last node in a linked list with two nodes
+  firstNodePtr = List_createNode(111);
+  List_insertHead(&head, firstNodePtr);
+  List_deleteNode(&head, secondNodePtr);
+  assert(List_findNode(head, firstNodePtr->item) == firstNodePtr);
+  assert(List_findNode(head, secondNodePtr->item) == NULL);
+  assert(head == firstNodePtr);
+  assert(firstNodePtr->next == NULL);
 
-  // // * Remove last node in a linked list with two nodes
-  // firstNode = List_createNode(111);
-  // List_insertHead(&head, firstNode);
-  // List_deleteNode(&head, secondNode);
-  // assert(List_findNode(head, firstNode->item) == firstNode);
-  // assert(List_findNode(head, secondNode->item) == NULL);
-  // assert(head == firstNode);
-  // assert(firstNode->next == NULL);
+  // * Remove first node in a linked list with three nodes
+  secondNodePtr = List_createNode(32);
+  List_insertTail(&head, secondNodePtr);
+  List_insertTail(&head, thirdNodePtr);
+  List_deleteNode(&head, firstNodePtr);
+  assert(List_findNode(head, firstNodePtr->item) == NULL);
+  assert(List_findNode(head, secondNodePtr->item) == secondNodePtr);
+  assert(List_findNode(head, thirdNodePtr->item) == thirdNodePtr);
+  assert(head == secondNodePtr);
+  assert(head->next == thirdNodePtr);
+  assert(thirdNodePtr->next == NULL);
 
-  // // * Remove first node in a linked list with three nodes
-  // secondNode = List_createNode(32);
-  // List_insertTail(&head, secondNode);
-  // List_insertTail(&head, thirdNode);
-  // List_deleteNode(&head, firstNode);
-  // assert(List_findNode(head, firstNode->item) == NULL);
-  // assert(List_findNode(head, secondNode->item) == secondNode);
-  // assert(List_findNode(head, thirdNode->item) == thirdNode);
-  // assert(head == secondNode);
-  // assert(head->next == thirdNode);
-  // assert(thirdNode->next == NULL);
+  // * Remove middle node in a linked list with three nodes
+  firstNodePtr = List_createNode(19);
+  List_insertHead(&head, firstNodePtr);
+  List_deleteNode(&head, secondNodePtr);
+  assert(List_findNode(head, firstNodePtr->item) == firstNodePtr);
+  assert(List_findNode(head, secondNodePtr->item) == NULL);
+  assert(List_findNode(head, thirdNodePtr->item) == thirdNodePtr);
+  assert(head == firstNodePtr);
+  assert(firstNodePtr->next == thirdNodePtr);
+  assert(thirdNodePtr->next == NULL);
 
-  // // * Remove middle node in a linked list with three nodes
-  // firstNode = List_createNode(19);
-  // List_insertHead(&head, firstNode);
-  // List_deleteNode(&head, secondNode);
-  // assert(List_findNode(head, firstNode->item) == firstNode);
-  // assert(List_findNode(head, secondNode->item) == NULL);
-  // assert(List_findNode(head, thirdNode->item) == thirdNode);
-  // assert(head == firstNode);
-  // assert(firstNode->next == thirdNode);
-  // assert(thirdNode->next == NULL);
+  // * Remove last node in a linked list with three nodes
+  secondNodePtr = List_createNode(119);
+  List_insertTail(&head, secondNodePtr);
+  List_deleteNode(&head, secondNodePtr);
+  assert(List_findNode(head, firstNodePtr->item) == firstNodePtr);
+  assert(List_findNode(head, thirdNodePtr->item) == thirdNodePtr);
+  assert(List_findNode(head, secondNodePtr->item) == NULL);
+  assert(head == firstNodePtr);
+  assert(firstNodePtr->next == thirdNodePtr);
+  assert(thirdNodePtr->next == NULL);
 
-  // // * Remove last node in a linked list with three nodes
-
-  // // * Free memory for thirdNode
-  // free(thirdNode);
-
-  // secondNode = List_createNode(19);
-  // List_insertTail(&head, secondNode);
-  // thirdNode = List_createNode(24);
-  // List_insertTail(&head, thirdNode);
-  // List_deleteNode(&head, thirdNode);
-  // assert(List_findNode(head, firstNode->item) == firstNode);
-  // assert(List_findNode(head, secondNode->item) == secondNode);
-  // assert(List_findNode(head, thirdNode->item) == NULL);
-  // assert(head == firstNode);
-  // assert(firstNode->next == secondNode);
-  // assert(secondNode->next == NULL);
-
-  // // * Free memory for secondNode and thirdNode
-  // free(secondNode);
-  // free(firstNode);
+  // * Free memory for secondNodePtr and thirdNodePtr
+  free(thirdNodePtr);
+  free(firstNodePtr);
 
   // /*
   // * Tests for List_sort
   // */
   // head = NULL;
-  // firstNode = List_createNode(22);
-  // secondNode = List_createNode(132);
-  // thirdNode = List_createNode(43);
+  // firstNodePtr = List_createNode(22);
+  // secondNodePtr = List_createNode(132);
+  // thirdNodePtr = List_createNode(43);
 
   // // * Sorting an empty list
   // List_sort(&head);
   // assert(head == NULL);
 
   // // * Sorting a list with one entry (added to the head)
-  // List_insertHead(&head, firstNode);
+  // List_insertHead(&head, firstNodePtr);
   // List_sort(&head);
-  // assert(head == firstNode);
+  // assert(head == firstNodePtr);
   // assert(head->next == NULL);
 
-  // // * Free memory for firstNode
-  // List_deleteNode(&head, firstNode);
+  // // * Free memory for firstNodePtr
+  // List_deleteNode(&head, firstNodePtr);
 
   // // * Sorting a list with one entry (added to the tail)
-  // firstNode = List_createNode(2);
-  // List_insertTail(&head, firstNode);
+  // firstNodePtr = List_createNode(2);
+  // List_insertTail(&head, firstNodePtr);
   // List_sort(&head);
-  // assert(head == firstNode);
+  // assert(head == firstNodePtr);
   // assert(head->next == NULL);
 
   // // * Sorting a list with two entries (originally unsorted)
-  // List_insertHead(&head, secondNode);
+  // List_insertHead(&head, secondNodePtr);
   // List_sort(&head);
-  // assert(head == secondNode);
-  // assert(head->next == firstNode);
+  // assert(head == secondNodePtr);
+  // assert(head->next == firstNodePtr);
 
-  // // * Free memory for firstNode
-  // List_deleteNode(&head, firstNode);
+  // // * Free memory for firstNodePtr
+  // List_deleteNode(&head, firstNodePtr);
 
   // // * Sorting a list with two entries (originally sorted with different item values)
-  // firstNode = List_createNode(2);
-  // List_insertHead(&head, firstNode);
+  // firstNodePtr = List_createNode(2);
+  // List_insertHead(&head, firstNodePtr);
   // List_sort(&head);
-  // assert(head == firstNode);
-  // assert(head->next == secondNode);
+  // assert(head == firstNodePtr);
+  // assert(head->next == secondNodePtr);
 
-  // // * Free memory for secondNode and firstNode
-  // List_deleteNode(&head, secondNode);
-  // List_deleteNode(&head, firstNode);
+  // // * Free memory for secondNodePtr and firstNodePtr
+  // List_deleteNode(&head, secondNodePtr);
+  // List_deleteNode(&head, firstNodePtr);
 
   // // * Sorting a list with two entries (originally sorted with the same item values)
-  // firstNode = List_createNode(2);
-  // List_insertTail(&head, firstNode);
-  // secondNode = List_createNode(2);
-  // List_insertTail(&head, secondNode);
+  // firstNodePtr = List_createNode(2);
+  // List_insertTail(&head, firstNodePtr);
+  // secondNodePtr = List_createNode(2);
+  // List_insertTail(&head, secondNodePtr);
   // List_sort(&head);
-  // assert(head == firstNode);
-  // assert(head->next == secondNode);
+  // assert(head == firstNodePtr);
+  // assert(head->next == secondNodePtr);
 
-  // // * Free memory for secondNode and firstNode
-  // List_deleteNode(&head, secondNode);
-  // List_deleteNode(&head, firstNode);
+  // // * Free memory for secondNodePtr and firstNodePtr
+  // List_deleteNode(&head, secondNodePtr);
+  // List_deleteNode(&head, firstNodePtr);
 
   // // * Sorting a list with three entries (smallest at the front and largest at the end)
-  // firstNode = List_createNode(-20);
-  // List_insertTail(&head, firstNode);
-  // secondNode = List_createNode(0);
-  // List_insertTail(&head, secondNode);
-  // List_insertTail(&head, thirdNode);
+  // firstNodePtr = List_createNode(-20);
+  // List_insertTail(&head, firstNodePtr);
+  // secondNodePtr = List_createNode(0);
+  // List_insertTail(&head, secondNodePtr);
+  // List_insertTail(&head, thirdNodePtr);
   // List_sort(&head);
-  // assert(head == firstNode);
-  // assert(head->next == secondNode);
-  // assert(head->next->next == thirdNode);
+  // assert(head == firstNodePtr);
+  // assert(head->next == secondNodePtr);
+  // assert(head->next->next == thirdNodePtr);
 
-  // // * Free memory for secondNode and firstNode
-  // List_deleteNode(&head, secondNode);
-  // List_deleteNode(&head, firstNode);
+  // // * Free memory for secondNodePtr and firstNodePtr
+  // List_deleteNode(&head, secondNodePtr);
+  // List_deleteNode(&head, firstNodePtr);
 
   // // * Sorting a list with three entries (largest at the front and smallest at the end)
-  // firstNode = List_createNode(-20);
-  // List_insertTail(&head, firstNode);
-  // secondNode = List_createNode(0);
-  // List_insertHead(&head, secondNode);
+  // firstNodePtr = List_createNode(-20);
+  // List_insertTail(&head, firstNodePtr);
+  // secondNodePtr = List_createNode(0);
+  // List_insertHead(&head, secondNodePtr);
   // List_sort(&head);
-  // assert(head == firstNode);
-  // assert(head->next == secondNode);
-  // assert(head->next->next == thirdNode);
+  // assert(head == firstNodePtr);
+  // assert(head->next == secondNodePtr);
+  // assert(head->next->next == thirdNodePtr);
 
-  // // * Free memory for firstNode, secondNode and thirdNode
-  // List_deleteNode(&head, firstNode);
-  // List_deleteNode(&head, secondNode);
-  // List_deleteNode(&head, thirdNode);
+  // // * Free memory for firstNodePtr, secondNodePtr and thirdNodePtr
+  // List_deleteNode(&head, firstNodePtr);
+  // List_deleteNode(&head, secondNodePtr);
+  // List_deleteNode(&head, thirdNodePtr);
 
   printf("Execution finished.\n");
 

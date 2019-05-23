@@ -94,9 +94,9 @@ void List_deleteNode (struct nodeStructPtr* headRef, struct nodeStructPtr node) 
   }
 
   if (currentNodePtr->next == node) {
-    struct nodeStructPtr tempNodePtr = node;
-    currentNodePtr->next = node->next;
-    free(tempNodePtr);
+    struct nodeStructPtr tempNodePtr = node->next;
+    free(currentNodePtr->next);
+    currentNodePtr->next = tempNodePtr;
   }
 }
 
