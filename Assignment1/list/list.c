@@ -111,23 +111,25 @@ void List_sort (struct nodeStructPtr* headRef) {
 
   const int STOP_SORTING = 0;
   const int KEEP_SORTING = 1;
+  struct nodeStructPtr tempNodePtr;
+  struct nodeStructPtr previousNodePtr;
 
   int sort;
   do {
     sort = STOP_SORTING;
 
-    for (struct nodeStructPtr tempNodePtr, previousNodePtr = *headRef; tempNodePtr->next != NULL; tempNodePtr = tempNodePtr->next) {
+    for (tempNodePtr = *headRef, previousNodePtr = *headRef; tempNodePtr->next != NULL; tempNodePtr = tempNodePtr->next) {
 
       if ((tempNodePtr == previousNodePtr) && (tempNodePtr->item > tempNodePtr->next->item)) {
 
         struct nodeStructPtr afterTempNodePtrNextPtr = tempNodePtr->next->next;
 
-        head = tempNodePtr->next;
-        head->next = tempNodePtr;
+        *headRef = tempNodePtr->next;
+        (*headRef)->next = tempNodePtr;
         tempNodePtr->next = afterTempNodePtrNextPtr;
 
-        prevNodePtr = head;
-        tempNodePtr = head;
+        previousNodePtr = *headRef;
+        tempNodePtr = *headRef;
 
         sort = KEEP_SORTING;
 

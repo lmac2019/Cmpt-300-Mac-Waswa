@@ -334,7 +334,7 @@ int main (int argc, char **argv) {
   // * Sorting a list with one entry (added to the head)
   List_insertHead(&head, firstNodePtr);
   List_sort(&head);
-  assert(head->item == 22);
+  assert(head == firstNodePtr);
   assert(head->next == NULL);
 
   // * Free memory for firstNodePtr
@@ -344,24 +344,30 @@ int main (int argc, char **argv) {
   firstNodePtr = List_createNode(2);
   List_insertTail(&head, firstNodePtr);
   List_sort(&head);
-  assert(head->item == 2);
+  assert(head == firstNodePtr);
   assert(head->next == NULL);
 
   // * Sorting a list with two entries (originally unsorted)
   List_insertHead(&head, secondNodePtr);
   List_sort(&head);
-  assert(head->item == 2);
-  assert(head->next->item == 132);
+  assert(head == firstNodePtr);
+  assert(head->next == secondNodePtr);
+  assert(head->next->next == NULL);
+  assert(firstNodePtr->next == secondNodePtr);
+  assert(secondNodePtr->next == NULL);
 
   // * Free memory for secondNodePtr
-  List_deleteNode(&head, firstNodePtr);
+  List_deleteNode(&head, secondNodePtr);
   
   // * Sorting a list with two entries (originally sorted with different item values)
-  firstNodePtr = List_createNode(1);
-  List_insertTail(&head, firstNodePtr);
+  secondNodePtr = List_createNode(100);
+  List_insertTail(&head, secondNodePtr);
   List_sort(&head);
-  assert(head->item == 1);
-  assert(head->next->item == 2);
+  assert(head == firstNodePtr);
+  assert(head->next == secondNodePtr);
+  assert(head->next->next == NULL);
+  assert(firstNodePtr->next == secondNodePtr);
+  assert(secondNodePtr->next == NULL);
 
   // * Free memory for secondNodePtr and firstNodePtr
   List_deleteNode(&head, secondNodePtr);
@@ -373,8 +379,11 @@ int main (int argc, char **argv) {
   secondNodePtr = List_createNode(7);
   List_insertTail(&head, secondNodePtr);
   List_sort(&head);
-  assert(head->item == 7);
-  assert(head->next->item == 7);
+  assert(head == firstNodePtr);
+  assert(head->next == secondNodePtr);
+  assert(head->next->next == NULL);
+  assert(firstNodePtr->next == secondNodePtr);
+  assert(secondNodePtr->next == NULL);
 
   // * Free memory for secondNodePtr and firstNodePtr
   List_deleteNode(&head, secondNodePtr);
@@ -382,14 +391,18 @@ int main (int argc, char **argv) {
 
   // * Sorting a list with three entries (smallest at the front and largest at the end)
   firstNodePtr = List_createNode(-20);
-  List_insertTail(&head, firstNodePtr);
+  List_insertHead(&head, firstNodePtr);
   secondNodePtr = List_createNode(10);
   List_insertTail(&head, secondNodePtr);
   List_insertTail(&head, thirdNodePtr);
   List_sort(&head);
-  assert(head->item == -20);
-  assert(head->next->item == 10);
-  assert(head->next->next->item == 43);
+  assert(head == firstNodePtr);
+  assert(head->next == secondNodePtr);
+  assert(head->next->next == thirdNodePtr);
+  assert(head->next->next->next == NULL);
+  assert(firstNodePtr->next == secondNodePtr);
+  assert(secondNodePtr->next == thirdNodePtr);
+  assert(thirdNodePtr->next == NULL);
 
   // * Free memory for secondNodePtr and firstNodePtr
   List_deleteNode(&head, secondNodePtr);
@@ -401,14 +414,18 @@ int main (int argc, char **argv) {
   secondNodePtr = List_createNode(-20);
   List_insertTail(&head, secondNodePtr);
   List_sort(&head);
-  assert(head->item == -20);
-  assert(head->next->item == 1);
-  assert(head->next->next->item == 43);
+  assert(head == secondNodePtr);
+  assert(head->next == firstNodePtr);
+  assert(head->next->next == thirdNodePtr);
+  assert(head->next->next->next == NULL);
+  assert(secondNodePtr->next == firstNodePtr);
+  assert(firstNodePtr->next == thirdNodePtr);
+  assert(thirdNodePtr->next == NULL);
 
   // * Free memory for firstNodePtr, secondNodePtr and thirdNodePtr
+  List_deleteNode(&head, thirdNodePtr);
   List_deleteNode(&head, firstNodePtr);
   List_deleteNode(&head, secondNodePtr);
-  List_deleteNode(&head, thirdNodePtr);
 
   // * Ensure all memory is freed
   assert(head == NULL);
