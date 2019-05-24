@@ -116,21 +116,40 @@ void List_sort (struct nodeStructPtr* headRef) {
   do {
     sort = STOP_SORTING;
 
-    for (struct nodeStructPtr tempNodePtr, prevNodePtr = *headRef; tempNodePtr->next != NULL; tempNodePtr = tempNodePtr->next) {
-      if (tempNodePtr != *headRef) {
-        prevNodePtr = prevNodePtr->next;
-      }
+    for (struct nodeStructPtr tempNodePtr, previousNodePtr = *headRef; tempNodePtr->next != NULL; tempNodePtr = tempNodePtr->next) {
 
-      if (tempNodePtr->item > tempNodePtr->next->item) {
+      if ((tempNodePtr == previousNodePtr) && (tempNodePtr->item > tempNodePtr->next->item)) {
+
+        struct nodeStructPtr afterTempNodePtrNextPtr = tempNodePtr->next->next;
+
+        head = tempNodePtr->next;
+        head->next = tempNodePtr;
+        tempNodePtr->next = afterTempNodePtrNextPtr;
+
+        prevNodePtr = head;
+        tempNodePtr = head;
+
+        sort = KEEP_SORTING;
+
+      } else if (tempNodePtr->item > tempNodePtr->next->item) {
+
         struct nodeStructPtr currentNodePtr = tempNodePtr;
         struct nodeStructPtr afterTempNodePtrNextPtr = tempNodePtr->next->next;
 
-        prevNodePtr->next = tempNodePtr->next;
+        previousNodePtr->next = tempNodePtr->next;
         tempNodePtr->next->next = currentNodePtr;
         currentNodePtr->next = afterTempNodePtrNextPtr;
 
+        tempNodePtr = previousNodePtr->next;
+
         sort = KEEP_SORTING;
+
       }
+
+      if (tempNodePtr != *headRef) {
+        previousNodePtr = previousNodePtr->next;
+      }
+
     }
   } while (sort == KEEP_SORTING);
 }
