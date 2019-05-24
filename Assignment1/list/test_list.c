@@ -335,6 +335,7 @@ int main (int argc, char **argv) {
   List_insertHead(&head, firstNodePtr);
   List_sort(&head);
   assert(head == firstNodePtr);
+  assert(head->item == 22);
   assert(head->next == NULL);
 
   // * Free memory for firstNodePtr
@@ -345,13 +346,16 @@ int main (int argc, char **argv) {
   List_insertTail(&head, firstNodePtr);
   List_sort(&head);
   assert(head == firstNodePtr);
+  assert(head->item == 2);
   assert(head->next == NULL);
 
   // * Sorting a list with two entries (originally unsorted)
   List_insertHead(&head, secondNodePtr);
   List_sort(&head);
   assert(head == firstNodePtr);
+  assert(head->item == 2);
   assert(head->next == secondNodePtr);
+  assert(head->next->item == 132);
   assert(head->next->next == NULL);
   assert(firstNodePtr->next == secondNodePtr);
   assert(secondNodePtr->next == NULL);
@@ -364,7 +368,9 @@ int main (int argc, char **argv) {
   List_insertTail(&head, secondNodePtr);
   List_sort(&head);
   assert(head == firstNodePtr);
+  assert(head->item == 2);
   assert(head->next == secondNodePtr);
+  assert(head->next->item == 100);
   assert(head->next->next == NULL);
   assert(firstNodePtr->next == secondNodePtr);
   assert(secondNodePtr->next == NULL);
@@ -380,7 +386,9 @@ int main (int argc, char **argv) {
   List_insertTail(&head, secondNodePtr);
   List_sort(&head);
   assert(head == firstNodePtr);
+  assert(head->item == 7);
   assert(head->next == secondNodePtr);
+  assert(head->next->item == 7);
   assert(head->next->next == NULL);
   assert(firstNodePtr->next == secondNodePtr);
   assert(secondNodePtr->next == NULL);
@@ -397,8 +405,11 @@ int main (int argc, char **argv) {
   List_insertTail(&head, thirdNodePtr);
   List_sort(&head);
   assert(head == firstNodePtr);
+  assert(head->item == -20);
   assert(head->next == secondNodePtr);
+  assert(head->next->item == 10);
   assert(head->next->next == thirdNodePtr);
+  assert(head->next->next->item == 43);
   assert(head->next->next->next == NULL);
   assert(firstNodePtr->next == secondNodePtr);
   assert(secondNodePtr->next == thirdNodePtr);
@@ -415,8 +426,11 @@ int main (int argc, char **argv) {
   List_insertTail(&head, secondNodePtr);
   List_sort(&head);
   assert(head == secondNodePtr);
+  assert(head->item == -20);
   assert(head->next == firstNodePtr);
+  assert(head->next->item == 1);
   assert(head->next->next == thirdNodePtr);
+  assert(head->next->next->item == 43);
   assert(head->next->next->next == NULL);
   assert(secondNodePtr->next == firstNodePtr);
   assert(firstNodePtr->next == thirdNodePtr);
