@@ -1,7 +1,11 @@
 Team MacWaswa
 
-Taorui Liu(Mac) Student ID: 301237339
-Waswa
+Name: Taorui Liu(Mac) 
+Student ID: 301237339
 
-For both list and mystring under directory type make to compile and output the test result
-To clean the folder type make clean to remove all object files as well as all output and temporary files
+Name: Waswa Olunga
+Student ID: 301307966
+
+For both list and mystring under directory the following applies:
+1. Type make to compile and output the test result
+2. Type make clean to remove all object files and executables

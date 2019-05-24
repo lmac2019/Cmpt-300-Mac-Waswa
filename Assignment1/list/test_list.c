@@ -427,7 +427,6 @@ int main (int argc, char **argv) {
   List_deleteNode(&head, firstNodePtr);
   List_deleteNode(&head, secondNodePtr);
 
-
   // * Sorting a list with four entries (smallest at the front and largest at the end)
   firstNodePtr = List_createNode(0);
   List_insertHead(&head, firstNodePtr);
@@ -494,8 +493,6 @@ int main (int argc, char **argv) {
   List_deleteNode(&head,fourthNodePtr);
   List_deleteNode(&head,fifthNodePtr);
 
-
-  // * Ensure all memory is freed
   assert(head == NULL);
 
   printf("Execution finished.\n");
