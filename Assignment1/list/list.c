@@ -116,12 +116,19 @@ void List_sort (struct nodeStructPtr* headRef) {
   do {
     sort = STOP_SORTING;
 
-    for (struct nodeStructPtr tempNodePtr = *headRef; tempNodePtr->next != NULL; tempNodePtr = tempNodePtr->next) {
+    for (struct nodeStructPtr tempNodePtr, prevNodePtr = *headRef; tempNodePtr->next != NULL; tempNodePtr = tempNodePtr->next) {
+      if (tempNodePtr != *headRef) {
+        prevNodePtr = prevNodePtr->next;
+      }
+
       if (tempNodePtr->item > tempNodePtr->next->item) {
-        int tempNodeItem;
-        tempNodeItem = tempNodePtr->item;
-        tempNodePtr->item = tempNodePtr->next->item;
-        tempNodePtr->next->item = tempNodeItem;
+        struct nodeStructPtr currentNodePtr = tempNodePtr;
+        struct nodeStructPtr afterTempNodePtrNextPtr = tempNodePtr->next->next;
+
+        prevNodePtr->next = tempNodePtr->next;
+        tempNodePtr->next->next = currentNodePtr;
+        currentNodePtr->next = afterTempNodePtrNextPtr;
+
         sort = KEEP_SORTING;
       }
     }
