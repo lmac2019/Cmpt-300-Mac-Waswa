@@ -114,6 +114,9 @@ int main(int argc, char* argv[])
 
 		// DEBUG: Dump out arguments:
 		for (int i = 0; tokens[i] != NULL; i++) {
+      if (strcmp("exit",tokens[i]) == 0){
+        exit(0);
+      }
 			write(STDOUT_FILENO, "   Token: ", strlen("   Token: "));
 			write(STDOUT_FILENO, tokens[i], strlen(tokens[i]));
 			write(STDOUT_FILENO, "\n", strlen("\n"));
