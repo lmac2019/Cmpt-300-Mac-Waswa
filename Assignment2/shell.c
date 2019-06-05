@@ -93,7 +93,13 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background) {
 int main (int argc, charPtr argv[]) {
 	char input_buffer[COMMAND_LENGTH];
 	charPtr tokens[NUM_TOKENS];
-  char* prompt = "> ";
+
+  charPtr prompt = "> ";
+  charPtr exitToken = "exit";
+  charPtr foregroundProcessIntro = "   Token: ";
+  charPtr newline = "\n";
+  charPtr backgroundProcessIntro = "Run in background.";
+
 	while (true) {
 		// * Get command
 		// * Use write because we need to use read() to work with
@@ -104,17 +110,17 @@ int main (int argc, charPtr argv[]) {
 
 		// * DEBUG: Dump out arguments:
 		for (int i = 0; tokens[i] != NULL; i++) {
-      if (strcmp("exit",tokens[i]) == 0) {
+      if (strcmp(exitToken, tokens[i]) == 0) {
         exit(0);
       }
 
-			write(STDOUT_FILENO, "   Token: ", strlen("   Token: "));
+			write(STDOUT_FILENO, foregroundProcessIntro, strlen(foregroundProcessIntro));
 			write(STDOUT_FILENO, tokens[i], strlen(tokens[i]));
-			write(STDOUT_FILENO, "\n", strlen("\n"));
+			write(STDOUT_FILENO, newline, strlen(newline));
 		}
 
 		if (in_background) {
-			write(STDOUT_FILENO, "Run in background.", strlen("Run in background."));
+			write(STDOUT_FILENO, backgroundProcessIntro, strlen(backgroundProcessIntro));
 		}
 
 		/*
