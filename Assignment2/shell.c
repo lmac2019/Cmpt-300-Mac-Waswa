@@ -1,13 +1,4 @@
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-#define charPtr char*
-#define boolPtr bool*
-#define COMMAND_LENGTH 1024
-#define NUM_TOKENS (COMMAND_LENGTH / 2 + 1)
+#include "shell.h"
 
 /*
  * Command Input and Processing
@@ -97,40 +88,45 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background) {
 /*
  * Main and Execute Commands
  */
-int main (int argc, charPtr argv[]) {
-	char input_buffer[COMMAND_LENGTH];
-	charPtr tokens[NUM_TOKENS];
-	while (true) {
-		// * Get command
-		// * Use write because we need to use read() to work with
-		// * signals, and read() is incompatible with printf().
-		write(STDOUT_FILENO, "> ", strlen("> "));
-		bool in_background = false;
-		read_command(input_buffer, tokens, &in_background);
+int main(int argc, charPtr argv[])
+{
+  char input_buffer[COMMAND_LENGTH];
+  charPtr tokens[NUM_TOKENS];
+  while (true)
+  {
+    // * Get command
+    // * Use write because we need to use read() to work with
+    // * signals, and read() is incompatible with printf().
+    write(STDOUT_FILENO, "> ", strlen("> "));
+    bool in_background = false;
+    read_command(input_buffer, tokens, &in_background);
 
-		// * DEBUG: Dump out arguments:
-		for (int i = 0; tokens[i] != NULL; i++) {
-      if (strcmp("exit",tokens[i]) == 0) {
+    // * DEBUG: Dump out arguments:
+    for (int i = 0; tokens[i] != NULL; i++)
+    {
+      if (strcmp("exit", tokens[i]) == 0)
+      {
         exit(0);
       }
 
-			write(STDOUT_FILENO, "   Token: ", strlen("   Token: "));
-			write(STDOUT_FILENO, tokens[i], strlen(tokens[i]));
-			write(STDOUT_FILENO, "\n", strlen("\n"));
-		}
+      write(STDOUT_FILENO, "   Token: ", strlen("   Token: "));
+      write(STDOUT_FILENO, tokens[i], strlen(tokens[i]));
+      write(STDOUT_FILENO, "\n", strlen("\n"));
+    }
 
-		if (in_background) {
-			write(STDOUT_FILENO, "Run in background.", strlen("Run in background."));
-		}
+    if (in_background)
+    {
+      write(STDOUT_FILENO, "Run in background.", strlen("Run in background."));
+    }
 
-		/*
+    /*
 		 * Steps For Basic Shell:
 		 * 1. Fork a child process
 		 * 2. Child process invokes execvp() using results in token array.
 		 * 3. If in_background is false, parent waits for child to finish. 
      * Otherwise, parent loops back to read_command() again immediately.
 		 */
-	}
+  }
 
-	return 0;
+  return 0;
 }
