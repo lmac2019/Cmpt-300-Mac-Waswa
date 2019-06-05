@@ -22,21 +22,23 @@ int tokenize_command (charPtr buff, charPtr tokens[]) {
 
 	for (int i = 0; i < num_chars; i++) {
 		switch (buff[i]) {
-		// * Handle token delimiters (ends):
-		case ' ':
-		case '\t':
-		case '\n':
-			buff[i] = '\0';
-			in_token = false;
-			break;
+      // * Handle token delimiters (ends):
+      case ' ':
+      case '\t':
+      case '\n': {
+        buff[i] = '\0';
+        in_token = false;
+        break;
+      }
 
-		// * Handle other characters (may be start)
-		default:
-			if (!in_token) {
-				tokens[token_count] = &buff[i];
-				token_count++;
-				in_token = true;
-			}
+      // * Handle other characters (may be start)
+      default: {
+        if (!in_token) {
+          tokens[token_count] = &buff[i];
+          token_count++;
+          in_token = true;
+        }
+      }
 		}
 	}
 
