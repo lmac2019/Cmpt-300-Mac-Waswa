@@ -14,8 +14,6 @@ all: shell shell_sol
 %.o : %.c
 	$(CC) -c $(CCFLAGS) $<
 
-
-
 shell: shell.o
 	$(CC) -o shell shell.o $(CCFLAGS)
 
