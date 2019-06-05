@@ -49,17 +49,17 @@ int tokenize_command (charPtr buff, charPtr tokens[]) {
  * Read a command from the keyboard into the buffer 'buff' and tokenize it
  * such that 'tokens[i]' points into 'buff' to the i'th token in the command.
  * buff: Buffer allocated by the calling code. Must be at least COMMAND_LENGTH bytes long.
- * tokens[]: Array of character pointers which point into 'buff'. Must be at
- * least NUM_TOKENS long. Will strip out up to one final '&' token.
- * tokens will be NULL terminated (a NULL pointer indicates end of tokens).
- * in_background: pointer to a boolean variable. Set to true if user entered
+ * tokens[]: Array of character pointers which point into 'buff'. 
+ * Must be at least NUM_TOKENS long. Will strip out up to one final '&' token.
+ * Tokens will be NULL terminated (a NULL pointer indicates end of tokens).
+ * in_background: pointer to a boolean variable. Set to true if user entered.
  * an & as their last token; otherwise set to false.
  */
 void read_command (charPtr buff, charPtr tokens[], boolPtr in_background) {
 	*in_background = false;
 
 	// * Read input
-	int length = read(STDIN_FILENO, buff, COMMAND_LENGTH-1);
+	int length = read(STDIN_FILENO, buff, COMMAND_LENGTH - 1);
 
 	if (length < 0) {
 		perror("Unable to read command from keyboard. Terminating.\n");
@@ -91,11 +91,12 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background) {
 int main (int argc, charPtr argv[]) {
 	char input_buffer[COMMAND_LENGTH];
 	charPtr tokens[NUM_TOKENS];
+  char* prompt = "> ";
 	while (true) {
 		// * Get command
 		// * Use write because we need to use read() to work with
 		// * signals, and read() is incompatible with printf().
-		write(STDOUT_FILENO, "> ", strlen("> "));
+		write(STDOUT_FILENO, prompt, strlen(prompt));
 		bool in_background = false;
 		read_command(input_buffer, tokens, &in_background);
 
