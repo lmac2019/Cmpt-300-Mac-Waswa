@@ -124,7 +124,10 @@ void execute_command (const charPtr tokens[], const bool in_background) {
       } while (!WIFEXITED(status) && !WIFSIGNALED(status));
     }
 
-    // * Clean up any previously exited background processes
+    // * Check if any child process has terminated.
+    // * If none have terminated, then waitpid will return 0 and exit the loop
+    // * otherwise, the terminated child will be cleaned up 
+    // * and the next child process will be waited
     while (waitpid(-1, NULL, WNOHANG) > 0);
   }
 }
