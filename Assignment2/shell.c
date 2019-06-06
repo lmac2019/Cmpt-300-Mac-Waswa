@@ -94,10 +94,10 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background) {
  * True if the user's command was entered as a background process.
  * False if the user's command was entered as a foreground process.
  */
-void execute_command (const charPtr tokens[], const bool in_background) {
+void execute_command (charPtr tokens[], const bool in_background) {
   pid_t new_process_id = fork();
 
-  if (new_process_id == ERROR) {
+  if (new_process_id == ERROR_CODE) {
     // * Failed to create child process
     perror("An error occured when creating a child process");
     exit(ERROR_CODE);
@@ -111,7 +111,20 @@ void execute_command (const charPtr tokens[], const bool in_background) {
     }
   } else {
     // * Parent process enters here
-    if (!in_background) {
+    if (in_background) {
+      // * Check if any child process has terminated.
+      // * If none have terminated, then waitpid will return 0 and exit the loop
+      // * otherwise, the terminated child will be cleaned up 
+      // * and the next child process will be waited
+      int wait_result;
+      do {
+        wait_result = waitpid(WAIT_ALL_CHILDREN, NULL, WNOHANG);
+        if (wait_result == ERROR_CODE) {
+          perror("An error occured in waiting for all child processes");
+          exit(ERROR_CODE);
+        }
+      } while (wait_result > 0);
+    } else {
       // * Suspend execution of parent process
       // * Wait for foreground child process to terminate
       int status;
@@ -123,19 +136,6 @@ void execute_command (const charPtr tokens[], const bool in_background) {
         }
       } while (!WIFEXITED(status) && !WIFSIGNALED(status));
     }
-
-    // * Check if any child process has terminated.
-    // * If none have terminated, then waitpid will return 0 and exit the loop
-    // * otherwise, the terminated child will be cleaned up 
-    // * and the next child process will be waited
-    int wait_result;
-    do {
-      wait_result = waitpid(WAIT_ALL_CHILDREN, NULL, WNOHANG);
-      if (wait_result == ERROR_CODE) {
-        perror("An error occured in waiting for all child processes");
-        exit(ERROR_CODE);
-      }
-    } while (wait_result > 0);
   }
 }
 
