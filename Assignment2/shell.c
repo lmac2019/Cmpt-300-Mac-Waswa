@@ -64,7 +64,7 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background) {
 	int length = read(STDIN_FILENO, buff, COMMAND_LENGTH - 1);
   if (length < 0) {
 		perror("Unable to read command from keyboard. Terminating.\n");
-		exit(-1);
+		exit(ERROR_CODE);
 	}
 
 	// * Null terminate and strip \n.
@@ -97,29 +97,29 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background) {
 void execute_command (const charPtr tokens[], const bool in_background) {
   pid_t new_process_id = fork();
 
-  if (new_process_id < 0) {
+  if (new_process_id == ERROR) {
     // * Failed to create child process
     perror("An error occured when creating a child process");
-    exit(-1);
+    exit(ERROR_CODE);
   } else if (new_process_id == 0) {
     // * Child process enters here
     // * Execute command in child process
-    if (execvp(tokens[0], tokens) == -1) {
+    if (execvp(tokens[0], tokens) == ERROR_CODE) {
       // * Error encountered in execution of command by child process
       perror("An error occured when executing the command in the child process");
-      exit(-1);
+      exit(ERROR_CODE);
     }
   } else {
     // * Parent process enters here
     if (!in_background) {
-      // * Foreground process
-      // * Suspend execution of parent process and wait for child process to terminate
+      // * Suspend execution of parent process
+      // * Wait for foreground child process to terminate
       int status;
       do {
-        int wait_result = waitpid(new_process_id, &status, WNOHANG);
-        if (wait_result == -1) {
-          perror("An error occured in waiting for the child process");
-          exit(-1);
+        int wait_result = waitpid(new_process_id, &status, 0);
+        if (wait_result == ERROR_CODE) {
+          perror("An error occured when waiting for the child process");
+          exit(ERROR_CODE);
         }
       } while (!WIFEXITED(status) && !WIFSIGNALED(status));
     }
@@ -128,7 +128,14 @@ void execute_command (const charPtr tokens[], const bool in_background) {
     // * If none have terminated, then waitpid will return 0 and exit the loop
     // * otherwise, the terminated child will be cleaned up 
     // * and the next child process will be waited
-    while (waitpid(-1, NULL, WNOHANG) > 0);
+    int wait_result;
+    do {
+      wait_result = waitpid(WAIT_ALL_CHILDREN, NULL, WNOHANG);
+      if (wait_result == ERROR_CODE) {
+        perror("An error occured in waiting for all child processes");
+        exit(ERROR_CODE);
+      }
+    } while (wait_result > 0);
   }
 }
 
