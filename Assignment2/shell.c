@@ -62,7 +62,6 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background) {
 
 	// * Read input
 	int length = read(STDIN_FILENO, buff, COMMAND_LENGTH - 1);
-
 	if (length < 0) {
 		perror("Unable to read command from keyboard. Terminating.\n");
 		exit(-1);
@@ -106,7 +105,7 @@ int main (int argc, charPtr argv[]) {
 		// * signals, and read() is incompatible with printf().
 		write(STDOUT_FILENO, prompt, strlen(prompt));
 		bool in_background = false;
-		read_command(input_buffer, tokens, &in_background);
+    read_command(input_buffer, tokens, &in_background);
 
 		// * DEBUG: Dump out arguments:
 		for (int i = 0; tokens[i] != NULL; i++) {
