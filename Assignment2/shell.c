@@ -93,49 +93,17 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background) {
  * in_background: a boolean variable. 
  * True if the user's command was entered as a background process.
  * False if the user's command was entered as a foreground process.
+ * num_background_child_processes: a pointer to a variable containing the current number of background child processes.
  */
-void execute_command (charPtr tokens[], const bool in_background) {
+void execute_command (charPtr tokens[], const bool in_background, intPtr num_background_child_processes) {
   pid_t new_process_id = fork();
 
   if (new_process_id == ERROR_CODE) {
-    // * Failed to create child process
-    perror("An error occured when creating a child process");
-    exit(ERROR_CODE);
+    handle_fork_error();
   } else if (new_process_id == 0) {
-    // * Child process enters here
-    // * Execute command in child process
-    if (execvp(tokens[0], tokens) == ERROR_CODE) {
-      // * Error encountered in execution of command by child process
-      perror("An error occured when executing the command in the child process");
-      exit(ERROR_CODE);
-    }
+    handle_child_process(tokens);
   } else {
-    // * Parent process enters here
-    if (in_background) {
-      // * Check if any child process has terminated.
-      // * If none have terminated, then waitpid will return 0 and exit the loop
-      // * otherwise, the terminated child will be cleaned up 
-      // * and the next child process will be waited
-      int wait_result;
-      do {
-        wait_result = waitpid(WAIT_ALL_CHILDREN, NULL, WNOHANG);
-        if (wait_result == ERROR_CODE) {
-          perror("An error occured in waiting for all child processes");
-          exit(ERROR_CODE);
-        }
-      } while (wait_result > 0);
-    } else {
-      // * Suspend execution of parent process
-      // * Wait for foreground child process to terminate
-      int status;
-      do {
-        int wait_result = waitpid(new_process_id, &status, 0);
-        if (wait_result == ERROR_CODE) {
-          perror("An error occured when waiting for the child process");
-          exit(ERROR_CODE);
-        }
-      } while (!WIFEXITED(status) && !WIFSIGNALED(status));
-    }
+    handle_parent_process(new_process_id, in_background, num_background_child_processes);
   }
 }
 
@@ -145,6 +113,7 @@ void execute_command (charPtr tokens[], const bool in_background) {
 int main (int argc, charPtr argv[]) {
 	char input_buffer[COMMAND_LENGTH];
 	charPtr tokens[NUM_TOKENS];
+  int num_background_child_processes = 0;
 
 	while (true) {
 		// * Get command
@@ -153,7 +122,7 @@ int main (int argc, charPtr argv[]) {
 		write_to_shell("> ");
 		bool in_background = false;
     read_command(input_buffer, tokens, &in_background);
-    execute_command(tokens, in_background);
+    execute_command(tokens, in_background, &num_background_child_processes);
 
 		// * DEBUG: Dump out arguments:
 		for (int i = 0; tokens[i] != NULL; i++) {

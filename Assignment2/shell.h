@@ -3,11 +3,6 @@
 
 /* Include necessary external libraries */
 
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 #include "macros.h"
 #include "helpers.h"
 
@@ -15,6 +10,6 @@
 
 int tokenize_command(charPtr buff, charPtr tokens[]);
 void read_command(charPtr buff, charPtr tokens[], boolPtr in_background);
-void execute_command(charPtr tokens[], const bool in_background);
+void execute_command(charPtr tokens[], const bool in_background, intPtr num_background_child_processes);
 
 #endif
