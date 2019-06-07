@@ -8,6 +8,8 @@
 #include <string.h>
 #include <unistd.h>
 #include "macros.h"
+#include <sys/types.h>
+#include <sys/wait.h>
 
 /* Function prototypes */
 
