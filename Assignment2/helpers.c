@@ -22,6 +22,12 @@ void handle_fork_error () {
  * tokens[]: an array of character pointers containing the tokens of the command
  */
 void handle_child_process (charPtr tokens[]) {
+  if (strcmp("cd", tokens[0]) == 0) {
+ 		if(chdir(tokens[1])!=0){
+ 			perror("chdir() failed");
+ 		}
+ 		return;
+  }
   if (execvp(tokens[0], tokens) == ERROR_CODE) {
     perror("An error occured when executing the command in the child process");
     exit(ERROR_CODE);
