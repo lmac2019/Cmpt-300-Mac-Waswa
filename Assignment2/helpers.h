@@ -12,7 +12,6 @@
 #include <sys/wait.h>
 
 /* Function prototypes */
-
 void write_to_shell(charPtr message);
 void handle_fork_error();
 void handle_child_process(charPtr tokens[]);

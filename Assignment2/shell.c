@@ -96,13 +96,12 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background) {
  * num_background_child_processes: a pointer to a variable containing the current number of background child processes.
  */
 void execute_command (charPtr tokens[], const bool in_background, intPtr num_background_child_processes) {
-	// if(sizeof(tokens)>=1){
-	// 	if (strcmp("cd", tokens[0]) == 0) {
-	// 	   if(chdir(tokens[1]!=0)){
-	// 			 perror("chdir error!");
-	// 		 }
-	// 	}
-	// }
+		if (strcmp("cd", tokens[0]) == 0) {
+		   if(chdir(tokens[1])!=0){
+				 perror("chdir() failed");
+			 }
+			 return;
+		}
 	for (int i = 0; tokens[i] != NULL; i++) {
 		if (strcmp("exit", tokens[i]) == 0) {
 			exit(0);
