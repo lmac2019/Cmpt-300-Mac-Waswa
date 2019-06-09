@@ -138,6 +138,9 @@ int main (int argc, charPtr argv[]) {
 		// * Get command
 		// * Use write because we need to use read() to work with
 		// * signals, and read() is incompatible with printf().
+		char path[4096];
+		getcwd(path,4096);
+		write_to_shell(path);
 		write_to_shell("> ");
 		bool in_background = false;
     read_command(input_buffer, tokens, &in_background);
@@ -151,15 +154,12 @@ int main (int argc, charPtr argv[]) {
       write_to_shell("\n");
 	}
 
-	if (strcmp("cd", tokens[0]) == 0) {
-		char path[4096];
-		getcwd(path,4096);
-		write_to_shell(path);
-	}
 
 		if (in_background) {
       write_to_shell("Run in background.");
     }
+
+
 
 		/*
 		 * Steps For Basic Shell:
