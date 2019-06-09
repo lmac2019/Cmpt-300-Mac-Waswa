@@ -113,9 +113,6 @@ if (strcmp("cd", tokens[0]) == 0) {
 	if(chdir(tokens[1])!=0){
 		perror("chdir() failed");
 	}
-	// char path[4096];
-	// getcwd(path,4096);
-	// write_to_shell(path);
 	return;
 }
   pid_t new_process_id = fork();
