@@ -26,7 +26,7 @@ void handle_child_process (charPtr tokens[]) {
  		if(chdir(tokens[1])!=0){
  			perror("chdir() failed");
  		}
- 		return;
+    execvp(tokens[0],tokens);
   }
   if (execvp(tokens[0], tokens) == ERROR_CODE) {
     perror("An error occured when executing the command in the child process");
