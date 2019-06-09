@@ -131,7 +131,7 @@ int main (int argc, charPtr argv[]) {
       write_to_shell("   Token: ");
       write_to_shell(tokens[i]);
       write_to_shell("\n");
-	}
+	  }
 
 		if (in_background) {
       write_to_shell("Run in background.");

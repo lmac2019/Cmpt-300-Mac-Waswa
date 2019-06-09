@@ -96,10 +96,10 @@ void handle_internal_commands (charPtr tokens[]) {
 
 		} else if (strcmp(PWD_COMMAND, tokens[i]) == 0) {
 
-      charPtr path[4096];
+      char path[4096];
       charPtr cwd = getcwd(path, 4096);
       
-      if (cwd === NULL) {
+      if (cwd == NULL) {
         perror("An error occured when executing the getcwd() function");
       } else {
         write_to_shell(cwd);
