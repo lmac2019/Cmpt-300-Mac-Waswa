@@ -10,7 +10,6 @@ void write_to_shell (charPtr message) {
 
 /*
  * Handles displaying an error message if an error occurs when fork is used
- * message: Character array containing string to display.
  */
 void handle_fork_error () {
   perror("An error occured when creating a child process");
@@ -86,6 +85,7 @@ void wait_background_child_processes (intPtr num_background_child_processes) {
 
 /*
  * Handles the execution of internal commands
+ * tokens[]: an array of character pointers containing the tokens of the command
  */
 void handle_internal_commands (charPtr tokens[]) {
   for (int i = 0; tokens[i] != NULL; i++) {
@@ -117,4 +117,18 @@ void handle_internal_commands (charPtr tokens[]) {
 
     }
   }
+}
+
+/*
+ * Handles the execution of the history command
+ * tokens[]: an array of character pointers containing the tokens of the command
+ * last_command_index: the index of the last command to be entered
+ */
+bool handle_history_command (charPtr tokens[], int last_command_index) {
+  if (strcmp(tokens[0], HISTORY_COMMAND) == 0) {
+    print_last_ten_commands(last_command_index);
+    return true;
+  }
+
+  return false;
 }

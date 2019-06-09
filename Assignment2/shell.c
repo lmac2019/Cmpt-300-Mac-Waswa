@@ -94,9 +94,12 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background) {
  * True if the user's command was entered as a background process.
  * False if the user's command was entered as a foreground process.
  * num_background_child_processes: a pointer to a variable containing the current number of background child processes.
+ * last_command_index: the index of the last command to be entered
  */
-void execute_command (charPtr tokens[], const bool in_background, intPtr num_background_child_processes) {
-	handle_internal_commands(tokens);
+void execute_command (charPtr tokens[], const bool in_background, intPtr num_background_child_processes, int last_command_index) {
+	handle_history_command(tokens, last_command_index);
+  
+  handle_internal_commands(tokens);
 
   pid_t new_process_id = fork();
 
@@ -115,19 +118,24 @@ void execute_command (charPtr tokens[], const bool in_background, intPtr num_bac
 int main (int argc, charPtr argv[]) {
 	char input_buffer[COMMAND_LENGTH];
 	charPtr tokens[NUM_TOKENS];
+  int last_command_index = 0;
   int num_background_child_processes = 0;
+
+  init_history();
 
 	while (true) {
 		// * Get command
 		// * Use write because we need to use read() to work with
 		// * signals, and read() is incompatible with printf().
 		char path[4096];
-		getcwd(path,4096);
+		getcwd(path, 4096);
 		write_to_shell(path);
 		write_to_shell("> ");
 		bool in_background = false;
     read_command(input_buffer, tokens, &in_background);
-    execute_command(tokens, in_background, &num_background_child_processes);
+    add_command_to_history(input_buffer, last_command_index);
+    last_command_index++;
+    execute_command(tokens, in_background, &num_background_child_processes, last_command_index);
 
 		// * DEBUG: Dump out arguments:
 		for (int i = 0; tokens[i] != NULL; i++) {
@@ -136,12 +144,9 @@ int main (int argc, charPtr argv[]) {
       write_to_shell("\n");
 	  }
 
-
 		if (in_background) {
       write_to_shell("Run in background.");
     }
-
-
 
 		/*
 		 * Steps For Basic Shell:

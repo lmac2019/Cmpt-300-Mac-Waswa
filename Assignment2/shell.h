@@ -5,11 +5,12 @@
 
 #include "macros.h"
 #include "helpers.h"
+#include "history.h"
 
 /* Function prototypes */
 
 int tokenize_command(charPtr buff, charPtr tokens[]);
 void read_command(charPtr buff, charPtr tokens[], boolPtr in_background);
-void execute_command(charPtr tokens[], const bool in_background, intPtr num_background_child_processes);
+void execute_command(charPtr tokens[], history[][], const bool in_background, intPtr num_background_child_processes);
 
 #endif

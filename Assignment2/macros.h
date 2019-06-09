@@ -6,7 +6,6 @@
 #include <stdbool.h>
 
 /* Macros */
-
 #define boolPtr bool *
 #define charPtr char *
 #define intPtr int *
@@ -17,5 +16,7 @@
 #define EXIT_COMMAND "exit"
 #define PWD_COMMAND "pwd"
 #define CD_COMMAND "cd"
+#define HISTORY_COMMAND "history"
+#define HISTORY_DEPTH 10
 
 #endif

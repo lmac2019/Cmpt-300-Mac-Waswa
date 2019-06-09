@@ -2,11 +2,11 @@
 #define HELPERS_H
 
 /* Include necessary external libraries */
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include "history.h"
 #include "macros.h"
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -19,5 +19,6 @@ void handle_parent_process(const pid_t new_process_id, const bool in_background,
 void wait_foreground_child_process(const pid_t new_process_id);
 void wait_background_child_processes(intPtr num_background_child_processes);
 void handle_internal_commands(charPtr tokens[]);
+bool handle_history_command(charPtr tokens[], int last_command_index);
 
 #endif
