@@ -22,6 +22,12 @@ void handle_fork_error () {
  * tokens[]: an array of character pointers containing the tokens of the command
  */
 void handle_child_process (charPtr tokens[]) {
+  if (strcmp("cd", tokens[0]) == 0) {
+ 		if(chdir(tokens[1])!=0){
+ 			perror("chdir() failed");
+ 		}
+    execvp(tokens[0],tokens);
+  }
   if (execvp(tokens[0], tokens) == ERROR_CODE) {
     perror("An error occured when executing the command in the child process");
     exit(ERROR_CODE);
@@ -31,7 +37,7 @@ void handle_child_process (charPtr tokens[]) {
 /*
  * Handles waiting for child prcoesses in the parent process
  * new_process_id: process id of the child process that was just created
- * in_background: a boolean variable. 
+ * in_background: a boolean variable.
  * True if the user's command was entered as a background process.
  * False if the user's command was entered as a foreground process.
  * num_background_child_processes: a pointer to a variable containing the current number of background child processes.
@@ -62,7 +68,7 @@ void wait_foreground_child_process (const pid_t new_process_id) {
   } while (!WIFEXITED(status) && !WIFSIGNALED(status));
 }
 
-/* 
+/*
  * Handles waiting for all background child processes
  * If no child background process has terminated then immediately returns
  * If one child background process has terminated then its resources are cleaned up

@@ -51,7 +51,7 @@ int tokenize_command (charPtr buff, charPtr tokens[]) {
  * Read a command from the keyboard into the buffer 'buff' and tokenize it
  * such that 'tokens[i]' points into 'buff' to the i'th token in the command.
  * buff: Buffer allocated by the calling code. Must be at least COMMAND_LENGTH bytes long.
- * tokens[]: Array of character pointers which point into 'buff'. 
+ * tokens[]: Array of character pointers which point into 'buff'.
  * Must be at least NUM_TOKENS long. Will strip out up to one final '&' token.
  * Tokens will be NULL terminated (a NULL pointer indicates end of tokens).
  * in_background: pointer to a boolean variable. Set to true if user entered.
@@ -90,12 +90,25 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background) {
  * Uses the tokens that have been created from the user's command
  * to execute the command through a child process.
  * tokens[]: an array of character pointers containing the tokens of the command
- * in_background: a boolean variable. 
+ * in_background: a boolean variable.
  * True if the user's command was entered as a background process.
  * False if the user's command was entered as a foreground process.
  * num_background_child_processes: a pointer to a variable containing the current number of background child processes.
  */
 void execute_command (charPtr tokens[], const bool in_background, intPtr num_background_child_processes) {
+	for (int i = 0; tokens[i] != NULL; i++) {
+		if (strcmp("exit", tokens[i]) == 0) {
+			exit(0);
+		}
+ }
+ for (int i = 0; tokens[i] != NULL; i++) {
+	 if (strcmp("pwd", tokens[i]) == 0) {
+		 char path[4096];
+		 getcwd(path,4096);
+		 printf("Directory: %s\n",path);
+		 return;
+	 }
+}
   pid_t new_process_id = fork();
 
   if (new_process_id == ERROR_CODE) {
@@ -126,14 +139,11 @@ int main (int argc, charPtr argv[]) {
 
 		// * DEBUG: Dump out arguments:
 		for (int i = 0; tokens[i] != NULL; i++) {
-      if (strcmp("exit", tokens[i]) == 0) {
-        exit(0);
-      }
 
       write_to_shell("   Token: ");
       write_to_shell(tokens[i]);
       write_to_shell("\n");
-		}
+	}
 
 		if (in_background) {
       write_to_shell("Run in background.");
@@ -143,7 +153,7 @@ int main (int argc, charPtr argv[]) {
 		 * Steps For Basic Shell:
 		 * 1. Fork a child process
 		 * 2. Child process invokes execvp() using results in token array.
-		 * 3. If in_background is false, parent waits for child to finish. 
+		 * 3. If in_background is false, parent waits for child to finish.
      * Otherwise, parent loops back to read_command() again immediately.
 		 */
 	}
