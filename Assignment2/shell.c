@@ -109,6 +109,15 @@ void execute_command (charPtr tokens[], const bool in_background, intPtr num_bac
 		 return;
 	 }
 }
+if (strcmp("cd", tokens[0]) == 0) {
+	if(chdir(tokens[1])!=0){
+		perror("chdir() failed");
+	}
+	// char path[4096];
+	// getcwd(path,4096);
+	// write_to_shell(path);
+	return;
+}
   pid_t new_process_id = fork();
 
   if (new_process_id == ERROR_CODE) {
@@ -143,6 +152,12 @@ int main (int argc, charPtr argv[]) {
       write_to_shell("   Token: ");
       write_to_shell(tokens[i]);
       write_to_shell("\n");
+	}
+
+	if (strcmp("cd", tokens[0]) == 0) {
+		char path[4096];
+		getcwd(path,4096);
+		write_to_shell(path);
 	}
 
 		if (in_background) {
