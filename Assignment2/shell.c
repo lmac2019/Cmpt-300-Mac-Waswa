@@ -96,7 +96,9 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background) {
  * num_background_child_processes: a pointer to a variable containing the current number of background child processes.
  */
 void execute_command (charPtr tokens[], const bool in_background, intPtr num_background_child_processes) {
-	handle_internal_commands(tokens);
+	if(handle_internal_commands(tokens)){
+			return;
+	}
 
   pid_t new_process_id = fork();
 
