@@ -22,12 +22,6 @@ void handle_fork_error () {
  * tokens[]: an array of character pointers containing the tokens of the command
  */
 void handle_child_process (charPtr tokens[]) {
-  if (strcmp("cd", tokens[0]) == 0) {
- 		if(chdir(tokens[1])!=0){
- 			perror("chdir() failed");
- 		}
-    execvp(tokens[0],tokens);
-  }
   if (execvp(tokens[0], tokens) == ERROR_CODE) {
     perror("An error occured when executing the command in the child process");
     exit(ERROR_CODE);
@@ -87,5 +81,40 @@ void wait_background_child_processes (intPtr num_background_child_processes) {
         *num_background_child_processes -= 1;
       }
     } while (*num_background_child_processes > 0 && wait_result > 0);
+  }
+}
+
+/*
+ * Handles the execution of internal commands
+ */
+void handle_internal_commands (charPtr tokens[]) {
+  for (int i = 0; tokens[i] != NULL; i++) {
+
+		if (strcmp(EXIT_COMMAND, tokens[i]) == 0) {
+
+			exit(0);
+
+		} else if (strcmp(PWD_COMMAND, tokens[i]) == 0) {
+
+      charPtr path[4096];
+      charPtr cwd = getcwd(path, 4096);
+      
+      if (cwd === NULL) {
+        perror("An error occured when executing the getcwd() function");
+      } else {
+        write_to_shell(cwd);
+      }
+
+      return;
+
+    } else if (strcmp(CD_COMMAND, tokens[i]) == 0) {
+
+      if (chdir(tokens[1]) == -1) {
+        perror("An error occured whne executing the chdir() function");
+      }
+
+      return;
+
+    }
   }
 }

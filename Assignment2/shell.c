@@ -96,19 +96,8 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background) {
  * num_background_child_processes: a pointer to a variable containing the current number of background child processes.
  */
 void execute_command (charPtr tokens[], const bool in_background, intPtr num_background_child_processes) {
-	for (int i = 0; tokens[i] != NULL; i++) {
-		if (strcmp("exit", tokens[i]) == 0) {
-			exit(0);
-		}
- }
- for (int i = 0; tokens[i] != NULL; i++) {
-	 if (strcmp("pwd", tokens[i]) == 0) {
-		 char path[4096];
-		 getcwd(path,4096);
-		 printf("Directory: %s\n",path);
-		 return;
-	 }
-}
+	handle_internal_commands(tokens);
+
   pid_t new_process_id = fork();
 
   if (new_process_id == ERROR_CODE) {
@@ -139,7 +128,6 @@ int main (int argc, charPtr argv[]) {
 
 		// * DEBUG: Dump out arguments:
 		for (int i = 0; tokens[i] != NULL; i++) {
-
       write_to_shell("   Token: ");
       write_to_shell(tokens[i]);
       write_to_shell("\n");
