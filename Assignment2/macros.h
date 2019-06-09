@@ -14,5 +14,8 @@
 #define NUM_TOKENS (COMMAND_LENGTH / 2 + 1)
 #define ERROR_CODE -1
 #define WAIT_ALL_CHILDREN -1
+#define EXIT_COMMAND "exit"
+#define PWD_COMMAND "pwd"
+#define CD_COMMAND "cd"
 
 #endif

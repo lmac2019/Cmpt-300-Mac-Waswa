@@ -83,3 +83,38 @@ void wait_background_child_processes (intPtr num_background_child_processes) {
     } while (*num_background_child_processes > 0 && wait_result > 0);
   }
 }
+
+/*
+ * Handles the execution of internal commands
+ */
+void handle_internal_commands (charPtr tokens[]) {
+  for (int i = 0; tokens[i] != NULL; i++) {
+
+		if (strcmp(EXIT_COMMAND, tokens[i]) == 0) {
+
+			exit(0);
+
+		} else if (strcmp(PWD_COMMAND, tokens[i]) == 0) {
+
+      char path[4096];
+      charPtr cwd = getcwd(path, 4096);
+      
+      if (cwd == NULL) {
+        perror("An error occured when executing the getcwd() function");
+      } else {
+        write_to_shell(cwd);
+      }
+
+      return;
+
+    } else if (strcmp(CD_COMMAND, tokens[i]) == 0) {
+
+      if (chdir(tokens[1]) == -1) {
+        perror("An error occured whne executing the chdir() function");
+      }
+
+      return;
+
+    }
+  }
+}
