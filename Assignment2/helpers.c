@@ -114,14 +114,20 @@ bool handle_internal_commands (charPtr tokens[]) {
 
     }
   }
-  if (strcmp(CD_COMMAND, tokens[0]) == 0) {
 
-      if (chdir(tokens[1]) == -1) {
-      perror("An error occured whne executing the chdir() function");
+  for (int i = 0; tokens[i] != NULL; i++) {
+
+    if (strcmp(CD_COMMAND, tokens[i]) == 0) {
+        if(i == 0){
+        if (chdir(tokens[i+1]) == -1) {
+        perror("An error occured whne executing the chdir() function");
+        }
       }
 
-    return true;
+      return true;
 
+    }
   }
+
   return false;
 }
