@@ -97,9 +97,13 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background) {
  * last_command_index: the index of the last command to be entered
  */
 void execute_command (charPtr tokens[], const bool in_background, intPtr num_background_child_processes, int last_command_index) {
-	handle_history_command(tokens, last_command_index);
+	if (handle_history_command(tokens, last_command_index)) {
+    return;
+  }
   
-  handle_internal_commands(tokens);
+  if (handle_internal_commands(tokens)){
+		return;
+	}
 
   pid_t new_process_id = fork();
 

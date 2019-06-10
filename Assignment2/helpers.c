@@ -87,33 +87,44 @@ void wait_background_child_processes (intPtr num_background_child_processes) {
  * Handles the execution of internal commands
  * tokens[]: an array of character pointers containing the tokens of the command
  */
-void handle_internal_commands (charPtr tokens[]) {
+bool handle_internal_commands (charPtr tokens[]) {
   for (int i = 0; tokens[i] != NULL; i++) {
-
-		if (strcmp(EXIT_COMMAND, tokens[i]) == 0) {
+    if (strcmp(EXIT_COMMAND, tokens[i]) == 0) {
 
 			exit(0);
 
-		} else if (strcmp(PWD_COMMAND, tokens[i]) == 0) {
+		}
+  }
+
+  for (int i = 0; tokens[i] != NULL; i++) {
+
+		 if (strcmp(PWD_COMMAND, tokens[i]) == 0) {
 
       char path[4096];
       charPtr cwd = getcwd(path, 4096);
-      
+
       if (cwd == NULL) {
         perror("An error occured when executing the getcwd() function");
       } else {
         write_to_shell(cwd);
+        write_to_shell("\n");
       }
 
-      return;
+      return true;
 
-    } else if (strcmp(CD_COMMAND, tokens[i]) == 0) {
+    }
+  }
 
-      if (chdir(tokens[1]) == -1) {
+  for (int i = 0; tokens[i] != NULL; i++) {
+
+    if (strcmp(CD_COMMAND, tokens[i]) == 0) {
+        if(i == 0){
+        if (chdir(tokens[i+1]) == -1) {
         perror("An error occured whne executing the chdir() function");
+        }
       }
 
-      return;
+      return true;
 
     }
   }
