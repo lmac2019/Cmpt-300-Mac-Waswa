@@ -96,6 +96,9 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background) {
  * num_background_child_processes: a pointer to a variable containing the current number of background child processes.
  */
 void execute_command (charPtr tokens[], const bool in_background, intPtr num_background_child_processes) {
+	if(tokens[0]==NULL){
+    return;
+  }
 	if(handle_internal_commands(tokens)){
 			return;
 	}
