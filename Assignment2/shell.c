@@ -141,10 +141,22 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background, int la
  * last_command_index: the index of the last command to be entered
  */
 void execute_command (charPtr tokens[], const bool in_background, intPtr num_background_child_processes, int last_command_index) {
+  if (tokens[0] == NULL) {
+		return;
+	}
+
   if (handle_show_history_command(tokens, last_command_index)) {
     return;
   }
-  
+
+	if (handle_previous_command(tokens, last_command_index)) {
+    return;
+  }
+
+  if (handle_history_command(tokens, last_command_index)) {
+    return;
+  }
+
   if (handle_internal_commands(tokens)){
 		return;
 	}
