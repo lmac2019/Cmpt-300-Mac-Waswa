@@ -98,7 +98,7 @@ bool read_and_execute_command (charPtr buff, charPtr tokens[], boolPtr in_backgr
   } else {
     add_command_to_history(buff, last_command_index);
   }
-  
+
   // * Tokenize (saving original command string)
 	int token_count = tokenize_command(buff, tokens);
 	if (token_count == 0) {
@@ -173,11 +173,10 @@ int main (int argc, charPtr argv[]) {
 
     if (!executed) {
       execute_command(tokens, in_background, &num_background_child_processes, last_command_index);
+      write_string_to_shell("\n");
+      print_last_ten_commands(last_command_index);
+      write_string_to_shell("\n");
     }
-	
-    write_string_to_shell("\n");
-    print_last_ten_commands(last_command_index);
-    write_string_to_shell("\n");
   }
 
 	return 0;
