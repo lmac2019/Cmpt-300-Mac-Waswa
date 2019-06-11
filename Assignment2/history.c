@@ -39,7 +39,7 @@ void shift_commands() {
 */
 void print_last_ten_commands (int last_command_index) {
   if (last_command_index == 0) {
-    return;
+    errx(ERROR_CODE, "Unable to execute command: No commands in history");
   }
   
   for (int row = 0; row < HISTORY_DEPTH && history[row][0] != '\0'; row++) {
