@@ -98,8 +98,6 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background, int la
       add_command_to_history(buffer_to_tokenize, last_command_index);
     } else if (is_nth_command(buffer_to_tokenize)) {
       int command_index = get_command_index(buffer_to_tokenize, last_command_index);
-      write_integer_to_shell(command_index);
-      write_string_to_shell("\n");
       write_string_to_shell(history[command_index]);
       write_string_to_shell("\n");
 
@@ -146,14 +144,6 @@ void execute_command (charPtr tokens[], const bool in_background, intPtr num_bac
 	}
 
   if (handle_show_history_command(tokens, last_command_index)) {
-    return;
-  }
-
-	if (handle_previous_command(tokens, last_command_index)) {
-    return;
-  }
-
-  if (handle_history_command(tokens, last_command_index)) {
     return;
   }
 
