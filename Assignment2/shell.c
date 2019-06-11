@@ -55,9 +55,10 @@ int tokenize_command (charPtr buff, charPtr tokens[]) {
  * Must be at least NUM_TOKENS long. Will strip out up to one final '&' token.
  * Tokens will be NULL terminated (a NULL pointer indicates end of tokens).
  * in_background: pointer to a boolean variable. Set to true if user entered.
+ * last_command_index: the index of the last command to be entered
  * an & as their last token; otherwise set to false.
  */
-void read_command (charPtr buff, charPtr tokens[], boolPtr in_background) {
+void read_command (charPtr buff, charPtr tokens[], boolPtr in_background, int last_command_index) {
 	*in_background = false;
 
 	// * Read input
@@ -73,7 +74,9 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background) {
 		buff[strlen(buff) - 1] = '\0';
 	}
 
-	// * Tokenize (saving original command string)
+  add_command_to_history(buff, last_command_index);
+
+  // * Tokenize (saving original command string)
 	int token_count = tokenize_command(buff, tokens);
 	if (token_count == 0) {
 		return;
@@ -97,7 +100,15 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background) {
  * last_command_index: the index of the last command to be entered
  */
 void execute_command (charPtr tokens[], const bool in_background, intPtr num_background_child_processes, int last_command_index) {
-	if (handle_history_command(tokens, last_command_index)) {
+	if (handle_previous_command(tokens, last_command_index)) {
+    return;
+  }
+
+  if (handle_nth_command(tokens, last_command_index)) {
+
+  }
+  
+  if (handle_history_command(tokens, last_command_index)) {
     return;
   }
   
@@ -125,32 +136,32 @@ int main (int argc, charPtr argv[]) {
   int last_command_index = 0;
   int num_background_child_processes = 0;
 
-  init_history();
-
 	while (true) {
 		// * Get command
 		// * Use write because we need to use read() to work with
 		// * signals, and read() is incompatible with printf().
 		char path[4096];
 		getcwd(path, 4096);
-		write_to_shell(path);
-		write_to_shell("> ");
+		write_string_to_shell(path);
+		write_string_to_shell("> ");
 		bool in_background = false;
-    read_command(input_buffer, tokens, &in_background);
-    add_command_to_history(input_buffer, last_command_index);
+
+    read_command(input_buffer, tokens, &in_background, last_command_index);
+
     last_command_index++;
+
     execute_command(tokens, in_background, &num_background_child_processes, last_command_index);
 
 		// * DEBUG: Dump out arguments:
-		for (int i = 0; tokens[i] != NULL; i++) {
-      write_to_shell("   Token: ");
-      write_to_shell(tokens[i]);
-      write_to_shell("\n");
-	  }
+		// for (int i = 0; tokens[i] != NULL; i++) {
+    //   write_string_to_shell("   Token: ");
+    //   write_string_to_shell(tokens[i]);
+    //   write_string_to_shell("\n");
+	  // }
 
-		if (in_background) {
-      write_to_shell("Run in background.");
-    }
+		// if (in_background) {
+    //   write_string_to_shell("Run in background.");
+    // }
 
 		/*
 		 * Steps For Basic Shell:

@@ -12,13 +12,16 @@
 #include <sys/wait.h>
 
 /* Function prototypes */
-void write_to_shell(charPtr message);
+void write_string_to_shell(charPtr message);
+void write_integer_to_shell(int number);
 void handle_fork_error();
 void handle_child_process(charPtr tokens[]);
 void handle_parent_process(const pid_t new_process_id, const bool in_background, intPtr num_background_child_processes);
 void wait_foreground_child_process(const pid_t new_process_id);
 void wait_background_child_processes(intPtr num_background_child_processes);
-void handle_internal_commands(charPtr tokens[]);
+bool handle_internal_commands(charPtr tokens[]);
 bool handle_history_command(charPtr tokens[], int last_command_index);
+bool handle_previous_command(charPtr tokens[], int last_command_index);
+bool handle_nth_command(charPtr tokens[], int last_command_index);
 
 #endif

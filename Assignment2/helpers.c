@@ -1,11 +1,21 @@
 #include "helpers.h"
 
 /*
- * Uses the write linux command to write a message to the shell
+ * Uses the write linux command to write a string to the shell
  * message: Character array containing string to display.
  */
-void write_to_shell (charPtr message) {
+void write_string_to_shell (charPtr message) {
   write(STDOUT_FILENO, message, strlen(message));
+}
+
+/*
+ * Allows an integer to be written to the shell
+ * number: Integer to display
+ */
+void write_integer_to_shell (int number) {
+  char stringify_number[11];
+  sprintf(stringify_number, "%d", number);
+  write_string_to_shell(stringify_number);
 }
 
 /*
@@ -90,44 +100,39 @@ void wait_background_child_processes (intPtr num_background_child_processes) {
 bool handle_internal_commands (charPtr tokens[]) {
   for (int i = 0; tokens[i] != NULL; i++) {
     if (strcmp(EXIT_COMMAND, tokens[i]) == 0) {
-
 			exit(0);
-
 		}
   }
 
   for (int i = 0; tokens[i] != NULL; i++) {
-
-		 if (strcmp(PWD_COMMAND, tokens[i]) == 0) {
-
+    if (strcmp(PWD_COMMAND, tokens[i]) == 0) {
       char path[4096];
       charPtr cwd = getcwd(path, 4096);
 
       if (cwd == NULL) {
         perror("An error occured when executing the getcwd() function");
       } else {
-        write_to_shell(cwd);
-        write_to_shell("\n");
+        write_string_to_shell(cwd);
+        write_string_to_shell("\n");
       }
 
       return true;
-
     }
   }
 
   for (int i = 0; tokens[i] != NULL; i++) {
-
     if (strcmp(CD_COMMAND, tokens[i]) == 0) {
-        if(i == 0){
-        if (chdir(tokens[i+1]) == -1) {
-        perror("An error occured whne executing the chdir() function");
+      if (i == 0) {
+        if (chdir(tokens[i + 1]) == ERROR_CODE) {
+          perror("An error occured when executing the chdir() function");
         }
       }
 
       return true;
-
     }
   }
+
+  return false;
 }
 
 /*
@@ -141,5 +146,32 @@ bool handle_history_command (charPtr tokens[], int last_command_index) {
     return true;
   }
 
+  return false;
+}
+
+/*
+ * Handles the execution of the previous command.
+ * If there is no previous command then display an appropriate error message.
+ * tokens[]: an array of character pointers containing the tokens of the command
+ * last_command_index: the index of the last command to be entered
+ */
+bool handle_previous_command (charPtr tokens[], int last_command_index) {
+  if (strcmp(tokens[0], PREVIOUS_COMMAND) == 0) {
+    print_last_ten_commands(last_command_index);
+    return true;
+  }
+
+  return false;
+}
+
+/*
+ * Handles the execution of the nth command.
+ * If n is not a number, 
+ * or an invalid value (not one of the previous ten command numbers) 
+ * then display an error.
+ * tokens[]: an array of character pointers containing the tokens of the command
+ * last_command_index: the index of the last command to be entered
+ */
+bool handle_nth_command (charPtr tokens[], int last_command_index) {
   return false;
 }

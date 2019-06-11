@@ -17,6 +17,7 @@
 #define PWD_COMMAND "pwd"
 #define CD_COMMAND "cd"
 #define HISTORY_COMMAND "history"
+#define PREVIOUS_COMMAND "!!"
 #define HISTORY_DEPTH 10
 
 #endif

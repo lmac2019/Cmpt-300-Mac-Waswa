@@ -1,38 +1,35 @@
 #include "history.h"
 
 /*
-* Handles initialzing the history two dimensional array
-*/
-void init_history () {
-  for (int current_row = 0; current_row < HISTORY_DEPTH; current_row++) {
-    history[current_row] = malloc(COMMAND_LENGTH * sizeof(char));
-  }
-}
-
-/*
 * Handles adding a new command to history
 * new_command_buffer[]: an array of characters containing the new command to be added to history
-* new_command_index: the index of the history array at which this new command should be added
+* new_command_row: the index of the history array at which this new command should be added
 */
-void add_command_to_history (char new_command_buffer[], int new_command_index) {
-  char copy_buffer[strlen(new_command_buffer)];
-  strcpy(copy_buffer, new_command_buffer);
+void add_command_to_history (char new_command_buffer[], int new_command_row) {
+  int row = new_command_row;
 
-  if (new_command_index == HISTORY_DEPTH) {
+  if (new_command_row >= HISTORY_DEPTH) {
     shift_commands();
-    history[new_command_index - 1] = copy_buffer;
-  } else {
-    history[new_command_index] = copy_buffer;
+    row = HISTORY_DEPTH - 1;
+  } 
+
+  int col;
+  for (col = 0; new_command_buffer[col] != '\0'; col++) {
+    history[row][col] = new_command_buffer[col];
   }
 
+  history[row][col] = '\0';
 }
 
 /*
-* Handles shifting the commands in the history array to the left by one
+* Handles shifting the commands in the history array 
+* such that the oldest command is deleted and there is room for a new command
 */
 void shift_commands() {
-  for (int current_index = 0; current_index < HISTORY_DEPTH - 1; current_index++) {
-    history[current_index] = history[current_index + 1];
+  for (int row = 0; row < HISTORY_DEPTH - 1; row++) {
+    for (int col = 0; col < COMMAND_LENGTH; col++) {
+      history[row][col] = history[row + 1][col];
+    }
   }
 }
 
@@ -45,11 +42,18 @@ void print_last_ten_commands (int last_command_index) {
     return;
   }
   
-  for (int current_index = 0; current_index < HISTORY_DEPTH; current_index++) {
-    int print_index = last_command_index - HISTORY_DEPTH + current_index + 1;
-    // write_to_shell(print_index);
-    write_to_shell("\t");
-    write_to_shell(history[current_index]);
-    write_to_shell("\n");
+  for (int row = 0; row < HISTORY_DEPTH && history[row][0] != '\0'; row++) {
+    int print_index;
+    
+    if (last_command_index > HISTORY_DEPTH) {
+      print_index = last_command_index - HISTORY_DEPTH + row + 1;
+    } else {
+      print_index = row + 1;
+    }
+
+    write_integer_to_shell(print_index);
+    write_string_to_shell("\t");
+    write_string_to_shell(history[row]);
+    write_string_to_shell("\n");
   }
 }
