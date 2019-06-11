@@ -204,9 +204,16 @@ void handle_previous_history_command (charPtr tokens[], boolPtr in_background, i
   }
 
   add_command_to_history(history[previous_command_index], *last_command_index);
-  create_tokens(history[previous_command_index], tokens, in_background);
+
+  char buffer_copy[COMMAND_LENGTH];
+  memcpy(buffer_copy, &history[previous_command_index], COMMAND_LENGTH - 1);
+  buffer_copy[COMMAND_LENGTH - 1] = '\0';
+  create_tokens(buffer_copy, tokens, in_background);
 
   *last_command_index += 1;
+
+  write_string_to_shell(history[previous_command_index]);
+  write_string_to_shell("\n");
 
   execute_command(tokens, *in_background, num_background_child_processes, *last_command_index);
 }
