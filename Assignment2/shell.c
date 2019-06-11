@@ -70,13 +70,13 @@ int tokenize_command (charPtr buff, charPtr tokens[]) {
  * tokens[]: Array of character pointers which point into 'buff'.
  * Must be at least NUM_TOKENS long. Will strip out up to one final '&' token.
  * Tokens will be NULL terminated (a NULL pointer indicates end of tokens).
- * in_background: pointer to a boolean variable. Set to true if user entered.
+ * in_background: pointer to a boolean variable. Set to true if user entered & after command.
  * num_background_child_processes: a pointer to a variable containing the current number of background child processes.
- * last_command_index: the index of the last command to be entered
+ * last_command_index: a pointer to the index of the last command to be entered
  * an & as their last token; otherwise set to false.
  * Returns a boolean to indicate if the command was executed or not
  */
-bool read_and_execute_command (charPtr buff, charPtr tokens[], boolPtr in_background, intPtr num_background_child_processes, int last_command_index) {
+bool read_and_execute_command (charPtr buff, charPtr tokens[], boolPtr in_background, intPtr num_background_child_processes, intPtr last_command_index) {
 	*in_background = false;
 
 	// * Read input
@@ -95,22 +95,10 @@ bool read_and_execute_command (charPtr buff, charPtr tokens[], boolPtr in_backgr
   if (is_history_command(buff)) {
     handle_history_commands(buff, tokens, in_background, num_background_child_processes, last_command_index);
     return true;
-  } else {
-    add_command_to_history(buff, last_command_index);
   }
 
-  // * Tokenize (saving original command string)
-	int token_count = tokenize_command(buff, tokens);
-	if (token_count == 0) {
-		return false;
-	}
-
-	// * Extract if running in background:
-	if (token_count > 0 && strcmp(tokens[token_count - 1], "&") == 0) {
-		*in_background = true;
-		tokens[token_count - 1] = 0;
-	}
-
+  add_command_to_history(buff, *last_command_index);
+  create_tokens(buff, tokens, in_background);
   return false;
 }
 
@@ -167,15 +155,11 @@ int main (int argc, charPtr argv[]) {
 
 		bool in_background = false;
 
-    bool executed = read_and_execute_command(input_buffer, tokens, &in_background, &num_background_child_processes, last_command_index);
-
-    last_command_index++;
+    bool executed = read_and_execute_command(input_buffer, tokens, &in_background, &num_background_child_processes, &last_command_index);
 
     if (!executed) {
+      last_command_index++;
       execute_command(tokens, in_background, &num_background_child_processes, last_command_index);
-      write_string_to_shell("\n");
-      print_last_ten_commands(last_command_index);
-      write_string_to_shell("\n");
     }
   }
 

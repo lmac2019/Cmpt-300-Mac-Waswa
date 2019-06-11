@@ -1,6 +1,27 @@
 #include "helpers.h"
 
 /*
+ * Creates tokens for the given command
+ * buff: Character array containing string to tokenize.
+ * tokens: array of pointers of size at least COMMAND_LENGTH/2 + 1.
+ * in_background: pointer to a boolean variable. Set to true if user entered & after command.
+ */
+void create_tokens (charPtr buff, charPtr tokens[], boolPtr in_background) {
+  // * Tokenize (saving original command string)
+	int token_count = tokenize_command(buff, tokens);
+
+	if (token_count == 0) {
+		return;
+	}
+
+	// * Extract if running in background:
+	if (token_count > 0 && strcmp(tokens[token_count - 1], "&") == 0) {
+		*in_background = true;
+		tokens[token_count - 1] = 0;
+	}
+}
+
+/*
  * Uses the write linux command to write a string to the shell
  * message: Character array containing string to display.
  */
@@ -155,16 +176,48 @@ bool handle_show_history_command (charPtr tokens[], int last_command_index) {
  * tokens[]: an array of character pointers containing the tokens of the command
  * in_background: pointer to a boolean variable. Set to true if user entered.
  * num_background_child_processes: a pointer to a variable containing the current number of background child processes.
- * last_command_index: the index of the last command to be entered
+ * last_command_index: a pointer to the the index of the last command to be entered
  */
-void handle_history_commands (char buffer[], charPtr tokens[], boolPtr in_background, intPtr num_background_child_processes, int last_command_index) {
+void handle_history_commands (char buffer[], charPtr tokens[], boolPtr in_background, intPtr num_background_child_processes, intPtr last_command_index) {
   if (is_previous_command(buffer)) {
-    return;
+    return handle_previous_history_command(tokens, in_background, num_background_child_processes, last_command_index);
   } else if (is_nth_command(buffer)) {
-    return;
+    return handle_nth_history_command();
   } else {
     errx(ERROR_CODE, "Unable to execute command: Invalid history command");
   }
+}
+
+/* 
+ * Handles executing the previous history command
+ * This command executes the previous command in history if it exists
+ * And adds the command to the end of the history 2D array
+ */
+void handle_previous_history_command (charPtr tokens[], boolPtr in_background, intPtr num_background_child_processes, intPtr last_command_index) {
+  if (*last_command_index == 0) {
+    errx(ERROR_CODE, "Unable to execute command: No previous commands");
+  } 
+
+  int previous_command_index = HISTORY_DEPTH - 1;
+  if (*last_command_index < HISTORY_DEPTH) {
+    previous_command_index = *last_command_index - 1;
+  }
+
+  add_command_to_history(history[previous_command_index], *last_command_index);
+  create_tokens(history[previous_command_index], tokens, in_background);
+
+  *last_command_index += 1;
+
+  execute_command(tokens, *in_background, num_background_child_processes, *last_command_index);
+}
+
+/* 
+ * Handles executing the nth history command
+ * This command executes the nth command in history if it exists
+ * And adds the command to the end of the history 2D array
+ */
+void handle_nth_history_command () {
+  return;
 }
 
 /*

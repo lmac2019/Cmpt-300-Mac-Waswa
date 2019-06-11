@@ -12,7 +12,7 @@
 /* Function prototypes */
 
 int tokenize_command(charPtr buff, charPtr tokens[]);
-bool read_and_execute_command(charPtr buff, charPtr tokens[], boolPtr in_background, intPtr num_background_child_processes, int last_command_index);
+bool read_and_execute_command(charPtr buff, charPtr tokens[], boolPtr in_background, intPtr num_background_child_processes, intPtr last_command_index);
 void execute_command(charPtr tokens[], const bool in_background, intPtr num_background_child_processes, int last_command_index);
 
 #endif
