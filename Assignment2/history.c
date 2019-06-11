@@ -109,49 +109,55 @@ bool is_previous_command (char buffer[]) {
 }
 
 /*
-* Returns the index of the nth command if it exists otherwise throws an error
+* Checks whether the command in the buffer is the nth history command
 * buffer: an array of characters containing the new command to be added to history
-* last_command_index: the index of the last command to be entered
 */
-bool nth_command_index (char buffer[], int last_command_index) {
+bool is_nth_command (char buffer[]) {
   char sub_buffer[strlen(buffer)];
   memcpy(sub_buffer, &buffer[1], strlen(buffer) - 1);
   sub_buffer[strlen(buffer) - 1] = '\0';
 
-  int command_number;
-  if (has_only_numbers(sub_buffer)) {
-    command_number = atoi(sub_buffer);
-  } else {
-    errx(ERROR_CODE, "Unable to execute command: Invalid argument for history command");
-  }
-
-  if (command_number <= last_command_index && command_number > last_command_index - HISTORY_DEPTH) {
-    if (command_number > HISTORY_DEPTH) {
-      return last_command_index - command_number + HISTORY_DEPTH - 1;
-    } else {
-      return command_number;
-    }
-  } else {
-    errx(ERROR_CODE, "Unable to execute command: Invalid command number");
-  }
-
-  return ERROR_CODE;
+  return has_proper_number(sub_buffer);
 }
 
 /*
 * Checks whether the buffer is made up of only numbers
 * buffer: an array of characters
 */
-bool has_only_numbers (char buffer[]) {
+bool has_proper_number (char buffer[]) {
   if (buffer[0] == '0') {
     return false;
   }
 
-  for (int index = 1; buffer[index] != '\0'; index++) {
+  for (int index = 0; buffer[index] != '\0'; index++) {
     if (!isdigit(buffer[index])) {
       return false;
     }
   }
 
   return true;
+}
+
+/*
+* Returns the index of the nth command 
+* buffer: an array of characters containing only numbers
+* last_command_index: the index of the last command to be entered
+*/
+int get_command_index (char buffer[], int last_command_index) {
+  char sub_buffer[strlen(buffer)];
+  memcpy(sub_buffer, &buffer[1], strlen(buffer) - 1);
+  sub_buffer[strlen(buffer) - 1] = '\0';
+
+  int command_number = atoi(sub_buffer);
+  int first_command_index = last_command_index - HISTORY_DEPTH + 1;
+  if (command_number > last_command_index || command_number < first_command_index) {
+    errx(ERROR_CODE, "Unable to execute command: Invalid command number");
+  }
+
+  if (last_command_index > HISTORY_DEPTH) {
+    int difference = last_command_index - command_number;
+    return HISTORY_DEPTH - difference - 1;
+  } else {
+    return command_number - 1;
+  }
 }

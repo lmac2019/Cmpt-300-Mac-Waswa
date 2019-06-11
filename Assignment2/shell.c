@@ -90,27 +90,32 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background, int la
   }
 
   charPtr buffer_to_tokenize = buff;
-  if (is_history_command(buff)) {
-    if (is_previous_command(buff)) {
+  if (is_history_command(buffer_to_tokenize)) {
+    if (is_previous_command(buffer_to_tokenize)) {
       buffer_to_tokenize = get_last_command(last_command_index);
       write_string_to_shell(buffer_to_tokenize);
       write_string_to_shell("\n");
       add_command_to_history(buffer_to_tokenize, last_command_index);
-    }
-
-    int command_index = nth_command_index(buff);
-    if (command_index != ERROR_CODE) {
-      buffer_to_tokenize = get_nth_command(command_index);
-      write_string_to_shell(buffer_to_tokenize);
+    } else if (is_nth_command(buffer_to_tokenize)) {
+      int command_index = get_command_index(buffer_to_tokenize, last_command_index);
+      write_integer_to_shell(command_index);
       write_string_to_shell("\n");
-      add_command_to_history(buffer_to_tokenize, last_command_index);
-    } 
+      write_string_to_shell(history[command_index]);
+      write_string_to_shell("\n");
 
-    errx(ERROR_CODE, "Unable to execute command: Not a valid history command");
+      if (last_command_index >= HISTORY_DEPTH) {
+        add_command_to_history(history[command_index - 1], last_command_index);
+        buffer_to_tokenize = history[command_index - 1];
+      } else {
+        buffer_to_tokenize = history[command_index];
+        add_command_to_history(history[command_index], last_command_index);
+      }
+    } else {
+      errx(ERROR_CODE, "Unable to execute command: Invalid history command");
+    }
   } else {
     add_command_to_history(buffer_to_tokenize, last_command_index);
   }
-
 
   // * Tokenize (saving original command string)
 	int token_count = tokenize_command(buffer_to_tokenize, tokens);
@@ -171,6 +176,7 @@ int main (int argc, charPtr argv[]) {
 
 	while (true) {
 		print_prompt();
+
 		bool in_background = false;
 
     read_command(input_buffer, tokens, &in_background, last_command_index);
