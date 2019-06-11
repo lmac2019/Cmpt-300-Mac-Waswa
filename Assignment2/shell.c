@@ -5,6 +5,21 @@
  */
 
 /*
+ * Global variables
+ */
+
+static int last_command_index = 0;
+
+/*
+ * Handler for SIGINT signal (CTRL + C)
+ */
+void handle_SIGINT() {
+  write_string_to_shell("\n");
+  print_last_ten_commands(last_command_index);
+  print_prompt();
+}
+
+/*
  * Tokenize the string in 'buff' into 'tokens'.
  * buff: Character array containing string to tokenize.
  * Will be modified: all whitespace replaced with '\0'
@@ -63,7 +78,7 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background, int la
 
 	// * Read input
 	int length = read(STDIN_FILENO, buff, COMMAND_LENGTH - 1);
-  if (length < 0) {
+  if ((length < 0) && (errno != EINTR)) {
 		perror("Unable to read command from keyboard. Terminating.\n");
 		exit(ERROR_CODE);
 	}
@@ -72,12 +87,25 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background, int la
 	buff[length] = '\0';
 	if (buff[strlen(buff) - 1] == '\n') {
 		buff[strlen(buff) - 1] = '\0';
-	}
+  }
 
-  add_command_to_history(buff, last_command_index);
+  charPtr buffer_to_tokenize = buff;
+  if (is_history_command(buff)) {
+    if (is_previous_command(buff)) {
+      buffer_to_tokenize = get_last_command(last_command_index);
+      write_string_to_shell(buffer_to_tokenize);
+      write_string_to_shell("\n");
+      add_command_to_history(buffer_to_tokenize, last_command_index);
+    } else {
+      errx(ERROR_CODE, "Unable to execute command: Not a valid history command");
+    }
+  } else {
+    add_command_to_history(buffer_to_tokenize, last_command_index);
+  }
+
 
   // * Tokenize (saving original command string)
-	int token_count = tokenize_command(buff, tokens);
+	int token_count = tokenize_command(buffer_to_tokenize, tokens);
 	if (token_count == 0) {
 		return;
 	}
@@ -100,15 +128,7 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background, int la
  * last_command_index: the index of the last command to be entered
  */
 void execute_command (charPtr tokens[], const bool in_background, intPtr num_background_child_processes, int last_command_index) {
-	if (handle_previous_command(tokens, last_command_index)) {
-    return;
-  }
-
-  if (handle_nth_command(tokens, last_command_index)) {
-
-  }
-  
-  if (handle_history_command(tokens, last_command_index)) {
+  if (handle_show_history_command(tokens, last_command_index)) {
     return;
   }
   
@@ -131,19 +151,18 @@ void execute_command (charPtr tokens[], const bool in_background, intPtr num_bac
  * Main and Execute Commands
  */
 int main (int argc, charPtr argv[]) {
-	char input_buffer[COMMAND_LENGTH];
+  struct sigaction handler;
+  handler.sa_handler = handle_SIGINT;
+  handler.sa_flags = 0;
+  sigemptyset(&handler.sa_mask);
+  sigaction(SIGINT, &handler, NULL);
+
+  char input_buffer[COMMAND_LENGTH];
 	charPtr tokens[NUM_TOKENS];
-  int last_command_index = 0;
   int num_background_child_processes = 0;
 
 	while (true) {
-		// * Get command
-		// * Use write because we need to use read() to work with
-		// * signals, and read() is incompatible with printf().
-		char path[4096];
-		getcwd(path, 4096);
-		write_string_to_shell(path);
-		write_string_to_shell("> ");
+		print_prompt();
 		bool in_background = false;
 
     read_command(input_buffer, tokens, &in_background, last_command_index);
@@ -151,25 +170,6 @@ int main (int argc, charPtr argv[]) {
     last_command_index++;
 
     execute_command(tokens, in_background, &num_background_child_processes, last_command_index);
-
-		// * DEBUG: Dump out arguments:
-		// for (int i = 0; tokens[i] != NULL; i++) {
-    //   write_string_to_shell("   Token: ");
-    //   write_string_to_shell(tokens[i]);
-    //   write_string_to_shell("\n");
-	  // }
-
-		// if (in_background) {
-    //   write_string_to_shell("Run in background.");
-    // }
-
-		/*
-		 * Steps For Basic Shell:
-		 * 1. Fork a child process
-		 * 2. Child process invokes execvp() using results in token array.
-		 * 3. If in_background is false, parent waits for child to finish.
-     * Otherwise, parent loops back to read_command() again immediately.
-		 */
 	}
 
 	return 0;

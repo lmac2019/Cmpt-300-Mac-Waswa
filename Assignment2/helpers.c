@@ -106,8 +106,8 @@ bool handle_internal_commands (charPtr tokens[]) {
 
   for (int i = 0; tokens[i] != NULL; i++) {
     if (strcmp(PWD_COMMAND, tokens[i]) == 0) {
-      char path[4096];
-      charPtr cwd = getcwd(path, 4096);
+      char path[CWD_LENGTH];
+      charPtr cwd = getcwd(path, CWD_LENGTH);
 
       if (cwd == NULL) {
         perror("An error occured when executing the getcwd() function");
@@ -136,12 +136,12 @@ bool handle_internal_commands (charPtr tokens[]) {
 }
 
 /*
- * Handles the execution of the history command
+ * Handles the execution of the show history command
  * tokens[]: an array of character pointers containing the tokens of the command
  * last_command_index: the index of the last command to be entered
  */
-bool handle_history_command (charPtr tokens[], int last_command_index) {
-  if (strcmp(tokens[0], HISTORY_COMMAND) == 0) {
+bool handle_show_history_command (charPtr tokens[], int last_command_index) {
+  if (strcmp(tokens[0], SHOW_HISTORY_COMMAND) == 0) {
     print_last_ten_commands(last_command_index);
     return true;
   }
@@ -150,28 +150,11 @@ bool handle_history_command (charPtr tokens[], int last_command_index) {
 }
 
 /*
- * Handles the execution of the previous command.
- * If there is no previous command then display an appropriate error message.
- * tokens[]: an array of character pointers containing the tokens of the command
- * last_command_index: the index of the last command to be entered
+ * Handles printing the prompt for the user to type
  */
-bool handle_previous_command (charPtr tokens[], int last_command_index) {
-  if (strcmp(tokens[0], PREVIOUS_COMMAND) == 0) {
-    print_last_ten_commands(last_command_index);
-    return true;
-  }
-
-  return false;
-}
-
-/*
- * Handles the execution of the nth command.
- * If n is not a number, 
- * or an invalid value (not one of the previous ten command numbers) 
- * then display an error.
- * tokens[]: an array of character pointers containing the tokens of the command
- * last_command_index: the index of the last command to be entered
- */
-bool handle_nth_command (charPtr tokens[], int last_command_index) {
-  return false;
+void print_prompt() {
+  char path[CWD_LENGTH];
+  getcwd(path, CWD_LENGTH);
+  write_string_to_shell(path);
+  write_string_to_shell("> ");
 }

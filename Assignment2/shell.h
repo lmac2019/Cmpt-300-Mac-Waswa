@@ -6,6 +6,8 @@
 #include "macros.h"
 #include "helpers.h"
 #include "history.h"
+#include <signal.h>
+#include <errno.h>
 
 /* Function prototypes */
 

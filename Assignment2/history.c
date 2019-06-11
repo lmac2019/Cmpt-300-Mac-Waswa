@@ -43,17 +43,50 @@ void print_last_ten_commands (int last_command_index) {
   }
   
   for (int row = 0; row < HISTORY_DEPTH && history[row][0] != '\0'; row++) {
-    int print_index;
+    int command_index;
     
     if (last_command_index > HISTORY_DEPTH) {
-      print_index = last_command_index - HISTORY_DEPTH + row + 1;
+      command_index = last_command_index - HISTORY_DEPTH + row + 1;
     } else {
-      print_index = row + 1;
+      command_index = row + 1;
     }
 
-    write_integer_to_shell(print_index);
+    write_integer_to_shell(command_index);
     write_string_to_shell("\t");
     write_string_to_shell(history[row]);
     write_string_to_shell("\n");
   }
+}
+
+/*
+* Gets the last command in history
+* last_command_index: the index of the last command to be entered
+*/
+charPtr get_last_command (int last_command_index) {
+  if (last_command_index == 0) {
+    errx(ERROR_CODE, "Unable to execute command: No previous commands");
+  }
+
+  int command_index = HISTORY_DEPTH - 1;
+  if (last_command_index < HISTORY_DEPTH) {
+    command_index = last_command_index - 1;
+  }
+
+  return history[command_index];
+}
+
+/*
+* Checks whether the command in the buffer is either a previous history command or nth history command
+* buffer: an array of characters containing the new command to be added to history
+*/
+bool is_history_command (char buffer[]) {
+  return buffer[0] == '!';
+}
+
+/*
+* Checks whether the command in the buffer is the previous history command
+* buffer: an array of characters containing the new command to be added to history
+*/
+bool is_previous_command (char buffer[]) {
+  return strlen(buffer) == 2 && buffer[0] == '!' && buffer[1] == '!';
 }
