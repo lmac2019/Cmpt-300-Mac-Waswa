@@ -96,9 +96,17 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background, int la
       write_string_to_shell(buffer_to_tokenize);
       write_string_to_shell("\n");
       add_command_to_history(buffer_to_tokenize, last_command_index);
-    } else {
-      errx(ERROR_CODE, "Unable to execute command: Not a valid history command");
     }
+
+    int command_index = nth_command_index(buff);
+    if (command_index != ERROR_CODE) {
+      buffer_to_tokenize = get_nth_command(command_index);
+      write_string_to_shell(buffer_to_tokenize);
+      write_string_to_shell("\n");
+      add_command_to_history(buffer_to_tokenize, last_command_index);
+    } 
+
+    errx(ERROR_CODE, "Unable to execute command: Not a valid history command");
   } else {
     add_command_to_history(buffer_to_tokenize, last_command_index);
   }

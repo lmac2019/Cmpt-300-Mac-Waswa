@@ -76,6 +76,23 @@ charPtr get_last_command (int last_command_index) {
 }
 
 /*
+* Gets the nth command in history
+* last_command_index: the index of the last command to be entered
+*/
+charPtr get_nth_command_index (int last_command_index) {
+  if (last_command_index == 0) {
+    errx(ERROR_CODE, "Unable to execute command: No previous commands");
+  }
+
+  int command_index = HISTORY_DEPTH - 1;
+  if (last_command_index < HISTORY_DEPTH) {
+    command_index = last_command_index - 1;
+  }
+
+  return history[command_index];
+}
+
+/*
 * Checks whether the command in the buffer is either a previous history command or nth history command
 * buffer: an array of characters containing the new command to be added to history
 */
@@ -88,5 +105,53 @@ bool is_history_command (char buffer[]) {
 * buffer: an array of characters containing the new command to be added to history
 */
 bool is_previous_command (char buffer[]) {
-  return strlen(buffer) == 2 && buffer[0] == '!' && buffer[1] == '!';
+  return strlen(buffer) == 2 && buffer[1] == '!';
+}
+
+/*
+* Returns the index of the nth command if it exists otherwise throws an error
+* buffer: an array of characters containing the new command to be added to history
+* last_command_index: the index of the last command to be entered
+*/
+bool nth_command_index (char buffer[], int last_command_index) {
+  char sub_buffer[strlen(buffer)];
+  memcpy(sub_buffer, &buffer[1], strlen(buffer) - 1);
+  sub_buffer[strlen(buffer) - 1] = '\0';
+
+  int command_number;
+  if (has_only_numbers(sub_buffer)) {
+    command_number = atoi(sub_buffer);
+  } else {
+    errx(ERROR_CODE, "Unable to execute command: Invalid argument for history command");
+  }
+
+  if (command_number <= last_command_index && command_number > last_command_index - HISTORY_DEPTH) {
+    if (command_number > HISTORY_DEPTH) {
+      return last_command_index - command_number + HISTORY_DEPTH - 1;
+    } else {
+      return command_number;
+    }
+  } else {
+    errx(ERROR_CODE, "Unable to execute command: Invalid command number");
+  }
+
+  return ERROR_CODE;
+}
+
+/*
+* Checks whether the buffer is made up of only numbers
+* buffer: an array of characters
+*/
+bool has_only_numbers (char buffer[]) {
+  if (buffer[0] == '0') {
+    return false;
+  }
+
+  for (int index = 1; buffer[index] != '\0'; index++) {
+    if (!isdigit(buffer[index])) {
+      return false;
+    }
+  }
+
+  return true;
 }
