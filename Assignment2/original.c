@@ -65,7 +65,7 @@ int tokenize_command(char *buff, char *tokens[])
  * in_background: pointer to a boolean variable. Set to true if user entered
  *       an & as their last token; otherwise set to false.
  */
-void read_command(char *buff, char *tokens[], _Bool *in_background)
+void read_and_execute_command(char *buff, char *tokens[], _Bool *in_background)
 {
 	*in_background = false;
 
@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
 		// signals, and read() is incompatible with printf().
 		write(STDOUT_FILENO, "> ", strlen("> "));
 		_Bool in_background = false;
-		read_command(input_buffer, tokens, &in_background);
+		read_and_execute_command(input_buffer, tokens, &in_background);
 
 		// DEBUG: Dump out arguments:
 		for (int i = 0; tokens[i] != NULL; i++) {
@@ -128,7 +128,7 @@ int main(int argc, char* argv[])
 		 * 2. Child process invokes execvp() using results in token array.
 		 * 3. If in_background is false, parent waits for
 		 *    child to finish. Otherwise, parent loops back to
-		 *    read_command() again immediately.
+		 *    read_and_execute_command() again immediately.
 		 */
 
 	}

@@ -149,6 +149,24 @@ bool handle_show_history_command (charPtr tokens[], int last_command_index) {
   return false;
 }
 
+/* 
+ * Handles all kinds of history commands
+ * buffer[]: an array of characters containing a history command
+ * tokens[]: an array of character pointers containing the tokens of the command
+ * in_background: pointer to a boolean variable. Set to true if user entered.
+ * num_background_child_processes: a pointer to a variable containing the current number of background child processes.
+ * last_command_index: the index of the last command to be entered
+ */
+void handle_history_commands (char buffer[], charPtr tokens[], boolPtr in_background, intPtr num_background_child_processes, int last_command_index) {
+  if (is_previous_command(buffer)) {
+    return;
+  } else if (is_nth_command(buffer)) {
+    return;
+  } else {
+    errx(ERROR_CODE, "Unable to execute command: Invalid history command");
+  }
+}
+
 /*
  * Handles printing the prompt for the user to type
  */

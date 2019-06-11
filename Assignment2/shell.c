@@ -65,15 +65,18 @@ int tokenize_command (charPtr buff, charPtr tokens[]) {
 /*
  * Read a command from the keyboard into the buffer 'buff' and tokenize it
  * such that 'tokens[i]' points into 'buff' to the i'th token in the command.
+ * Attempt to execute a history command before the tokenizing process.
  * buff: Buffer allocated by the calling code. Must be at least COMMAND_LENGTH bytes long.
  * tokens[]: Array of character pointers which point into 'buff'.
  * Must be at least NUM_TOKENS long. Will strip out up to one final '&' token.
  * Tokens will be NULL terminated (a NULL pointer indicates end of tokens).
  * in_background: pointer to a boolean variable. Set to true if user entered.
+ * num_background_child_processes: a pointer to a variable containing the current number of background child processes.
  * last_command_index: the index of the last command to be entered
  * an & as their last token; otherwise set to false.
+ * Returns a boolean to indicate if the command was executed or not
  */
-void read_command (charPtr buff, charPtr tokens[], boolPtr in_background, int last_command_index) {
+bool read_and_execute_command (charPtr buff, charPtr tokens[], boolPtr in_background, intPtr num_background_child_processes, int last_command_index) {
 	*in_background = false;
 
 	// * Read input
@@ -89,36 +92,17 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background, int la
 		buff[strlen(buff) - 1] = '\0';
   }
 
-  charPtr buffer_to_tokenize = buff;
-  if (is_history_command(buffer_to_tokenize)) {
-    if (is_previous_command(buffer_to_tokenize)) {
-      buffer_to_tokenize = get_last_command(last_command_index);
-      write_string_to_shell(buffer_to_tokenize);
-      write_string_to_shell("\n");
-      add_command_to_history(buffer_to_tokenize, last_command_index);
-    } else if (is_nth_command(buffer_to_tokenize)) {
-      int command_index = get_command_index(buffer_to_tokenize, last_command_index);
-      write_string_to_shell(history[command_index]);
-      write_string_to_shell("\n");
-
-      if (last_command_index >= HISTORY_DEPTH) {
-        add_command_to_history(history[command_index - 1], last_command_index);
-        buffer_to_tokenize = history[command_index - 1];
-      } else {
-        buffer_to_tokenize = history[command_index];
-        add_command_to_history(history[command_index], last_command_index);
-      }
-    } else {
-      errx(ERROR_CODE, "Unable to execute command: Invalid history command");
-    }
+  if (is_history_command(buff)) {
+    handle_history_commands(buff, tokens, in_background, num_background_child_processes, last_command_index);
+    return true;
   } else {
-    add_command_to_history(buffer_to_tokenize, last_command_index);
+    add_command_to_history(buff, last_command_index);
   }
-
+  
   // * Tokenize (saving original command string)
-	int token_count = tokenize_command(buffer_to_tokenize, tokens);
+	int token_count = tokenize_command(buff, tokens);
 	if (token_count == 0) {
-		return;
+		return false;
 	}
 
 	// * Extract if running in background:
@@ -126,6 +110,8 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background, int la
 		*in_background = true;
 		tokens[token_count - 1] = 0;
 	}
+
+  return false;
 }
 
 /*
@@ -170,7 +156,7 @@ int main (int argc, charPtr argv[]) {
   handler.sa_handler = handle_SIGINT;
   handler.sa_flags = 0;
   sigemptyset(&handler.sa_mask);
-  sigaction(SIGINT, &handler, NULL);
+  // sigaction(SIGINT, &handler, NULL);
 
   char input_buffer[COMMAND_LENGTH];
 	charPtr tokens[NUM_TOKENS];
@@ -181,12 +167,18 @@ int main (int argc, charPtr argv[]) {
 
 		bool in_background = false;
 
-    read_command(input_buffer, tokens, &in_background, last_command_index);
+    bool executed = read_and_execute_command(input_buffer, tokens, &in_background, &num_background_child_processes, last_command_index);
 
     last_command_index++;
 
-    execute_command(tokens, in_background, &num_background_child_processes, last_command_index);
-	}
+    if (!executed) {
+      execute_command(tokens, in_background, &num_background_child_processes, last_command_index);
+    }
+	
+    write_string_to_shell("\n");
+    print_last_ten_commands(last_command_index);
+    write_string_to_shell("\n");
+  }
 
 	return 0;
 }

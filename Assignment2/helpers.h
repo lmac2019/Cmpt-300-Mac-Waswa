@@ -21,6 +21,7 @@ void wait_foreground_child_process(const pid_t new_process_id);
 void wait_background_child_processes(intPtr num_background_child_processes);
 bool handle_internal_commands(charPtr tokens[]);
 bool handle_show_history_command(charPtr tokens[], int last_command_index);
+void handle_history_commands(char buffer[], charPtr tokens[], boolPtr in_background, intPtr num_background_child_processes, int last_command_index);
 void print_prompt();
 
 #endif

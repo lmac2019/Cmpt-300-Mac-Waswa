@@ -11,7 +11,7 @@ void add_command_to_history (char new_command_buffer[], int new_command_row) {
   if (new_command_row >= HISTORY_DEPTH) {
     shift_commands();
     row = HISTORY_DEPTH - 1;
-  } 
+  }
 
   int col;
   for (col = 0; new_command_buffer[col] != '\0'; col++) {
