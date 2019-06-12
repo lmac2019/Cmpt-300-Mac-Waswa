@@ -1,6 +1,17 @@
 #include "history.h"
 
 /*
+* Initializes history to an array of null terminated entries
+*/
+void init_history () {
+  for (int row = 0; row < HISTORY_DEPTH; row++) {
+    for (int col = 0; col < COMMAND_LENGTH; col++) {
+      history[row][col] = '\0';
+    }
+  }
+}
+
+/*
 * Handles adding a new command to history
 * new_command_buffer[]: an array of characters containing the new command to be added to history
 * new_command_row: the index of the history array at which this new command should be added
@@ -44,7 +55,7 @@ void print_last_ten_commands (int last_command_index) {
   
   for (int row = 0; row < HISTORY_DEPTH && history[row][0] != '\0'; row++) {
     int command_index;
-    
+
     if (last_command_index > HISTORY_DEPTH) {
       command_index = last_command_index - HISTORY_DEPTH + row + 1;
     } else {

@@ -8,7 +8,6 @@
  * Global variables
  */
 static bool from_handler = false;
-static bool handler_executed = false;
 static int last_command_index = 0;
 
 /*
@@ -98,7 +97,10 @@ bool read_and_execute_command (charPtr buff, charPtr tokens[], boolPtr in_backgr
     return true;
   }
 
-  add_command_to_history(buff, *last_command_index);
+  if (!from_handler) {
+    add_command_to_history(buff, *last_command_index);
+  }
+
   create_tokens(buff, tokens, in_background);
   return false;
 }
@@ -143,6 +145,8 @@ void execute_command (charPtr tokens[], const bool in_background, intPtr num_bac
  * Main and Execute Commands
  */
 int main (int argc, charPtr argv[]) {
+  init_history();
+
   struct sigaction handler;
   handler.sa_handler = handle_SIGINT;
   handler.sa_flags = 0;
