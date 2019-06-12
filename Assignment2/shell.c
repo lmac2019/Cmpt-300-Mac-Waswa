@@ -7,16 +7,17 @@
 /*
  * Global variables
  */
-
+static bool from_handler = false;
+static bool handler_executed = false;
 static int last_command_index = 0;
 
 /*
  * Handler for SIGINT signal (CTRL + C)
  */
 void handle_SIGINT() {
+  from_handler = true;
   write_string_to_shell("\n");
   print_last_ten_commands(last_command_index);
-  print_prompt();
 }
 
 /*
@@ -84,7 +85,7 @@ bool read_and_execute_command (charPtr buff, charPtr tokens[], boolPtr in_backgr
   if ((length < 0) && (errno != EINTR)) {
 		perror("Unable to read command from keyboard. Terminating.\n");
 		exit(ERROR_CODE);
-	}
+	} 
 
 	// * Null terminate and strip \n.
 	buff[length] = '\0';
@@ -146,7 +147,7 @@ int main (int argc, charPtr argv[]) {
   handler.sa_handler = handle_SIGINT;
   handler.sa_flags = 0;
   sigemptyset(&handler.sa_mask);
-  // sigaction(SIGINT, &handler, NULL);
+  sigaction(SIGINT, &handler, NULL);
 
   char input_buffer[COMMAND_LENGTH];
 	charPtr tokens[NUM_TOKENS];
@@ -159,11 +160,13 @@ int main (int argc, charPtr argv[]) {
 
     bool executed = read_and_execute_command(input_buffer, tokens, &in_background, &num_background_child_processes, &last_command_index);
 
-    if (!executed) {
+    if (!executed && !from_handler) {
       if (input_buffer[0] != '\0') {
         last_command_index++;
       }
       execute_command(tokens, in_background, &num_background_child_processes, last_command_index);
+    } else if (from_handler) {
+      from_handler = false;
     }
   }
 
