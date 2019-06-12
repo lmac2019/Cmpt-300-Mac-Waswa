@@ -162,7 +162,9 @@ int main (int argc, charPtr argv[]) {
     bool executed = read_and_execute_command(input_buffer, tokens, &in_background, &num_background_child_processes, &last_command_index);
 
     if (!executed) {
-      last_command_index++;
+      if (input_buffer[0] != '\0') {
+        last_command_index++;
+      }
       execute_command(tokens, in_background, &num_background_child_processes, last_command_index);
     }
   }
