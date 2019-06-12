@@ -113,6 +113,10 @@ bool read_and_execute_command (charPtr buff, charPtr tokens[], boolPtr in_backgr
  * last_command_index: the index of the last command to be entered
  */
 void execute_command (charPtr tokens[], const bool in_background, intPtr num_background_child_processes, int last_command_index) {
+  if (in_background) {
+    // * Handle adding & to history
+  }
+  
   if (tokens[0] == NULL) {
 		return;
 	}

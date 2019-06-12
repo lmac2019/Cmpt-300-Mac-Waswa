@@ -117,20 +117,12 @@ bool is_nth_command (char buffer[]) {
   memcpy(sub_buffer, &buffer[1], strlen(buffer) - 1);
   sub_buffer[strlen(buffer) - 1] = '\0';
 
-  return has_proper_number(sub_buffer);
-}
-
-/*
-* Checks whether the buffer is made up of only numbers
-* buffer: an array of characters
-*/
-bool has_proper_number (char buffer[]) {
-  if (buffer[0] == '0') {
+  if (sub_buffer[0] == '0') {
     return false;
   }
 
-  for (int index = 0; buffer[index] != '\0'; index++) {
-    if (!isdigit(buffer[index])) {
+  for (int index = 0; sub_buffer[index] != '\0'; index++) {
+    if (!isdigit(sub_buffer[index])) {
       return false;
     }
   }
@@ -144,12 +136,16 @@ bool has_proper_number (char buffer[]) {
 * last_command_index: the index of the last command to be entered
 */
 int get_command_index (char buffer[], int last_command_index) {
+  int first_command_index = last_command_index - HISTORY_DEPTH + 1;
+  if (last_command_index < HISTORY_DEPTH) {
+    first_command_index = 1;
+  }
+
   char sub_buffer[strlen(buffer)];
   memcpy(sub_buffer, &buffer[1], strlen(buffer) - 1);
   sub_buffer[strlen(buffer) - 1] = '\0';
-
   int command_number = atoi(sub_buffer);
-  int first_command_index = last_command_index - HISTORY_DEPTH + 1;
+  
   if (command_number > last_command_index || command_number < first_command_index) {
     errx(ERROR_CODE, "Unable to execute command: Invalid command number");
   }

@@ -20,7 +20,6 @@ bool is_history_command(char buffer[]);
 bool is_previous_command(char buffer[]);
 bool is_nth_command(char buffer[]);
 bool has_proper_number(char buffer[]);
-bool is_a_digit(char character);
 int get_command_index(char buffer[], int last_command_index);
 
 #endif

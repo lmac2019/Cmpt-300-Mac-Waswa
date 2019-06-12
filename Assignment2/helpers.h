@@ -25,7 +25,7 @@ bool handle_internal_commands(charPtr tokens[]);
 bool handle_show_history_command(charPtr tokens[], int last_command_index);
 void handle_history_commands(char buffer[], charPtr tokens[], boolPtr in_background, intPtr num_background_child_processes, intPtr last_command_index);
 void handle_previous_history_command(charPtr tokens[], boolPtr in_background, intPtr num_background_child_processes, intPtr last_command_index);
-void handle_nth_history_command();
+void handle_nth_history_command(int command_index, charPtr tokens[], boolPtr in_background, intPtr num_background_child_processes, intPtr last_command_index);
 void print_prompt();
 
 #endif

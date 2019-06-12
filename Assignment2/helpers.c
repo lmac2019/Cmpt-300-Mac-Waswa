@@ -182,7 +182,8 @@ void handle_history_commands (char buffer[], charPtr tokens[], boolPtr in_backgr
   if (is_previous_command(buffer)) {
     return handle_previous_history_command(tokens, in_background, num_background_child_processes, last_command_index);
   } else if (is_nth_command(buffer)) {
-    return handle_nth_history_command();
+    int command_index = get_command_index(buffer, *last_command_index);
+    return handle_nth_history_command(command_index, tokens, in_background, num_background_child_processes, last_command_index);
   } else {
     errx(ERROR_CODE, "Unable to execute command: Invalid history command");
   }
@@ -192,6 +193,10 @@ void handle_history_commands (char buffer[], charPtr tokens[], boolPtr in_backgr
  * Handles executing the previous history command
  * This command executes the previous command in history if it exists
  * And adds the command to the end of the history 2D array
+ * tokens[]: an array of character pointers containing the tokens of the command
+ * in_background: pointer to a boolean variable. Set to true if user entered.
+ * num_background_child_processes: a pointer to a variable containing the current number of background child processes.
+ * last_command_index: a pointer to the the index of the last command to be entered
  */
 void handle_previous_history_command (charPtr tokens[], boolPtr in_background, intPtr num_background_child_processes, intPtr last_command_index) {
   if (*last_command_index == 0) {
@@ -222,9 +227,34 @@ void handle_previous_history_command (charPtr tokens[], boolPtr in_background, i
  * Handles executing the nth history command
  * This command executes the nth command in history if it exists
  * And adds the command to the end of the history 2D array
+ * command_index: the index of the command in history
+ * tokens[]: an array of character pointers containing the tokens of the command
+ * in_background: pointer to a boolean variable. Set to true if user entered.
+ * num_background_child_processes: a pointer to a variable containing the current number of background child processes.
+ * last_command_index: a pointer to the the index of the last command to be entered
  */
-void handle_nth_history_command () {
-  return;
+void handle_nth_history_command (int command_index, charPtr tokens[], boolPtr in_background, intPtr num_background_child_processes, intPtr last_command_index) {
+  if (*last_command_index == 0) {
+    errx(ERROR_CODE, "Unable to execute command: No commands found");
+  }
+
+  char buffer_copy[COMMAND_LENGTH];
+  memcpy(buffer_copy, &history[command_index], COMMAND_LENGTH - 1);
+  buffer_copy[COMMAND_LENGTH - 1] = '\0';
+  create_tokens(buffer_copy, tokens, in_background);
+
+  char second_buffer_copy[COMMAND_LENGTH];
+  memcpy(second_buffer_copy, &history[command_index], COMMAND_LENGTH - 1);
+  second_buffer_copy[COMMAND_LENGTH - 1] = '\0';
+
+  add_command_to_history(second_buffer_copy, *last_command_index);
+
+  *last_command_index += 1;
+
+  write_string_to_shell(second_buffer_copy);
+  write_string_to_shell("\n");
+
+  execute_command(tokens, *in_background, num_background_child_processes, *last_command_index);
 }
 
 /*
