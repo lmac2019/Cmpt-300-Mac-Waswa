@@ -115,6 +115,8 @@ bool read_and_execute_command (charPtr buff, charPtr tokens[], boolPtr in_backgr
 void execute_command (charPtr tokens[], const bool in_background, intPtr num_background_child_processes, int last_command_index) {
   if (tokens[0] == NULL && in_background) {
     add_command_to_history("&", last_command_index);
+    errx(ERROR_CODE, "Unable to execute command: & requires a preceding argument like, command &");
+    return;
   } else if (tokens[0] == NULL) {
 		return;
 	}
