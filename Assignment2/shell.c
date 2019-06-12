@@ -5,6 +5,22 @@
  */
 
 /*
+ * Global variables
+ */
+static bool from_handler = false;
+static bool handler_executed = false;
+static int last_command_index = 0;
+
+/*
+ * Handler for SIGINT signal (CTRL + C)
+ */
+void handle_SIGINT() {
+  from_handler = true;
+  write_string_to_shell("\n");
+  print_last_ten_commands(last_command_index);
+}
+
+/*
  * Tokenize the string in 'buff' into 'tokens'.
  * buff: Character array containing string to tokenize.
  * Will be modified: all whitespace replaced with '\0'
@@ -50,40 +66,41 @@ int tokenize_command (charPtr buff, charPtr tokens[]) {
 /*
  * Read a command from the keyboard into the buffer 'buff' and tokenize it
  * such that 'tokens[i]' points into 'buff' to the i'th token in the command.
+ * Attempt to execute a history command before the tokenizing process.
  * buff: Buffer allocated by the calling code. Must be at least COMMAND_LENGTH bytes long.
  * tokens[]: Array of character pointers which point into 'buff'.
  * Must be at least NUM_TOKENS long. Will strip out up to one final '&' token.
  * Tokens will be NULL terminated (a NULL pointer indicates end of tokens).
- * in_background: pointer to a boolean variable. Set to true if user entered.
+ * in_background: pointer to a boolean variable. Set to true if user entered & after command.
+ * num_background_child_processes: a pointer to a variable containing the current number of background child processes.
+ * last_command_index: a pointer to the index of the last command to be entered
  * an & as their last token; otherwise set to false.
+ * Returns a boolean to indicate if the command was executed or not
  */
-void read_command (charPtr buff, charPtr tokens[], boolPtr in_background) {
+bool read_and_execute_command (charPtr buff, charPtr tokens[], boolPtr in_background, intPtr num_background_child_processes, intPtr last_command_index) {
 	*in_background = false;
 
 	// * Read input
 	int length = read(STDIN_FILENO, buff, COMMAND_LENGTH - 1);
-  if (length < 0) {
+  if ((length < 0) && (errno != EINTR)) {
 		perror("Unable to read command from keyboard. Terminating.\n");
 		exit(ERROR_CODE);
-	}
+	} 
 
 	// * Null terminate and strip \n.
 	buff[length] = '\0';
 	if (buff[strlen(buff) - 1] == '\n') {
 		buff[strlen(buff) - 1] = '\0';
-	}
+  }
 
-	// * Tokenize (saving original command string)
-	int token_count = tokenize_command(buff, tokens);
-	if (token_count == 0) {
-		return;
-	}
+  if (is_history_command(buff)) {
+    handle_history_commands(buff, tokens, in_background, num_background_child_processes, last_command_index);
+    return true;
+  }
 
-	// * Extract if running in background:
-	if (token_count > 0 && strcmp(tokens[token_count - 1], "&") == 0) {
-		*in_background = true;
-		tokens[token_count - 1] = 0;
-	}
+  add_command_to_history(buff, *last_command_index);
+  create_tokens(buff, tokens, in_background);
+  return false;
 }
 
 /*
@@ -94,20 +111,28 @@ void read_command (charPtr buff, charPtr tokens[], boolPtr in_background) {
  * True if the user's command was entered as a background process.
  * False if the user's command was entered as a foreground process.
  * num_background_child_processes: a pointer to a variable containing the current number of background child processes.
+ * last_command_index: the index of the last command to be entered
  */
-void execute_command (charPtr tokens[], const bool in_background, intPtr num_background_child_processes) {
-	if(tokens[0]==NULL){
+void execute_command (charPtr tokens[], const bool in_background, intPtr num_background_child_processes, int last_command_index) {
+  if (tokens[0] == NULL && in_background) {
+    add_command_to_history("&", last_command_index);
+    warnx("Unable to execute command: & requires a preceding argument like, command &");
+    return;
+  } else if (tokens[0] == NULL) {
+		return;
+	}
+
+  if (handle_show_history_command(tokens, last_command_index)) {
     return;
   }
-	if(handle_internal_commands(tokens)){
-			return;
+
+  if (handle_internal_commands(tokens)){
+		return;
 	}
 
   pid_t new_process_id = fork();
 
-  if (new_process_id == ERROR_CODE) {
-    handle_fork_error();
-  } else if (new_process_id == 0) {
+  if (new_process_id == 0) {
     handle_child_process(tokens);
   } else {
     handle_parent_process(new_process_id, in_background, num_background_child_processes);
@@ -118,44 +143,32 @@ void execute_command (charPtr tokens[], const bool in_background, intPtr num_bac
  * Main and Execute Commands
  */
 int main (int argc, charPtr argv[]) {
-	char input_buffer[COMMAND_LENGTH];
+  struct sigaction handler;
+  handler.sa_handler = handle_SIGINT;
+  handler.sa_flags = 0;
+  sigemptyset(&handler.sa_mask);
+  sigaction(SIGINT, &handler, NULL);
+
+  char input_buffer[COMMAND_LENGTH];
 	charPtr tokens[NUM_TOKENS];
   int num_background_child_processes = 0;
 
 	while (true) {
-		// * Get command
-		// * Use write because we need to use read() to work with
-		// * signals, and read() is incompatible with printf().
-		char path[4096];
-		getcwd(path,4096);
-		write_to_shell(path);
-		write_to_shell("> ");
+		print_prompt();
+
 		bool in_background = false;
-    read_command(input_buffer, tokens, &in_background);
-    execute_command(tokens, in_background, &num_background_child_processes);
 
-		// * DEBUG: Dump out arguments:
-		for (int i = 0; tokens[i] != NULL; i++) {
-      write_to_shell("   Token: ");
-      write_to_shell(tokens[i]);
-      write_to_shell("\n");
-	  }
+    bool executed = read_and_execute_command(input_buffer, tokens, &in_background, &num_background_child_processes, &last_command_index);
 
-
-		if (in_background) {
-      write_to_shell("Run in background.");
+    if (!executed && !from_handler) {
+      if (input_buffer[0] != '\0') {
+        last_command_index++;
+      }
+      execute_command(tokens, in_background, &num_background_child_processes, last_command_index);
+    } else if (from_handler) {
+      from_handler = false;
     }
-
-
-
-		/*
-		 * Steps For Basic Shell:
-		 * 1. Fork a child process
-		 * 2. Child process invokes execvp() using results in token array.
-		 * 3. If in_background is false, parent waits for child to finish.
-     * Otherwise, parent loops back to read_command() again immediately.
-		 */
-	}
+  }
 
 	return 0;
 }
