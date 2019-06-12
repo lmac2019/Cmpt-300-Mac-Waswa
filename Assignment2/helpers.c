@@ -175,9 +175,14 @@ void handle_history_commands (char buffer[], charPtr tokens[], boolPtr in_backgr
     return handle_previous_history_command(tokens, in_background, num_background_child_processes, last_command_index);
   } else if (is_nth_command(buffer)) {
     int command_index = get_command_index(buffer, *last_command_index);
-    return handle_nth_history_command(command_index, tokens, in_background, num_background_child_processes, last_command_index);
+    if (command_index == ERROR_CODE) {
+      warnx("Unable to execute command: Invalid command number");
+      return;
+    } else {
+      return handle_nth_history_command(command_index, tokens, in_background, num_background_child_processes, last_command_index);
+    }
   } else {
-    errx(ERROR_CODE, "Unable to execute command: Invalid history command");
+    warnx("Unable to execute command: Invalid history command");
   }
 }
 
@@ -192,7 +197,8 @@ void handle_history_commands (char buffer[], charPtr tokens[], boolPtr in_backgr
  */
 void handle_previous_history_command (charPtr tokens[], boolPtr in_background, intPtr num_background_child_processes, intPtr last_command_index) {
   if (*last_command_index == 0) {
-    errx(ERROR_CODE, "Unable to execute command: No previous commands");
+    warnx("Unable to execute command: No previous commands");
+    return;
   } 
 
   int previous_command_index = HISTORY_DEPTH - 1;
@@ -227,7 +233,8 @@ void handle_previous_history_command (charPtr tokens[], boolPtr in_background, i
  */
 void handle_nth_history_command (int command_index, charPtr tokens[], boolPtr in_background, intPtr num_background_child_processes, intPtr last_command_index) {
   if (*last_command_index == 0) {
-    errx(ERROR_CODE, "Unable to execute command: No commands found");
+    warnx("Unable to execute command: No commands found");
+    return;
   }
 
   char buffer_copy[COMMAND_LENGTH];

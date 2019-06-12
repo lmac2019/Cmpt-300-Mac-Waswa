@@ -158,7 +158,7 @@ int get_command_index (char buffer[], int last_command_index) {
   int command_number = atoi(sub_buffer);
   
   if (command_number > last_command_index || command_number < first_command_index) {
-    errx(ERROR_CODE, "Unable to execute command: Invalid command number");
+    return ERROR_CODE;
   }
 
   if (last_command_index > HISTORY_DEPTH) {
