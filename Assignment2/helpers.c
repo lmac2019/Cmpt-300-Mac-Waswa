@@ -40,14 +40,6 @@ void write_integer_to_shell (int number) {
 }
 
 /*
- * Handles displaying an error message if an error occurs when fork is used
- */
-void handle_fork_error () {
-  perror("An error occured when creating a child process");
-  exit(ERROR_CODE);
-}
-
-/*
  * Handles execution of the command in the child process
  * tokens[]: an array of character pointers containing the tokens of the command
  */

@@ -113,11 +113,9 @@ bool read_and_execute_command (charPtr buff, charPtr tokens[], boolPtr in_backgr
  * last_command_index: the index of the last command to be entered
  */
 void execute_command (charPtr tokens[], const bool in_background, intPtr num_background_child_processes, int last_command_index) {
-  if (in_background) {
-    // * Handle adding & to history
-  }
-  
-  if (tokens[0] == NULL) {
+  if (tokens[0] == NULL && in_background) {
+    add_command_to_history("&", last_command_index);
+  } else if (tokens[0] == NULL) {
 		return;
 	}
 
@@ -131,9 +129,7 @@ void execute_command (charPtr tokens[], const bool in_background, intPtr num_bac
 
   pid_t new_process_id = fork();
 
-  if (new_process_id == ERROR_CODE) {
-    handle_fork_error();
-  } else if (new_process_id == 0) {
+  if (new_process_id == 0) {
     handle_child_process(tokens);
   } else {
     handle_parent_process(new_process_id, in_background, num_background_child_processes);
