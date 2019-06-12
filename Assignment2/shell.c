@@ -8,7 +8,7 @@
  * Global variables
  */
 static bool from_handler = false;
-static bool handler_executed = false;
+// static bool handler_executed = false;
 static int last_command_index = 0;
 
 /*
@@ -85,7 +85,7 @@ bool read_and_execute_command (charPtr buff, charPtr tokens[], boolPtr in_backgr
   if ((length < 0) && (errno != EINTR)) {
 		perror("Unable to read command from keyboard. Terminating.\n");
 		exit(ERROR_CODE);
-	} 
+	}
 
 	// * Null terminate and strip \n.
 	buff[length] = '\0';
