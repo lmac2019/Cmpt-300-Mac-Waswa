@@ -11,6 +11,7 @@
 char history[HISTORY_DEPTH][COMMAND_LENGTH];
 
 /* Function prototypes */
+void init_history();
 void add_command_to_history(char new_command_buffer[], int new_command_index);
 void shift_commands();
 charPtr get_command_from_history();
