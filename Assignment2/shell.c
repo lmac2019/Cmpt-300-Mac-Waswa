@@ -85,7 +85,13 @@ bool read_and_execute_command (charPtr buff, charPtr tokens[], boolPtr in_backgr
   if ((length < 0) && (errno != EINTR)) {
 		perror("Unable to read command from keyboard. Terminating.\n");
 		exit(ERROR_CODE);
+<<<<<<< HEAD
 	}
+=======
+	} else if ((length < 0) && (errno == EINTR)) {
+    return true;
+  }
+>>>>>>> b9cb5695ef4f6c34bffbb81204156b3a9f0f27ee
 
 	// * Null terminate and strip \n.
 	buff[length] = '\0';
