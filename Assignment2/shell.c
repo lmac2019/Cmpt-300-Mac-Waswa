@@ -87,6 +87,8 @@ bool read_and_execute_command (charPtr buff, charPtr tokens[], boolPtr in_backgr
 		exit(ERROR_CODE);
 	} else if ((length < 0) && (errno == EINTR)) {
     return true;
+  } else if ((buff[0] == '\n') || (buff[0] == '\t')) {
+    return true;
   }
 
 	// * Null terminate and strip \n.
