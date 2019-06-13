@@ -113,11 +113,14 @@ void wait_background_child_processes (intPtr num_background_child_processes) {
  */
 bool handle_internal_commands (charPtr tokens[]) {
   for (int i = 0; tokens[i] != NULL; i++) {
-    if (strcmp(EXIT_COMMAND, tokens[i]) == 0) {
-			exit(0);
+		if(i == 0){
+    	if (strcmp(EXIT_COMMAND, tokens[i]) == 0) {
+				exit(0);
+			}
 		}
 
     if (strcmp(PWD_COMMAND, tokens[i]) == 0) {
+			if(i==0){
       char path[CWD_LENGTH];
       charPtr cwd = getcwd(path, CWD_LENGTH);
 
@@ -129,6 +132,7 @@ bool handle_internal_commands (charPtr tokens[]) {
       }
 
       return true;
+			}
     }
 
     if (strcmp(CD_COMMAND, tokens[i]) == 0) {
@@ -136,13 +140,12 @@ bool handle_internal_commands (charPtr tokens[]) {
         if (chdir(tokens[i + 1]) == ERROR_CODE) {
           perror("An error occured when executing the chdir() function");
         }
+				return true;
       }
-
-      return true;
     }
-  }
 
-  return false;
+}
+return false;
 }
 
 /*
