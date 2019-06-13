@@ -266,7 +266,7 @@ void print_prompt() {
  */
 bool is_buff_whitespace (char buffer[]) {
   for (int index = 0; index < strlen(buffer); index++) {
-    if (buffer[index] != ' ' && buffer[index] != '\t' && buffer[index] != '\n') {
+    if (!(buffer[index] == ' ' || buffer[index] == '\t' || buffer[index] == '\n')) {
       return false;
     }
   }
