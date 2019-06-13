@@ -45,7 +45,8 @@ void write_integer_to_shell (int number) {
  */
 void handle_child_process (charPtr tokens[]) {
   if (execvp(tokens[0], tokens) == ERROR_CODE) {
-    perror("An error occured when executing the command in the child process");
+    write_string_to_shell(tokens[0]);
+		write_string_to_shell(": Unknown command.\n");
     exit(ERROR_CODE);
   }
 }
@@ -158,7 +159,7 @@ bool handle_show_history_command (charPtr tokens[], int last_command_index) {
   return false;
 }
 
-/* 
+/*
  * Handles all kinds of history commands
  * buffer[]: an array of characters containing a history command
  * tokens[]: an array of character pointers containing the tokens of the command
@@ -182,7 +183,7 @@ void handle_history_commands (char buffer[], charPtr tokens[], boolPtr in_backgr
   }
 }
 
-/* 
+/*
  * Handles executing the previous history command
  * This command executes the previous command in history if it exists
  * And adds the command to the end of the history 2D array
@@ -195,7 +196,7 @@ void handle_previous_history_command (charPtr tokens[], boolPtr in_background, i
   if (*last_command_index == 0) {
     warnx("Unable to execute command: No previous commands");
     return;
-  } 
+  }
 
   int previous_command_index = HISTORY_DEPTH - 1;
   if (*last_command_index < HISTORY_DEPTH) {
@@ -217,7 +218,7 @@ void handle_previous_history_command (charPtr tokens[], boolPtr in_background, i
   execute_command(tokens, *in_background, num_background_child_processes, *last_command_index);
 }
 
-/* 
+/*
  * Handles executing the nth history command
  * This command executes the nth command in history if it exists
  * And adds the command to the end of the history 2D array
