@@ -117,7 +117,7 @@ bool read_and_execute_command (charPtr buff, charPtr tokens[], boolPtr in_backgr
  */
 void execute_command (charPtr tokens[], const bool in_background, intPtr num_background_child_processes, int last_command_index) {
   if (tokens[0] == NULL && in_background) {
-    warnx("Unable to execute command: & requires a preceding argument: command &");
+    write_string_to_shell("Unable to execute command: & requires a preceding argument: command &\n");
     return;
   } else if (tokens[0] == NULL) {
 		return;
