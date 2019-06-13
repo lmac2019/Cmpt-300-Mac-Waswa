@@ -79,7 +79,7 @@ int tokenize_command (charPtr buff, charPtr tokens[]) {
  */
 bool read_and_execute_command (charPtr buff, charPtr tokens[], boolPtr in_background, intPtr num_background_child_processes, intPtr last_command_index) {
 	*in_background = false;
-  
+
   // * Read input
 	int length = read(STDIN_FILENO, buff, COMMAND_LENGTH - 1);
   if ((length < 0) && (errno != EINTR)) {
@@ -87,7 +87,7 @@ bool read_and_execute_command (charPtr buff, charPtr tokens[], boolPtr in_backgr
 		exit(ERROR_CODE);
 	} else if ((length < 0) && (errno == EINTR)) {
     return true;
-  } else if (is_buff_whitespace(buff)) {
+  } else if (buff[0] == '\n') {
     return true;
   }
 

@@ -259,17 +259,3 @@ void print_prompt() {
   write_string_to_shell(path);
   write_string_to_shell("> ");
 }
-
-/*
- * Checks to see whether the buffer is made up of entirely whitespace characters
- * buffer[]: an array of characters
- */
-bool is_buff_whitespace (char buffer[]) {
-  for (int index = 0; index < strlen(buffer); index++) {
-    if (!(buffer[index] == ' ' || buffer[index] == '\t' || buffer[index] == '\n')) {
-      return false;
-    }
-  }
-
-  return true;
-} 
