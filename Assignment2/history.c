@@ -50,7 +50,7 @@ void shift_commands() {
 */
 void print_last_ten_commands (int last_command_index) {
   if (last_command_index == 0) {
-    warnx("Unable to execute command: No commands in history");
+    write_string_to_shell("Unable to execute command: No commands in history\n");
   }
   
   for (int row = 0; row < HISTORY_DEPTH && history[row][0] != '\0'; row++) {
@@ -67,40 +67,6 @@ void print_last_ten_commands (int last_command_index) {
     write_string_to_shell(history[row]);
     write_string_to_shell("\n");
   }
-}
-
-/*
-* Gets the last command in history
-* last_command_index: the index of the last command to be entered
-*/
-charPtr get_last_command (int last_command_index) {
-  if (last_command_index == 0) {
-    errx(ERROR_CODE, "Unable to execute command: No previous commands");
-  }
-
-  int command_index = HISTORY_DEPTH - 1;
-  if (last_command_index < HISTORY_DEPTH) {
-    command_index = last_command_index - 1;
-  }
-
-  return history[command_index];
-}
-
-/*
-* Gets the nth command in history
-* last_command_index: the index of the last command to be entered
-*/
-charPtr get_nth_command_index (int last_command_index) {
-  if (last_command_index == 0) {
-    errx(ERROR_CODE, "Unable to execute command: No previous commands");
-  }
-
-  int command_index = HISTORY_DEPTH - 1;
-  if (last_command_index < HISTORY_DEPTH) {
-    command_index = last_command_index - 1;
-  }
-
-  return history[command_index];
 }
 
 /*
