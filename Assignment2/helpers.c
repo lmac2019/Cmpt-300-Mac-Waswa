@@ -113,45 +113,30 @@ void wait_background_child_processes (intPtr num_background_child_processes) {
  * tokens[]: an array of character pointers containing the tokens of the command
  */
 bool handle_internal_commands (charPtr tokens[]) {
-  for (int i = 0; tokens[i] != NULL; i++) {
-		if(i == 0){
-    	if (strcmp(EXIT_COMMAND, tokens[i]) == 0) {
-				exit(0);
-			}
-		}
+  if (strcmp(EXIT_COMMAND, tokens[0]) == 0) {
+    exit(0);
+  }
+  
+  if (strcmp(PWD_COMMAND, tokens[0]) == 0) {
+    char path[CWD_LENGTH];
+    charPtr cwd = getcwd(path, CWD_LENGTH);
 
-    if (strcmp(PWD_COMMAND, tokens[i]) == 0) {
-			if(i==0){
-      char path[CWD_LENGTH];
-      charPtr cwd = getcwd(path, CWD_LENGTH);
-
-      if (cwd == NULL) {
-        perror("An error occured when executing the getcwd() function");
-      } else {
-        write_string_to_shell(cwd);
-        write_string_to_shell("\n");
-      }
-
-      return true;
-			}
+    if (cwd == NULL) {
+      perror("An error occured when executing the getcwd() function");
+    } else {
+      write_string_to_shell(cwd);
+      write_string_to_shell("\n");
     }
 
-    if (strcmp(CD_COMMAND, tokens[i]) == 0) {
-      if (i == 0) {
-        if (chdir(tokens[i + 1]) == ERROR_CODE) {
-          if (errno == ENOENT) {
-            write_string_to_shell("Invalid directory: ");
-            write_string_to_shell(tokens[i + 1]);
-            write_string_to_shell("\n");
-            exit(ERROR_CODE);
-          } else {
-            perror("An error occured when executing the chdir() function");
-          }
-        }
-				return true;
-      }
-    }
+    return true;
+  }
 
+  if (strcmp(CD_COMMAND, tokens[0]) == 0) {
+    if (chdir(tokens[1]) == ERROR_CODE) {
+      perror("An error occured when executing the chdir() function");
+    }
+    
+    return true;
   }
   
   return false;
