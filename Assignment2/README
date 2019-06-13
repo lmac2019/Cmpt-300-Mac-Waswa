@@ -5,3 +5,8 @@ Student ID: 301237339
 
 Name: Waswa Olunga
 Student ID: 301307966
+
+1. Type make to compile the shell
+2. Type ./shell to run shell
+3. Type exit to exit the shell
+4. Type make clean to remove all object files and executables
