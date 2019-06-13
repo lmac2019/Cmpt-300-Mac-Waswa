@@ -79,15 +79,15 @@ int tokenize_command (charPtr buff, charPtr tokens[]) {
  */
 bool read_and_execute_command (charPtr buff, charPtr tokens[], boolPtr in_background, intPtr num_background_child_processes, intPtr last_command_index) {
 	*in_background = false;
-
-	// * Read input
+  
+  // * Read input
 	int length = read(STDIN_FILENO, buff, COMMAND_LENGTH - 1);
   if ((length < 0) && (errno != EINTR)) {
 		perror("Unable to read command from keyboard. Terminating.\n");
 		exit(ERROR_CODE);
 	} else if ((length < 0) && (errno == EINTR)) {
     return true;
-  } else if ((buff[0] == '\n') || (buff[0] == '\t')) {
+  } else if (is_buff_whitespace(buff)) {
     return true;
   }
 
