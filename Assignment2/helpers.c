@@ -79,8 +79,10 @@ void wait_foreground_child_process (const pid_t new_process_id) {
   do {
     int wait_result = waitpid(new_process_id, &status, 0);
     if (wait_result == ERROR_CODE) {
-      perror("An error occured when waiting for the child process");
-      exit(ERROR_CODE);
+      write_string_to_shell("Error waiting for child process with id ");
+      write_integer_to_shell((int)new_process_id);
+      write_string_to_shell("\n");
+      perror("Error");
     }
   } while (!WIFEXITED(status) && !WIFSIGNALED(status));
 }
@@ -99,7 +101,6 @@ void wait_background_child_processes (intPtr num_background_child_processes) {
       wait_result = waitpid(WAIT_ALL_CHILDREN, NULL, WNOHANG);
       if (wait_result == ERROR_CODE) {
         perror("An error occured in waiting for all child processes");
-        exit(ERROR_CODE);
       } else if (wait_result > 0) {
         *num_background_child_processes -= 1;
       }
@@ -138,14 +139,22 @@ bool handle_internal_commands (charPtr tokens[]) {
     if (strcmp(CD_COMMAND, tokens[i]) == 0) {
       if (i == 0) {
         if (chdir(tokens[i + 1]) == ERROR_CODE) {
-          perror("An error occured when executing the chdir() function");
+          if (errno == ENOENT) {
+            write_string_to_shell("Invalid directory: ");
+            write_string_to_shell(tokens[i + 1]);
+            write_string_to_shell("\n");
+            exit(ERROR_CODE);
+          } else {
+            perror("An error occured when executing the chdir() function");
+          }
         }
 				return true;
       }
     }
 
-}
-return false;
+  }
+  
+  return false;
 }
 
 /*
