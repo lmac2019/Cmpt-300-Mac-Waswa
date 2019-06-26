@@ -1,21 +1,22 @@
-#include <stdlib.h>
-#include <stdio.h>
+#include "helpers.h"
 
-int main (int argc, char** argv){
-  //part 1 error checking
-  if(argc != 4){
-    printf("wrong argc number\n");
-    exit(-1);
+int main (int argc, charPtr* argv) {
+  if (argc != 4) {
+    print_error_message("Wrong number of arguments. 3 arguments expected in the form: ./candykids <#factories> <#kids> <#seconds>");
   }
-  for(int i = 1; i <argc; i++){
-    if(atoi(argv[i])<=0){
-      printf("argv[%d]: %s wrong argv\n",i,argv[i]);
-      exit(-1);
+
+  int converted_arguments[3];
+  intPtr fields[3];
+  for (int i = 1; i < argc; i++) {
+    converted_arguments[i - 1] = atoi(argv[i]);
+
+    if (converted_arguments[i - 1] <= 0){
+      print_error_message("All arguments must be integers and must be greater than zero");
+    } else {
+      fields[i - 1] = &converted_arguments[i - 1];
     }
-    printf("%s\n", argv[i]);
   }
-
-  // 1.  Extract arguments
+  
     // 2.  Initialize modules
     // 3.  Launch candy-factory threads
     // 4.  Launch kid threads
