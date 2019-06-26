@@ -1,4 +1,5 @@
 #include "helpers.h"
+#include "bbuff.h"
 
 int main (int argc, charPtr* argv) {
   if (argc != 4) {
@@ -16,6 +17,8 @@ int main (int argc, charPtr* argv) {
       fields[i - 1] = &converted_arguments[i - 1];
     }
   }
+
+  bbuff_init();
   
     // 2.  Initialize modules
     // 3.  Launch candy-factory threads
@@ -37,4 +40,5 @@ int main (int argc, charPtr* argv) {
   //  // Tell thread to stop itself, and then wait until it's done.
   //  stop_thread = true;
   //  pthread_join(daThreadID, NULL)
+  return 0;
 }
