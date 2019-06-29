@@ -7,6 +7,7 @@
 #include "pthread.h"
 #include "bbuff.h"
 
+void print_message(charPtr message);
 void print_error_message(charPtr error_message);
 
 #endif
