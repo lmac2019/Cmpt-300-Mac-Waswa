@@ -60,15 +60,11 @@ void bbuff_blocking_insert (voidPtr item) {
     pthread_cond_wait(&not_full, &bounded_buffer_mutex);
   }
 
-  struct candyStructPtr candy = (struct candyStructPtr) malloc(sizeof(struct candyStruct));
-  candy->factory_number = (int)pthread_self();
-  candy->time_stamp_in_ms = current_time_in_ms();
-
   if (bounded_buffer[next_empty_index] != NULL) {
     free(bounded_buffer[next_empty_index]);
   }
 
-  bounded_buffer[next_empty_index] = candy;
+  bounded_buffer[next_empty_index] = (struct candyStructPtr)candy;
 
   next_empty_index = (next_empty_index + 1) % BUFFER_SIZE;
   count++;
