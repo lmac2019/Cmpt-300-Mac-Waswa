@@ -17,8 +17,6 @@ int main (int argc, charPtr* argv) {
       fields[i - 1] = &converted_arguments[i - 1];
     }
   }
-
-  bbuff_init();
   
     // 2.  Initialize modules
     // 3.  Launch candy-factory threads
