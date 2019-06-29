@@ -4,15 +4,14 @@
 #include "macros.h"
 #include "pthread.h"
 #include <stdlib.h>
-#include "helpers.h"
 
-struct candyStruct {
-  int factory_number;
-  double time_stamp_in_ms;
-};
+typedef struct  {
+    int factory_number;
+    double time_stamp_in_ms;
+} candy_t;
 
 #define BUFFER_SIZE 10
-#define candyStructPtr candyStruct*
+#define candyStructPtr candy_t*
 
 void bbuff_init(void);
 void bbuff_blocking_insert(voidPtr item);

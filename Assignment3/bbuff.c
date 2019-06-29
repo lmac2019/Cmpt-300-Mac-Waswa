@@ -64,7 +64,7 @@ void bbuff_blocking_insert (voidPtr item) {
     free(bounded_buffer[next_empty_index]);
   }
 
-  bounded_buffer[next_empty_index] = (struct candyStructPtr)candy;
+  bounded_buffer[next_empty_index] = (struct candyStructPtr)item;
 
   next_empty_index = (next_empty_index + 1) % BUFFER_SIZE;
   count++;
