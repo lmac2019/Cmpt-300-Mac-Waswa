@@ -3,10 +3,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include "macros.h"
+#include "pthread.h"
+#include "bbuff.h"
 
 void print_error_message(charPtr error_message);
-double current_time_in_ms(void);
 
 #endif

@@ -64,7 +64,7 @@ void bbuff_blocking_insert (voidPtr item) {
     free(bounded_buffer[next_empty_index]);
   }
 
-  bounded_buffer[next_empty_index] = (struct candyStructPtr)item;
+  bounded_buffer[next_empty_index] = (candyStructPtr)item;
 
   next_empty_index = (next_empty_index + 1) % BUFFER_SIZE;
   count++;
@@ -79,7 +79,7 @@ void bbuff_blocking_insert (voidPtr item) {
  * Function takes no arguments
  */
 voidPtr bbuff_blocking_extract (void) {
-  struct candyStructPtr last_candy;
+  candyStructPtr last_candy;
 
   pthread_mutex_lock(&bounded_buffer_mutex);
 
@@ -87,7 +87,7 @@ voidPtr bbuff_blocking_extract (void) {
     pthread_cond_wait(&not_empty, &bounded_buffer_mutex);
   }
 
-  last_candy = (struct candyStructPtr)bounded_buffer[last_filled_index];
+  last_candy = (candyStructPtr)bounded_buffer[last_filled_index];
 
   last_filled_index = (last_filled_index + 1) % BUFFER_SIZE;
   count--;

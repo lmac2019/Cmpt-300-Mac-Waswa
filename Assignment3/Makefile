@@ -4,7 +4,7 @@
 # final executable to build:
 TARGET= candykids
 # .o files to link in (for all .c files)
-OBJS = candykids.o bbuff.o stats.o helpers.o producer.o
+OBJS = candykids.o bbuff.o stats.o helpers.o producer.o consumer.o
 
 # Add support for pthread and real-time clock here:
 CFLAGS = -Wall -g -std=c99 -Werror -D_POSIX_C_SOURCE=199309L

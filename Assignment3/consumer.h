@@ -1,12 +1,11 @@
-#ifndef PRODUCER_H
-#define PRODUCER_H
+#ifndef CONSUME_H
+#define CONSUME_H
 
 #include <stdio.h>
-#include <time.h>
 #include <unistd.h>
 #include "macros.h"
 #include "bbuff.h"
 
-void produce(voidPtr arg);
+void consume(void);
 
 #endif
