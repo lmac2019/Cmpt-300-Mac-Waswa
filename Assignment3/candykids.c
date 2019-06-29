@@ -1,8 +1,57 @@
 #include "helpers.h"
-#include "producer.h"
-#include "consumer.h"
+#include <unistd.h>
 
 static bool stop_thread = false;
+
+/*
+ * Handles getting the current time in milliseconds
+ */
+static double current_time_in_ms (void) {
+  struct timespec now;
+  clock_gettime(CLOCK_REALTIME, &now);
+  return now.tv_sec * 1000.0 + now.tv_nsec / 1000000.0;
+}
+
+/*
+ * Handles producing candy to be stored in the bounded buffer
+ */
+void produce (voidPtr arg) {
+  int factory_number = *((intPtr)arg);
+
+  while (!stop_thread) {
+    int sleep_time = rand() % 4;
+    printf("\tFactory %d ships candy & waits %ds\n", factory_number, sleep_time);
+
+    candyStructPtr candy = (candyStructPtr)malloc(sizeof(candy_t));
+    candy->factory_number = factory_number;
+    candy->time_stamp_in_ms = current_time_in_ms();
+    bbuff_blocking_insert(candy);
+
+    sleep(sleep_time);
+  }
+
+  printf("Candy-factory %d done\n", factory_number);
+
+  return;
+}
+
+/*
+ * Handles consuming candy from the bounded buffer
+ */
+void consume (void) {
+  while (true) {
+    candyStructPtr extracted_candy = (candyStructPtr)bbuff_blocking_extract();
+    
+    printf(
+      "Consumed candy created by factory %d at %fs", 
+      extracted_candy->factory_number, 
+      extracted_candy->time_stamp_in_ms
+    );
+
+    int sleep_time = rand() % 2;
+    sleep(sleep_time);
+  }
+}
 
 int main (int argc, charPtr* argv) {
   // * 1. Extract arguments
@@ -65,6 +114,7 @@ int main (int argc, charPtr* argv) {
   // * 9.  Print statistics
 
   // * 10. Cleanup any allocated memory
-  
+  free_bbuff();
+
   return 0;
 }

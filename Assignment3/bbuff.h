@@ -18,5 +18,6 @@ void bbuff_blocking_insert(voidPtr item);
 voidPtr bbuff_blocking_extract(void);
 bool bbuff_is_empty(void);
 bool bbuff_is_full(void);
+void free_bbuff(void);
 
 #endif

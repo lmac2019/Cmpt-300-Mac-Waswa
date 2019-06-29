@@ -114,3 +114,12 @@ bool bbuff_is_empty(void) {
 bool bbuff_is_full(void) {
   return count == BUFFER_SIZE;
 }
+
+/*
+ * Frees up memory in the bounded buffer
+ */
+void free_bbuff (void) {
+  for (int i = 0; i < BUFFER_SIZE; i++) {
+    free(bounded_buffer[i]);
+  }
+}
