@@ -1,9 +1,10 @@
 #ifndef BBUFF_H
 #define BBUFF_H
 
-#include "macros.h"
-#include "pthread.h"
 #include <stdlib.h>
+#include "pthread.h"
+#include "helpers.h"
+#include "macros.h"
 
 typedef struct  {
     int factory_number;
@@ -19,5 +20,6 @@ voidPtr bbuff_blocking_extract(void);
 bool bbuff_is_empty(void);
 bool bbuff_is_full(void);
 void free_bbuff(void);
+int get_count();
 
 #endif

@@ -43,7 +43,7 @@ void consume (void) {
     candyStructPtr extracted_candy = (candyStructPtr)bbuff_blocking_extract();
     
     printf(
-      "Consumed candy created by factory %d at %fs", 
+      "Consumed candy created by factory %d at %fs\n", 
       extracted_candy->factory_number, 
       extracted_candy->time_stamp_in_ms
     );
@@ -51,6 +51,8 @@ void consume (void) {
     int sleep_time = rand() % 2;
     sleep(sleep_time);
   }
+
+  return;
 }
 
 int main (int argc, charPtr* argv) {
@@ -106,6 +108,7 @@ int main (int argc, charPtr* argv) {
   }
 
   // * 8. Stop kid threads
+  // * Bugs when it comes to destroying kid threads
   for (int i = 0; i < args[1]; i++) {
     pthread_cancel(kid_threads[i]);
     pthread_join(kid_threads[i], NULL);

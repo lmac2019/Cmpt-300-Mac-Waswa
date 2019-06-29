@@ -47,6 +47,10 @@ void bbuff_init (void) {
   pthread_mutex_init(&bounded_buffer_mutex, NULL);
   pthread_cond_init(&not_full, NULL);
   pthread_cond_init(&not_empty, NULL);
+
+  for (int i = 0; i < BUFFER_SIZE; i++) {
+    bounded_buffer[i] = NULL;
+  }
 }
 
 /*
@@ -64,7 +68,7 @@ void bbuff_blocking_insert (voidPtr item) {
     free(bounded_buffer[next_empty_index]);
   }
 
-  bounded_buffer[next_empty_index] = (candyStructPtr)item;
+    bounded_buffer[next_empty_index] = (candyStructPtr)item;
 
   next_empty_index = (next_empty_index + 1) % BUFFER_SIZE;
   count++;
@@ -119,7 +123,15 @@ bool bbuff_is_full(void) {
  * Frees up memory in the bounded buffer
  */
 void free_bbuff (void) {
+  print_message("\t\t\t\t\tFreeing up memory in the bounded buffer...");
+
   for (int i = 0; i < BUFFER_SIZE; i++) {
-    free(bounded_buffer[i]);
+    if (bounded_buffer[i] != NULL) {
+      free(bounded_buffer[i]);
+    }
   }
+}
+
+int get_count () {
+  return count;
 }
