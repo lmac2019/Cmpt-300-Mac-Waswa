@@ -56,7 +56,7 @@ void bbuff_init (void) {
 void bbuff_blocking_insert (voidPtr item) {
   pthread_mutex_lock(&bounded_buffer_mutex);
 
-  while (count == BUFFER_SIZE) {
+  while (bbuff_is_full()) {
     pthread_cond_wait(&not_full, &bounded_buffer_mutex);
   }
 
@@ -87,7 +87,7 @@ voidPtr bbuff_blocking_extract (void) {
 
   pthread_mutex_lock(&bounded_buffer_mutex);
 
-  while (count == 0) {
+  while (bbuff_is_empty()) {
     pthread_cond_wait(&not_empty, &bounded_buffer_mutex);
   }
 
@@ -109,4 +109,12 @@ voidPtr bbuff_blocking_extract (void) {
  */
 bool bbuff_is_empty(void) {
   return count == 0;
+}
+
+/*
+ * Returns true if the bounded buffer is full otherwise returns false
+ * Function takes no arguments
+ */
+bool bbuff_is_full(void) {
+  return count == BUFFER_SIZE;
 }
