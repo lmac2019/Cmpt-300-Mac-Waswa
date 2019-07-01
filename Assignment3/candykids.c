@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include "bbuff.h"
 #include "helpers.h"
+#include "stats.h"
 
 static bool stop_factory_threads = false;
 
@@ -28,6 +29,7 @@ void produce (voidPtr arg) {
     candy->factory_number = factory_thread_number;
     candy->time_stamp_in_ms = current_time_in_ms();
     bbuff_blocking_insert(candy);
+    stats_record_produced(factory_thread_number);
 
     sleep(sleep_time);
   }
@@ -42,7 +44,12 @@ void produce (voidPtr arg) {
  */
 void consume (void) {
   while (true) {
-    bbuff_blocking_extract();
+    candyStructPtr candy = (candyStructPtr)malloc(sizeof(candy_t));
+    candy = bbuff_blocking_extract();
+    int last_factory_nummber = candy->factory_number;
+    double delay_in_ms = current_time_in_ms()-candy->time_stamp_in_ms;
+    stats_record_consumed(last_factory_nummber,delay_in_ms);
+    free(candy);
     sleep(rand() % 2);
   }
 
@@ -61,11 +68,12 @@ int main (int argc, charPtr* argv) {
 
     if (args[i - 1] <= 0){
       print_error_message("All arguments must be integers and must be greater than zero");
-    } 
+    }
   }
 
   // * 2. Initialize modules
   bbuff_init();
+  stats_init(args[0]);
 
   // * 3. Launch factory threads
   int factory_number[args[0]];
@@ -116,9 +124,10 @@ int main (int argc, charPtr* argv) {
   }
 
   // * 9.  Print statistics
-
+ stats_display();
 
   // * 10. Cleanup any allocated memory
+  stats_cleanup();
   free_bbuff();
 
   return 0;

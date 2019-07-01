@@ -1,5 +1,8 @@
 #ifndef STATS_H
 #define STATS_H
+#include "helpers.h"
+#include "macros.h"
+
 
 void stats_init(int num_producers);
 void stats_cleanup(void);
