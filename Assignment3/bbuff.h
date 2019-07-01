@@ -2,7 +2,6 @@
 #define BBUFF_H
 
 #include <pthread.h>
-#include <semaphore.h>
 #include <stdlib.h>
 #include "helpers.h"
 #include "macros.h"
@@ -19,6 +18,7 @@ void bbuff_init(void);
 void bbuff_blocking_insert(voidPtr item);
 voidPtr bbuff_blocking_extract(void);
 bool bbuff_is_empty(void);
+bool bbuff_is_full(void);
 void free_bbuff(void);
 
 #endif

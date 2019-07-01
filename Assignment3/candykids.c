@@ -1,6 +1,8 @@
 #include <unistd.h>
 #include "helpers.h"
 
+static pthread_mutex_t print_lock;
+
 static bool stop_factory_threads = false;
 
 /*
@@ -20,7 +22,10 @@ void produce (voidPtr arg) {
 
   while (!stop_factory_threads) {
     int sleep_time = rand() % 4;
+
+    pthread_mutex_lock(&print_lock);
     printf("\tFactory %d ships candy & waits %ds\n", factory_thread_number, sleep_time);
+    pthread_mutex_unlock(&print_lock);
 
     candyStructPtr candy = (candyStructPtr)malloc(sizeof(candy_t));
     candy->factory_number = factory_thread_number;
@@ -30,9 +35,11 @@ void produce (voidPtr arg) {
     sleep(sleep_time);
   }
 
+  pthread_mutex_lock(&print_lock);
   printf("Candy-factory %d done\n", factory_thread_number);
+  pthread_mutex_unlock(&print_lock);
 
-  return;
+  pthread_exit(0);
 }
 
 /*
@@ -43,18 +50,20 @@ void consume (voidPtr arg) {
 
   while (true) {
     candyStructPtr extracted_candy = (candyStructPtr)bbuff_blocking_extract();
-    
+
+    pthread_mutex_lock(&print_lock);
     printf(
       "Kid thread %d consumed candy created by factory %d at %fms\n", 
       kid_thread_number,
       extracted_candy->factory_number, 
       extracted_candy->time_stamp_in_ms
     );
+    pthread_mutex_unlock(&print_lock);
 
     sleep(rand() % 2);
   }
 
-  return;
+  pthread_exit(0);
 }
 
 int main (int argc, charPtr* argv) {
@@ -74,6 +83,7 @@ int main (int argc, charPtr* argv) {
 
   // * 2. Initialize modules
   bbuff_init();
+  pthread_mutex_init(&print_lock, NULL);
 
   // * 3. Launch factory threads
   int factory_number[args[0]];
@@ -104,6 +114,7 @@ int main (int argc, charPtr* argv) {
   }
 
   // * 6. Stop factory threads
+  print_message("Stopping candy factories...");
   stop_factory_threads = true;
   for (int i = 0; i < args[0]; i++) {
     pthread_join(factory_threads[i], NULL);
@@ -116,6 +127,7 @@ int main (int argc, charPtr* argv) {
   }
 
   // * 8. Stop kid threads
+  print_message("Stopping kids.");
   for (int i = 0; i < args[1]; i++) {
     pthread_cancel(kid_threads[i]);
     pthread_join(kid_threads[i], NULL);
