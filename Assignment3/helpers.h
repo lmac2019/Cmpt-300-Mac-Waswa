@@ -3,8 +3,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include "macros.h"
-#include "pthread.h"
 #include "bbuff.h"
 
 void print_message(charPtr message);

@@ -23,7 +23,7 @@ static int last_filled_index;
 /*
  * Mutex for the bounded buffer
  */
-static pthread_mutex_t bounded_buffer_mutex;
+static sem_t bounded_buffer_semaphore;
 
 /*
  * Condition variable for threads to wait if not full and proceed otherwise
@@ -44,7 +44,7 @@ void bbuff_init (void) {
   next_empty_index = 0;
   last_filled_index = 0;
 
-  pthread_mutex_init(&bounded_buffer_mutex, NULL);
+  sem_init(&bounded_buffer_semaphore, 0, 1);
   pthread_cond_init(&not_full, NULL);
   pthread_cond_init(&not_empty, NULL);
 
@@ -58,10 +58,10 @@ void bbuff_init (void) {
  * item: item to be inserted into the bounded buffer
  */
 void bbuff_blocking_insert (voidPtr item) {
-  pthread_mutex_lock(&bounded_buffer_mutex);
+  sem_wait(&bounded_buffer_semaphore);
 
   while (bbuff_is_full()) {
-    pthread_cond_wait(&not_full, &bounded_buffer_mutex);
+    pthread_cond_wait(&not_full, &bounded_buffer_semaphore);
   }
 
   if (bounded_buffer[next_empty_index] != NULL) {
@@ -75,7 +75,7 @@ void bbuff_blocking_insert (voidPtr item) {
 
   pthread_cond_signal(&not_empty);
 
-  pthread_mutex_unlock(&bounded_buffer_mutex);
+  sem_post(&bounded_buffer_semaphore);
 }
 
 /*
@@ -85,10 +85,10 @@ void bbuff_blocking_insert (voidPtr item) {
 voidPtr bbuff_blocking_extract (void) {
   candyStructPtr last_candy;
 
-  pthread_mutex_lock(&bounded_buffer_mutex);
+  sem_wait(&bounded_buffer_semaphore);
 
   while (bbuff_is_empty()) {
-    pthread_cond_wait(&not_empty, &bounded_buffer_mutex);
+    pthread_cond_wait(&not_empty, &bounded_buffer_semaphore);
   }
 
   last_candy = (candyStructPtr)bounded_buffer[last_filled_index];
@@ -98,7 +98,7 @@ voidPtr bbuff_blocking_extract (void) {
 
   pthread_cond_signal(&not_full);
 
-  pthread_mutex_unlock(&bounded_buffer_mutex);
+  sem_post(&bounded_buffer_semaphore);
 
   return last_candy;
 }
@@ -130,8 +130,4 @@ void free_bbuff (void) {
       free(bounded_buffer[i]);
     }
   }
-}
-
-int get_count () {
-  return count;
 }

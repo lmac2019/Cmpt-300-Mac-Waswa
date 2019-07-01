@@ -1,7 +1,7 @@
-#include "helpers.h"
 #include <unistd.h>
+#include "helpers.h"
 
-static bool stop_thread = false;
+static bool stop_factory_threads = false;
 
 /*
  * Handles getting the current time in milliseconds
@@ -16,21 +16,21 @@ static double current_time_in_ms (void) {
  * Handles producing candy to be stored in the bounded buffer
  */
 void produce (voidPtr arg) {
-  int factory_number = *((intPtr)arg);
+  int factory_thread_number = *((intPtr)arg);
 
-  while (!stop_thread) {
+  while (!stop_factory_threads) {
     int sleep_time = rand() % 4;
-    printf("\tFactory %d ships candy & waits %ds\n", factory_number, sleep_time);
+    printf("\tFactory %d ships candy & waits %ds\n", factory_thread_number, sleep_time);
 
     candyStructPtr candy = (candyStructPtr)malloc(sizeof(candy_t));
-    candy->factory_number = factory_number;
+    candy->factory_number = factory_thread_number;
     candy->time_stamp_in_ms = current_time_in_ms();
     bbuff_blocking_insert(candy);
 
     sleep(sleep_time);
   }
 
-  printf("Candy-factory %d done\n", factory_number);
+  printf("Candy-factory %d done\n", factory_thread_number);
 
   return;
 }
@@ -38,18 +38,21 @@ void produce (voidPtr arg) {
 /*
  * Handles consuming candy from the bounded buffer
  */
-void consume (void) {
+void consume (voidPtr arg) {
+  int kid_thread_number = *((intPtr)arg);
+
   while (true) {
+    print_message("Stuck here");
     candyStructPtr extracted_candy = (candyStructPtr)bbuff_blocking_extract();
     
     printf(
-      "Consumed candy created by factory %d at %fs\n", 
+      "Kid thread %d consumed candy created by factory %d at %fms\n", 
+      kid_thread_number,
       extracted_candy->factory_number, 
       extracted_candy->time_stamp_in_ms
     );
 
-    int sleep_time = rand() % 2;
-    sleep(sleep_time);
+    sleep(rand() % 2);
   }
 
   return;
@@ -74,19 +77,25 @@ int main (int argc, charPtr* argv) {
   bbuff_init();
 
   // * 3. Launch factory threads
-  pthread_t factory_threads[args[0]];
   int factory_number[args[0]];
   for (int i = 0; i < args[0]; i++) {
     factory_number[i] = i;
   }
+
+  pthread_t factory_threads[args[0]];
   for (int i = 0; i < args[0]; i++) {
     pthread_create(&factory_threads[i], NULL, (voidPtr) produce, &factory_number[i]);
   }
 
   // * 4. Launch kid threads
+  int kid_number[args[0]];
+  for (int i = 0; i < args[0]; i++) {
+    kid_number[i] = i;
+  }
+
   pthread_t kid_threads[args[1]];
   for (int i = 0; i < args[1]; i++) {
-    pthread_create(&kid_threads[i], NULL, (voidPtr) consume, NULL);
+    pthread_create(&kid_threads[i], NULL, (voidPtr) consume, &kid_number[i]);
   }
 
   // * 5. Wait for requested time
@@ -96,7 +105,7 @@ int main (int argc, charPtr* argv) {
   }
 
   // * 6. Stop factory threads
-  stop_thread = true;
+  stop_factory_threads = true;
   for (int i = 0; i < args[0]; i++) {
     pthread_join(factory_threads[i], NULL);
   }
@@ -108,10 +117,23 @@ int main (int argc, charPtr* argv) {
   }
 
   // * 8. Stop kid threads
-  // * Bugs when it comes to destroying kid threads
   for (int i = 0; i < args[1]; i++) {
-    pthread_cancel(kid_threads[i]);
-    pthread_join(kid_threads[i], NULL);
+    if (pthread_cancel(kid_threads[i])) {
+      i--;
+      print_message("\t\t\t\t\t\tCancellation failed");
+    } else {
+      print_message("\t\t\t\t\t\tCancellation successful");
+    }
+  }
+
+  print_message("\t\t\t\t\t\t\tMade it here");
+
+  for (int i = 0; i < args[1]; i++) {
+    voidPtr result;
+    pthread_join(kid_threads[i], &result);
+    if (result == PTHREAD_CANCELED) {
+      printf("\t\t\t\tThread was cancelled at index: %d\n", i);
+    }
   }
 
   // * 9.  Print statistics
