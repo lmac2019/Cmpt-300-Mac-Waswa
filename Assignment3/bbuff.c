@@ -66,6 +66,8 @@ void bbuff_init (void) {
  * item: item to be inserted into the bounded buffer
  */
 void bbuff_blocking_insert (voidPtr item) {
+  pthread_cleanup_push(cleanup_handler, &bounded_buffer_mutex);
+
   pthread_mutex_lock(&bounded_buffer_mutex);
 
   while (bbuff_is_full()) {
@@ -84,6 +86,8 @@ void bbuff_blocking_insert (voidPtr item) {
   pthread_cond_signal(&not_empty);
 
   pthread_mutex_unlock(&bounded_buffer_mutex);
+
+  pthread_cleanup_pop(0);
 }
 
 /*
@@ -92,7 +96,7 @@ void bbuff_blocking_insert (voidPtr item) {
  */
 voidPtr bbuff_blocking_extract (void) {
   candyStructPtr last_candy;
-
+  
   pthread_cleanup_push(cleanup_handler, &bounded_buffer_mutex);
 
   pthread_mutex_lock(&bounded_buffer_mutex);
