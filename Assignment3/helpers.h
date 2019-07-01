@@ -4,7 +4,6 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "bbuff.h"
 #include "macros.h"
 
 void print_message(charPtr message);

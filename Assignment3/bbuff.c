@@ -36,6 +36,14 @@ static pthread_cond_t not_full;
 static pthread_cond_t not_empty;
 
 /*
+ * Handles unlocing a mutex after a thread's resources have been cleaned up
+ * mutex: The mutex to be unlocked
+ */
+static void cleanup_handler(voidPtr mutex) {
+  pthread_mutex_unlock(mutex);
+}
+
+/*
  * Initializes bounded_buffer to be an array of pointers to -1
  * Function takes no arguments
  */
@@ -85,6 +93,8 @@ void bbuff_blocking_insert (voidPtr item) {
 voidPtr bbuff_blocking_extract (void) {
   candyStructPtr last_candy;
 
+  pthread_cleanup_push(cleanup_handler, &bounded_buffer_mutex);
+
   pthread_mutex_lock(&bounded_buffer_mutex);
 
   while (bbuff_is_empty()) {
@@ -99,6 +109,8 @@ voidPtr bbuff_blocking_extract (void) {
   pthread_cond_signal(&not_full);
 
   pthread_mutex_unlock(&bounded_buffer_mutex);
+
+  pthread_cleanup_pop(0);
 
   return last_candy;
 }

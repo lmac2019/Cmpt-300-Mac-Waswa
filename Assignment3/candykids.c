@@ -1,7 +1,6 @@
 #include <unistd.h>
+#include "bbuff.h"
 #include "helpers.h"
-
-static pthread_mutex_t print_lock;
 
 static bool stop_factory_threads = false;
 
@@ -23,9 +22,7 @@ void produce (voidPtr arg) {
   while (!stop_factory_threads) {
     int sleep_time = rand() % 4;
 
-    pthread_mutex_lock(&print_lock);
     printf("\tFactory %d ships candy & waits %ds\n", factory_thread_number, sleep_time);
-    pthread_mutex_unlock(&print_lock);
 
     candyStructPtr candy = (candyStructPtr)malloc(sizeof(candy_t));
     candy->factory_number = factory_thread_number;
@@ -35,9 +32,7 @@ void produce (voidPtr arg) {
     sleep(sleep_time);
   }
 
-  pthread_mutex_lock(&print_lock);
   printf("Candy-factory %d done\n", factory_thread_number);
-  pthread_mutex_unlock(&print_lock);
 
   pthread_exit(0);
 }
@@ -45,21 +40,9 @@ void produce (voidPtr arg) {
 /*
  * Handles consuming candy from the bounded buffer
  */
-void consume (voidPtr arg) {
-  int kid_thread_number = *((intPtr)arg);
-
+void consume (void) {
   while (true) {
-    candyStructPtr extracted_candy = (candyStructPtr)bbuff_blocking_extract();
-
-    pthread_mutex_lock(&print_lock);
-    printf(
-      "Kid thread %d consumed candy created by factory %d at %fms\n", 
-      kid_thread_number,
-      extracted_candy->factory_number, 
-      extracted_candy->time_stamp_in_ms
-    );
-    pthread_mutex_unlock(&print_lock);
-
+    bbuff_blocking_extract();
     sleep(rand() % 2);
   }
 
@@ -83,7 +66,6 @@ int main (int argc, charPtr* argv) {
 
   // * 2. Initialize modules
   bbuff_init();
-  pthread_mutex_init(&print_lock, NULL);
 
   // * 3. Launch factory threads
   int factory_number[args[0]];
@@ -134,6 +116,7 @@ int main (int argc, charPtr* argv) {
   }
 
   // * 9.  Print statistics
+
 
   // * 10. Cleanup any allocated memory
   free_bbuff();
