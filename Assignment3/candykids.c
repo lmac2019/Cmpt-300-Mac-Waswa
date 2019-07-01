@@ -42,7 +42,6 @@ void consume (voidPtr arg) {
   int kid_thread_number = *((intPtr)arg);
 
   while (true) {
-    print_message("Stuck here");
     candyStructPtr extracted_candy = (candyStructPtr)bbuff_blocking_extract();
     
     printf(
@@ -118,22 +117,8 @@ int main (int argc, charPtr* argv) {
 
   // * 8. Stop kid threads
   for (int i = 0; i < args[1]; i++) {
-    if (pthread_cancel(kid_threads[i])) {
-      i--;
-      print_message("\t\t\t\t\t\tCancellation failed");
-    } else {
-      print_message("\t\t\t\t\t\tCancellation successful");
-    }
-  }
-
-  print_message("\t\t\t\t\t\t\tMade it here");
-
-  for (int i = 0; i < args[1]; i++) {
-    voidPtr result;
-    pthread_join(kid_threads[i], &result);
-    if (result == PTHREAD_CANCELED) {
-      printf("\t\t\t\tThread was cancelled at index: %d\n", i);
-    }
+    pthread_cancel(kid_threads[i]);
+    pthread_join(kid_threads[i], NULL);
   }
 
   // * 9.  Print statistics

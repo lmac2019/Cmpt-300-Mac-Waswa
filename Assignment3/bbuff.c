@@ -123,8 +123,6 @@ bool bbuff_is_full(void) {
  * Frees up memory in the bounded buffer
  */
 void free_bbuff (void) {
-  print_message("\t\t\t\t\tFreeing up memory in the bounded buffer...");
-
   for (int i = 0; i < BUFFER_SIZE; i++) {
     if (bounded_buffer[i] != NULL) {
       free(bounded_buffer[i]);
