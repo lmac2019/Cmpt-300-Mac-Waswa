@@ -90,7 +90,7 @@ int main (int argc, charPtr* argv) {
   }
 
   // * 5. Wait for requested time
-  for (int i = 1; i <= args[2]; i++) {
+  for (int i = 0; i < args[2]; i++) {
     sleep(1);
     printf("Time %ds\n", i);
   }
