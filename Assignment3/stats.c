@@ -64,8 +64,8 @@ void stats_record_consumed(int factory_number, double delay_in_ms){
         }
 }
 void stats_display(void){
-        printf("%s%15s%15s%15s%15s%15s\n","Factory#",   "#Made",  "#Eaten","Min Delay[ms]",  "Avg Delay[ms]",  "Max Delay[ms]");
+        printf("%8s%15s%15s%15s%15s%15s\n","Factory#",   "#Made",  "#Eaten","Min Delay[ms]",  "Avg Delay[ms]",  "Max Delay[ms]");
         for(int i = 0; i<producer; i++) {
-                printf("%8d%15d%15d%15f%15f%15f\n",num_factories[i],candies_made[i],candies_consumed[i],min_delay[i],avg_delay[i],max_delay[i]);
+                printf("%8d%15d%15d%15.5f%15.5f%15.5f\n",num_factories[i],candies_made[i],candies_consumed[i],min_delay[i],avg_delay[i],max_delay[i]);
         }
 }
