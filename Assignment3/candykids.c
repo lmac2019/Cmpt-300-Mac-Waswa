@@ -49,7 +49,6 @@ void consume (void) {
                 int last_factory_nummber = candy->factory_number;
                 double delay_in_ms = current_time_in_ms()-candy->time_stamp_in_ms;
                 stats_record_consumed(last_factory_nummber,delay_in_ms);
-                free(candy);
                 sleep(rand() % 2);
         }
 
