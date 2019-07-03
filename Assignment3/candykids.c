@@ -30,7 +30,6 @@ void produce (voidPtr arg) {
                 candy->time_stamp_in_ms = current_time_in_ms();
                 bbuff_blocking_insert(candy);
                 stats_record_produced(factory_thread_number);
-
                 sleep(sleep_time);
         }
 
@@ -44,11 +43,9 @@ void produce (voidPtr arg) {
  */
 void consume (void) {
         while (true) {
-                candyStructPtr candy = (candyStructPtr)malloc(sizeof(candy_t));
-                candy = bbuff_blocking_extract();
-                int last_factory_nummber = candy->factory_number;
-                double delay_in_ms = current_time_in_ms()-candy->time_stamp_in_ms;
-                stats_record_consumed(last_factory_nummber,delay_in_ms);
+                candyStructPtr candy = (candyStructPtr)bbuff_blocking_extract();
+                stats_record_consumed(candy->factory_number, current_time_in_ms()-(candy->time_stamp_in_ms));
+                free(candy);
                 sleep(rand() % 2);
         }
 
@@ -127,7 +124,7 @@ int main (int argc, charPtr* argv) {
 
         // * 10. Cleanup any allocated memory
         stats_cleanup();
-        free_bbuff();
+        //free_bbuff();
 
         return 0;
 }

@@ -96,7 +96,7 @@ void bbuff_blocking_insert (voidPtr item) {
  */
 voidPtr bbuff_blocking_extract (void) {
   candyStructPtr last_candy;
-  
+
   pthread_cleanup_push(cleanup_handler, &bounded_buffer_mutex);
 
   pthread_mutex_lock(&bounded_buffer_mutex);
@@ -106,7 +106,9 @@ voidPtr bbuff_blocking_extract (void) {
   }
 
   last_candy = (candyStructPtr)bounded_buffer[last_filled_index];
+  bounded_buffer[last_filled_index] = NULL;
   last_filled_index = (last_filled_index + 1) % BUFFER_SIZE;
+
 
   count--;
 

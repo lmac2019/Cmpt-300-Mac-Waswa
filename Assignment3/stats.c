@@ -51,5 +51,9 @@ void stats_display(void){
         printf("%8s%15s%15s%15s%15s%15s\n","Factory#",   "#Made",  "#Eaten","Min Delay[ms]",  "Avg Delay[ms]",  "Max Delay[ms]");
         for(int i = 0; i<producer; i++) {
                 printf("%8d%15d%15d%15.5f%15.5f%15.5f\n",stats_array[i].num_factories,stats_array[i].candies_made,stats_array[i].candies_consumed,stats_array[i].min_delay,stats_array[i].avg_delay,stats_array[i].max_delay);
+                if(stats_array[i].candies_made != stats_array[i].candies_consumed) {
+                        printf("\tERROR: Mismatch between number made and eaten.\n");
+                }
+
         }
 }
