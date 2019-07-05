@@ -124,7 +124,7 @@ int main (int argc, charPtr* argv) {
 
         // * 10. Cleanup any allocated memory
         stats_cleanup();
-        //free_bbuff();
+        free_bbuff();
 
         return 0;
 }
