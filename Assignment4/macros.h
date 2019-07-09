@@ -3,5 +3,6 @@
 
 #define voidPtr void*
 #define intPtr int*
+#define charPtr char*
 
 #endif
