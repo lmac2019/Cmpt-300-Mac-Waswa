@@ -1,6 +1,3 @@
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include "kallocator.h"
 
 struct KAllocator {
@@ -76,6 +73,3 @@ void print_statistics() {
     printf("Largest free chunk size = %d\n", largest_free_chunk_size);
     printf("Smallest free chunk size = %d\n", smallest_free_chunk_size);
 }
-
-
-
