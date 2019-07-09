@@ -1,8 +1,9 @@
 #include "kallocator.h"
+#include "allocator_helpers.h"
 
 int main (int argc, charPtr argv[]) {
   initialize_allocator(100, FIRST_FIT);
-  printf("Using first fit algorithm on memory size 100\n");
+  print_allocator_message("Using first fit algorithm on memory size 100");
 
   // initialize_allocator(100, BEST_FIT);
   // printf("Using best fit algorithm on memory size 100\n");
@@ -14,7 +15,7 @@ int main (int argc, charPtr argv[]) {
   for (int i = 0; i < 10; ++i) {
     p[i] = kalloc(sizeof(int));
     if (p[i] == NULL) {
-      printf("Allocation failed\n");
+      print_allocator_message("Allocation failed");
       continue;
     }
     *(p[i]) = i;

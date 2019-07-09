@@ -20,3 +20,4 @@ Assignment4/kallocation
 Assignment4/kallocator.o
 Assignment4/main.o
 Assignment4/memory_list.o
+Assignment4/allocator_helpers.o
