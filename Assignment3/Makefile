@@ -19,7 +19,7 @@ all: clean $(TARGET)
 	$(CC) -c $(CFLAGS) $<
 
 $(TARGET): $(OBJS)
-	$(CC_C) $(CFLAGS) $(OBJS) -o -lrt -lpthread $@
+	$(CC_C) $(CFLAGS) $(OBJS) -lpthread -lrt -o $@
 
 clean:
 	rm -f $(TARGET)
