@@ -16,3 +16,6 @@ Assignment3/stats.o
 Assignment3/helpers.o
 Assignment3/producer.o
 Assignment3/consumer.o
+Assignment4/kallocation
+Assignment4/kallocator.o
+Assignment4/main.o
