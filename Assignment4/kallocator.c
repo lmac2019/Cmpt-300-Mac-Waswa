@@ -1,30 +1,51 @@
 #include "kallocator.h"
+#include "memory_list.h"
 
 struct KAllocator {
   enum allocation_algorithm aalgorithm;
   int size;
-  void* memory;
-  // Some other data members you want, 
-  // such as lists to record allocated/free memory
+  voidPtr memory;
+  struct memoryNodePtr free_memory_head;
+  struct memoryNodePtr allocated_memory_head;
 };
 
 struct KAllocator kallocator;
 
+/*
+ * Initializes the contiguous memory allocator
+ * _size: indicates the contiguous memory chunk size that is assumed for the rest of the program
+ * _aalgorithm: an enum which will determine the algorithm used for allocation in the rest of the program
+ */
 void initialize_allocator (int _size, enum allocation_algorithm _aalgorithm) {
   assert(_size > 0);
   kallocator.aalgorithm = _aalgorithm;
   kallocator.size = _size;
   kallocator.memory = malloc((size_t)kallocator.size);
-  // Add some other initialization 
+
+  struct memoryNodePtr init_free_memory = (struct memoryNodePtr) malloc(sizeof(struct memoryNode));
+  init_free_memory->current = kallocator.memory;
+  init_free_memory->block_size = kallocator.size;
+  init_free_memory->next = NULL;
+  List_insertHead(&kallocator.free_memory_head, init_free_memory);
+
+  kallocator.allocated_memory_head = NULL;
 }
 
+/*
+ * Frees all dynamic memory associated with the allocator
+ */
 void destroy_allocator () {
   free(kallocator.memory);
   // free other dynamic allocated memory to avoid memory leak
 }
 
-void* kalloc (int _size) {
-  void* ptr = NULL;
+/*
+ * Returns a pointer to the allocated block of size _size
+ * If allocation cannot be satisfied, kalloc returns NULL
+ * _size: the size of the block of memory to return
+ */
+voidPtr kalloc (int _size) {
+  voidPtr ptr = NULL;
 
   // Allocate memory from kallocator.memory 
   // ptr = address of allocated memory
@@ -32,6 +53,10 @@ void* kalloc (int _size) {
   return ptr;
 }
 
+/*
+ * Takes away the ownership of the block pointed by _ptr
+ * _ptr: pointer referencing block of memory to be freed
+ */
 void kfree (voidPtr _ptr) {
   assert(_ptr != NULL);
 }
