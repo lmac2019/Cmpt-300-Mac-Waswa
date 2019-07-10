@@ -1,15 +1,21 @@
 #include "kallocator.h"
+#include <string.h>
 
 int main (int argc, charPtr argv[]) {
-  initialize_allocator(100, FIRST_FIT);
-  print_allocator_message("Using first fit algorithm on memory size 100");
+  if(!strcmp(argv[1], "f")){
+    initialize_allocator(100, FIRST_FIT);
+    print_allocator_message("Using first fit algorithm on memory size 100");
+  }
 
-  // initialize_allocator(100, BEST_FIT);
-  // printf("Using best fit algorithm on memory size 100\n");
-  
-  // initialize_allocator(100, WORST_FIT);
-  // printf("Using worst fit algorithm on memory size 100\n");
+  if(!strcmp(argv[1], "b")){
+    initialize_allocator(100, BEST_FIT);
+    printf("Using best fit algorithm on memory size 100\n");
+  }
 
+  if(!strcmp(argv[1], "w")){
+    initialize_allocator(100, WORST_FIT);
+    printf("Using worst fit algorithm on memory size 100\n");
+  }
   intPtr p[50] = { NULL };
   for (int i = 0; i < 10; ++i) {
     p[i] = kalloc(sizeof(int));
