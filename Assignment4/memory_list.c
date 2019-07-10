@@ -169,3 +169,40 @@ void MemoryList_sort (struct memoryNodePtr* headRef) {
     }
   } while (sort == KEEP_SORTING);
 }
+
+/*
+  * Returns the smallest block size in the list
+  * If no nodes then will return 0
+  */
+int MemoryList_findSmallestBlockSize(struct memoryNodePtr head) {
+  int smallest_block_size = 0;
+
+  for (struct memoryNodePtr currentNodePtr = head; currentNodePtr != NULL; currentNodePtr = currentNodePtr->next) {
+    if (currentNodePtr == head) {
+      smallest_block_size = currentNodePtr->block_size;
+      continue;
+    }
+
+    if (currentNodePtr->block_size < smallest_block_size) {
+      smallest_block_size = currentNodePtr->block_size;
+    }
+  }
+
+  return smallest_block_size;
+}
+
+/*
+  * Returns the largest block size in the list
+  * If no nodes then will return 0
+  */
+int MemoryList_findLargestBlockSize(struct memoryNodePtr head) {
+  int largest_block_size = 0;
+
+  for (struct memoryNodePtr currentNodePtr = head; currentNodePtr != NULL; currentNodePtr = currentNodePtr->next) {
+    if (currentNodePtr->block_size > largest_block_size) {
+      largest_block_size = currentNodePtr->block_size;
+    }
+  }
+
+  return largest_block_size;
+}

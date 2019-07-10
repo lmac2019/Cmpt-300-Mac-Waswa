@@ -136,17 +136,28 @@ int available_memory () {
 }
 
 /*
+ * Returns the allocated memory size
+ */
+int allocated_memory () {
+  int allocated_memory_size = 0;
+
+  for (struct memoryNodePtr currentMemoryNodePtr = kallocator.allocated_memory_head; currentMemoryNodePtr != NULL; currentMemoryNodePtr = currentMemoryNodePtr->next) {
+    allocated_memory_size += currentMemoryNodePtr->block_size;
+  }
+
+  return allocated_memory_size;
+}
+
+/*
  * Prints the detailed statistics of the program
  */
 void print_statistics () {
-  int allocated_size = 0;
+  int allocated_size = allocated_memory();
   int allocated_chunks = MemoryList_countNodes(kallocator.allocated_memory_head);
   int free_size = available_memory();
   int free_chunks = MemoryList_countNodes(kallocator.free_memory_head);
-  int smallest_free_chunk_size = kallocator.size;
-  int largest_free_chunk_size = 0;
-
-  // Calculate the statistics
+  int smallest_free_chunk_size = MemoryList_findSmallestBlockSize(kallocator.free_memory_head);
+  int largest_free_chunk_size = MemoryList_findLargestBlockSize(kallocator.free_memory_head);
 
   printf("Allocated size = %d\n", allocated_size);
   printf("Allocated chunks = %d\n", allocated_chunks);

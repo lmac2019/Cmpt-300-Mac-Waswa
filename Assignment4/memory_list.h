@@ -20,5 +20,7 @@ struct memoryNodePtr MemoryList_findNode(struct memoryNodePtr head, voidPtr bloc
 void MemoryList_deleteNode(struct memoryNodePtr* headRef, struct memoryNodePtr node);
 void MemoryList_deleteAllNodes(struct memoryNodePtr* headRef);
 void MemoryList_sort(struct memoryNodePtr* headRef);
+int MemoryList_findSmallestBlockSize(struct memoryNodePtr head);
+int MemoryList_findLargestBlockSize(struct memoryNodePtr head);
 
 #endif

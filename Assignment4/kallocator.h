@@ -17,6 +17,7 @@ void initialize_allocator(int _size, enum allocation_algorithm _aalgorithm);
 voidPtr kalloc(int _size);
 void kfree(voidPtr _ptr);
 int available_memory();
+int allocated_memory();
 void print_statistics();
 int compact_allocation(voidPtr* _before, voidPtr* _after);
 void destroy_allocator();
