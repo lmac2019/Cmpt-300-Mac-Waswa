@@ -125,7 +125,38 @@ voidPtr kalloc (int _size) {
       break;
     }
     case WORST_FIT: {
-      print_allocator_message("WORST FIT");
+      struct memoryNodePtr temp_memory;
+      int tempblock = 0;
+      for (struct memoryNodePtr currentMemoryNodePtr = kallocator.free_memory_head; currentMemoryNodePtr != NULL; currentMemoryNodePtr = currentMemoryNodePtr->next) {
+        if (_size <= currentMemoryNodePtr->block_size) {
+          if(tempblock == 0){
+            tempblock = currentMemoryNodePtr->block_size;
+            temp_memory = currentMemoryNodePtr;
+            ptr = currentMemoryNodePtr->current;
+          }
+          else if(tempblock < currentMemoryNodePtr->block_size){
+            tempblock = currentMemoryNodePtr->block_size;
+            temp_memory = currentMemoryNodePtr;
+            ptr = temp_memory -> current;
+          }
+        }
+      }
+
+      if (_size == temp_memory->block_size) {
+        // * Remove node from free memory
+        MemoryList_deleteNode(&kallocator.free_memory_head, temp_memory);
+      } else if (_size < temp_memory->block_size) {
+        // * Update node in free memory
+        temp_memory->block_size -= _size;
+        temp_memory->current += _size;
+      }
+
+      struct memoryNodePtr allocated_memory = (struct memoryNodePtr) malloc(sizeof(struct memoryNode));
+      allocated_memory->current = ptr;
+      allocated_memory->block_size = _size;
+      allocated_memory->next = NULL;
+      MemoryList_insertTail(&kallocator.allocated_memory_head, allocated_memory);
+      MemoryList_sort(&kallocator.allocated_memory_head);
       break;
     }
     default: {
