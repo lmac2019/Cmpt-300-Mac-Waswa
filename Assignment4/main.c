@@ -1,5 +1,4 @@
 #include "kallocator.h"
-#include "allocator_helpers.h"
 
 int main (int argc, charPtr argv[]) {
   initialize_allocator(100, FIRST_FIT);

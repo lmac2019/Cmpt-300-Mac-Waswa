@@ -33,7 +33,7 @@ void initialize_allocator (int _size, enum allocation_algorithm _aalgorithm) {
   init_free_memory->current = kallocator.memory;
   init_free_memory->block_size = kallocator.size;
   init_free_memory->next = NULL;
-  List_insertHead(&kallocator.free_memory_head, init_free_memory);
+  MemoryList_insertHead(&kallocator.free_memory_head, init_free_memory);
 
   // * Initialize allocated memory
   kallocator.allocated_memory_head = NULL;
@@ -47,22 +47,60 @@ void destroy_allocator () {
   free(kallocator.memory);
 
   // * Frees all free memory
-  List_deleteAllNodes(&kallocator.free_memory_head);
+  MemoryList_deleteAllNodes(&kallocator.free_memory_head);
 
   // * Frees all allocated memory
-  List_deleteAllNodes(&kallocator.allocated_memory_head);
+  MemoryList_deleteAllNodes(&kallocator.allocated_memory_head);
 }
 
 /*
- * Returns a pointer to the allocated block of size _size
+ * Returns a pointer to the allocated block of _size
  * If allocation cannot be satisfied, kalloc returns NULL
  * _size: the size of the block of memory to return
  */
 voidPtr kalloc (int _size) {
   voidPtr ptr = NULL;
 
-  // Allocate memory from kallocator.memory 
-  // ptr = address of allocated memory
+  switch (kallocator.aalgorithm) {
+    case FIRST_FIT: {
+      for (struct memoryNodePtr currentMemoryNodePtr = kallocator.free_memory_head; currentMemoryNodePtr != NULL; currentMemoryNodePtr = currentMemoryNodePtr->next) {
+        if (_size <= currentMemoryNodePtr->block_size) {
+          // * Assign ptr to the free memory
+          ptr = currentMemoryNodePtr->current;
+
+          if (_size == currentMemoryNodePtr->block_size) {
+            // * Remove node from free memory
+            MemoryList_deleteNode(&kallocator.free_memory_head, currentMemoryNodePtr);
+          } else if (_size < currentMemoryNodePtr->block_size) {
+            // * Update node in free memory
+            currentMemoryNodePtr->block_size -= _size;
+            currentMemoryNodePtr->current += _size;
+          }
+
+          // * Add to allocated memory
+          struct memoryNodePtr allocated_memory = (struct memoryNodePtr) malloc(sizeof(struct memoryNode));
+          allocated_memory->current = ptr;
+          allocated_memory->block_size = _size;
+          allocated_memory->next = NULL;
+          MemoryList_insertTail(&kallocator.allocated_memory_head, allocated_memory);
+
+          break;
+        }
+      }
+      break;
+    }
+    case BEST_FIT: {
+      print_allocator_message("BEST FIT");
+      break;
+    }
+    case WORST_FIT: {
+      print_allocator_message("WORST FIT");
+      break;
+    }
+    default: {
+      print_allocator_error_message("Unknown allocation algorithm used");
+    }
+  }
 
   return ptr;
 }

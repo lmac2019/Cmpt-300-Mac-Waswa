@@ -1,5 +1,5 @@
-#ifndef LIST_H
-#define LIST_H
+#ifndef MemoryList_H
+#define MemoryList_H
 
 /* Include necessary external libraries */
 
@@ -19,12 +19,12 @@ struct nodeStruct {
 
 /* Function prototypes */
 
-struct nodeStructPtr List_createNode (int item);
-void List_insertHead (struct nodeStructPtr* headRef, struct nodeStructPtr node);
-void List_insertTail (struct nodeStructPtr* headRef, struct nodeStructPtr node);
-int List_countNodes (struct nodeStructPtr head);
-struct nodeStructPtr List_findNode (struct nodeStructPtr head, int item);
-void List_deleteNode (struct nodeStructPtr* headRef, struct nodeStructPtr node);
-void List_sort (struct nodeStructPtr* headRef);
+struct nodeStructPtr MemoryList_createNode (int item);
+void MemoryList_insertHead (struct nodeStructPtr* headRef, struct nodeStructPtr node);
+void MemoryList_insertTail (struct nodeStructPtr* headRef, struct nodeStructPtr node);
+int MemoryList_countNodes (struct nodeStructPtr head);
+struct nodeStructPtr MemoryList_findNode (struct nodeStructPtr head, int item);
+void MemoryList_deleteNode (struct nodeStructPtr* headRef, struct nodeStructPtr node);
+void MemoryList_sort (struct nodeStructPtr* headRef);
 
 #endif

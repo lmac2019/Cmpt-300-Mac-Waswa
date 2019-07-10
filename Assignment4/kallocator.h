@@ -1,9 +1,10 @@
-#ifndef __KALLOCATOR_H__
-#define __KALLOCATOR_H__
+#ifndef KALLOCATOR_H
+#define KALLOCATOR_H
 
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "allocator_helpers.h"
 #include "macros.h"
 
 enum allocation_algorithm { 

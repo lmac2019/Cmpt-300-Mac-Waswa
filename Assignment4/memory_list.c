@@ -4,7 +4,7 @@
  * Allocate memory for a node of type struct memoryNode and initialize
  * it with the current pointing to block. Return a pointer to the new node.
  */
-struct memoryNodePtr List_createNode (int block_size, voidPtr block) {
+struct memoryNodePtr MemoryList_createNode (int block_size, voidPtr block) {
   struct memoryNodePtr ptr = (struct memoryNodePtr) malloc(sizeof(struct memoryNode));
   ptr->current = block;
   ptr->block_size = block_size;
@@ -15,7 +15,7 @@ struct memoryNodePtr List_createNode (int block_size, voidPtr block) {
 /*
  * Insert node at the head of the list.
  */
-void List_insertHead (struct memoryNodePtr* headRef, struct memoryNodePtr node) {
+void MemoryList_insertHead (struct memoryNodePtr* headRef, struct memoryNodePtr node) {
   if (*headRef == NULL) {
     *headRef = node;
     return;
@@ -29,7 +29,7 @@ void List_insertHead (struct memoryNodePtr* headRef, struct memoryNodePtr node) 
 /*
  * Insert node after the tail of the list.
  */
-void List_insertTail (struct memoryNodePtr* headRef, struct memoryNodePtr node) {
+void MemoryList_insertTail (struct memoryNodePtr* headRef, struct memoryNodePtr node) {
   if (*headRef == NULL) {
     *headRef = node;
     return;
@@ -46,7 +46,7 @@ void List_insertTail (struct memoryNodePtr* headRef, struct memoryNodePtr node) 
  * Count number of nodes in the list.
  * Return 0 if the list is empty, i.e., head == NULL
  */
-int List_countNodes (struct memoryNodePtr head) {
+int MemoryList_countNodes (struct memoryNodePtr head) {
   if (head == NULL) {
     return 0;
   }
@@ -62,7 +62,7 @@ int List_countNodes (struct memoryNodePtr head) {
 /*
  * Return the first node holding the block, return NULL if none found
  */
-struct memoryNodePtr List_findNode (struct memoryNodePtr head, voidPtr block) {
+struct memoryNodePtr MemoryList_findNode (struct memoryNodePtr head, voidPtr block) {
   if (head == NULL) {
     return NULL;
   }
@@ -80,10 +80,10 @@ struct memoryNodePtr List_findNode (struct memoryNodePtr head, voidPtr block) {
  * Delete node from the list and free memory allocated to it.
  * This function assumes that node has been properly set to a valid node
  * in the list. For example, the client code may have found it by calling
- * List_findNode(). If the list contains only one node, the head of the list
+ * MemoryList_findNode(). If the list contains only one node, the head of the list
  * should be set to NULL.
  */
-void List_deleteNode (struct memoryNodePtr* headRef, struct memoryNodePtr node) {
+void MemoryList_deleteNode (struct memoryNodePtr* headRef, struct memoryNodePtr node) {
   struct memoryNodePtr currentNodePtr = *headRef;
   if (*headRef == node) {
     *headRef = currentNodePtr->next;
@@ -104,13 +104,13 @@ void List_deleteNode (struct memoryNodePtr* headRef, struct memoryNodePtr node) 
 /*
  * Deletes all nodes from the list and free memory allocated to them.
  */
-void List_deleteAllNodes (struct memoryNodePtr* headRef) {
+void MemoryList_deleteAllNodes (struct memoryNodePtr* headRef) {
   if (*headRef == NULL) {
     return;
   }
 
   do {
-    List_deleteNode(headRef, *headRef);
+    MemoryList_deleteNode(headRef, *headRef);
   } while (*headRef != NULL);
 }
 
@@ -118,7 +118,7 @@ void List_deleteAllNodes (struct memoryNodePtr* headRef) {
   * Sort the list in ascending order based on the block size.
   * Any sorting algorithm is fine.
   */
-void List_sort (struct memoryNodePtr* headRef) {
+void MemoryList_sort (struct memoryNodePtr* headRef) {
   if (*headRef == NULL) {
     return;
   }

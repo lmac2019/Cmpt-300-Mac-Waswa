@@ -7,62 +7,62 @@ int main (int argc, char **argv) {
   printf("Starting tests for list...\n");
 
   /*
-   * Tests for List_createNode
+   * Tests for MemoryList_createNode
    */
   struct nodeStructPtr createdNode;
 
-  createdNode = List_createNode(-100);
+  createdNode = MemoryList_createNode(-100);
   assert(createdNode->item == -100);
 
   // * Free memory for createdNode
   free(createdNode);
 
-  createdNode = List_createNode(0);
+  createdNode = MemoryList_createNode(0);
   assert(createdNode->item == 0);
 
   // * Free memory for createdNode
   free(createdNode);
 
-  createdNode = List_createNode(3);
+  createdNode = MemoryList_createNode(3);
   assert(createdNode->item == 3);
 
   // * Free memory for createdNode
   free(createdNode);
 
-  createdNode = List_createNode(100);
+  createdNode = MemoryList_createNode(100);
   assert(createdNode->item == 100);
 
   // * Free memory for createdNode
   free(createdNode);
 
   /*
-   * Tests for List_insertHead
+   * Tests for MemoryList_insertHead
    */
   struct nodeStructPtr head = NULL;
-  struct nodeStructPtr firstNodePtr = List_createNode(22);
-  struct nodeStructPtr secondNodePtr = List_createNode(132);
-  struct nodeStructPtr thirdNodePtr = List_createNode(43);
-  struct nodeStructPtr fourthNodePtr = List_createNode(-123);
-  struct nodeStructPtr fifthNodePtr = List_createNode(-234);
+  struct nodeStructPtr firstNodePtr = MemoryList_createNode(22);
+  struct nodeStructPtr secondNodePtr = MemoryList_createNode(132);
+  struct nodeStructPtr thirdNodePtr = MemoryList_createNode(43);
+  struct nodeStructPtr fourthNodePtr = MemoryList_createNode(-123);
+  struct nodeStructPtr fifthNodePtr = MemoryList_createNode(-234);
 
   // * No nodes added to linked list
   assert(head == NULL);
 
   // * firstNodePtr added to head of linked list
-  List_insertHead(&head, firstNodePtr);
+  MemoryList_insertHead(&head, firstNodePtr);
   assert(head == firstNodePtr);
   assert(firstNodePtr->next == NULL);
 
   // * secondNodePtr added to head of linked list
-  List_insertHead(&head, secondNodePtr);
+  MemoryList_insertHead(&head, secondNodePtr);
   assert(head == secondNodePtr);
   assert(secondNodePtr->next == firstNodePtr);
   assert(firstNodePtr->next == NULL);
 
   // * thirdNodePtr, fourthNodePtr and fifthNodePtr added to head of linked list sequentially
-  List_insertHead(&head, thirdNodePtr);
-  List_insertHead(&head, fourthNodePtr);
-  List_insertHead(&head, fifthNodePtr);
+  MemoryList_insertHead(&head, thirdNodePtr);
+  MemoryList_insertHead(&head, fourthNodePtr);
+  MemoryList_insertHead(&head, fifthNodePtr);
   assert(head == fifthNodePtr);
   assert(fifthNodePtr->next == fourthNodePtr);
   assert(fourthNodePtr->next == thirdNodePtr);
@@ -78,33 +78,33 @@ int main (int argc, char **argv) {
   free(fifthNodePtr);
 
   /*
-   * Tests for List_insertTail
+   * Tests for MemoryList_insertTail
    */
   head = NULL;
-  firstNodePtr = List_createNode(22);
-  secondNodePtr = List_createNode(132);
-  thirdNodePtr = List_createNode(43);
-  fourthNodePtr = List_createNode(-123);
-  fifthNodePtr = List_createNode(-234);
+  firstNodePtr = MemoryList_createNode(22);
+  secondNodePtr = MemoryList_createNode(132);
+  thirdNodePtr = MemoryList_createNode(43);
+  fourthNodePtr = MemoryList_createNode(-123);
+  fifthNodePtr = MemoryList_createNode(-234);
 
   // * No nodes added to linked list
   assert(head == NULL);
 
   // * firstNodePtr added to tail of linked list
-  List_insertTail(&head, firstNodePtr);
+  MemoryList_insertTail(&head, firstNodePtr);
   assert(head == firstNodePtr);
   assert(firstNodePtr->next == NULL);
 
   // * secondNodePtr added to tail of linked list
-  List_insertTail(&head, secondNodePtr);
+  MemoryList_insertTail(&head, secondNodePtr);
   assert(head == firstNodePtr);
   assert(firstNodePtr->next == secondNodePtr);
   assert(secondNodePtr->next == NULL);
 
   // * thirdNodePtr, fourthNodePtr, fifthNodePtr added to tail of linked list sequentially
-  List_insertTail(&head, thirdNodePtr);
-  List_insertTail(&head, fourthNodePtr);
-  List_insertTail(&head, fifthNodePtr);
+  MemoryList_insertTail(&head, thirdNodePtr);
+  MemoryList_insertTail(&head, fourthNodePtr);
+  MemoryList_insertTail(&head, fifthNodePtr);
   assert(head == firstNodePtr);
   assert(firstNodePtr->next == secondNodePtr);
   assert(secondNodePtr->next == thirdNodePtr);
@@ -120,74 +120,74 @@ int main (int argc, char **argv) {
   free(firstNodePtr);
 
   /*
-   * Tests for List_countNodes
+   * Tests for MemoryList_countNodes
    */
   head = NULL;
-  firstNodePtr = List_createNode(22);
-  secondNodePtr = List_createNode(132);
-  thirdNodePtr = List_createNode(43);
-  fourthNodePtr = List_createNode(-123);
-  fifthNodePtr = List_createNode(-234);
+  firstNodePtr = MemoryList_createNode(22);
+  secondNodePtr = MemoryList_createNode(132);
+  thirdNodePtr = MemoryList_createNode(43);
+  fourthNodePtr = MemoryList_createNode(-123);
+  fifthNodePtr = MemoryList_createNode(-234);
 
   // * No nodes added to linked list
-  assert(List_countNodes(head) == 0);
+  assert(MemoryList_countNodes(head) == 0);
 
   // * One node added to linked list (added to tail)
-  List_insertTail(&head, firstNodePtr);
-  assert(List_countNodes(head) == 1);
+  MemoryList_insertTail(&head, firstNodePtr);
+  assert(MemoryList_countNodes(head) == 1);
 
   // * Free memory for firstNodePtr
   free(firstNodePtr);
 
   head = NULL;
-  firstNodePtr = List_createNode(22);
+  firstNodePtr = MemoryList_createNode(22);
 
   // * One node added to linked list (added to head)
-  List_insertHead(&head, firstNodePtr);
-  assert(List_countNodes(head) == 1);
+  MemoryList_insertHead(&head, firstNodePtr);
+  assert(MemoryList_countNodes(head) == 1);
 
   // * Two nodes added to linked list (added to head)
-  List_insertHead(&head, secondNodePtr);
-  assert(List_countNodes(head) == 2);
+  MemoryList_insertHead(&head, secondNodePtr);
+  assert(MemoryList_countNodes(head) == 2);
 
   // * Free memory for firstNodePtr and secondNodePtr
   free(firstNodePtr);
   free(secondNodePtr);
 
   head = NULL;
-  firstNodePtr = List_createNode(22);
-  secondNodePtr = List_createNode(132);
+  firstNodePtr = MemoryList_createNode(22);
+  secondNodePtr = MemoryList_createNode(132);
 
   // * Two nodes added to linked list (added to tail)
-  List_insertTail(&head, firstNodePtr);
-  List_insertTail(&head, secondNodePtr);
-  assert(List_countNodes(head) == 2);
+  MemoryList_insertTail(&head, firstNodePtr);
+  MemoryList_insertTail(&head, secondNodePtr);
+  assert(MemoryList_countNodes(head) == 2);
 
   // * Free memory for secondNodePtr and firstNodePtr
   free(secondNodePtr);
   free(firstNodePtr);
 
   head = NULL;
-  firstNodePtr = List_createNode(22);
-  secondNodePtr = List_createNode(132);
+  firstNodePtr = MemoryList_createNode(22);
+  secondNodePtr = MemoryList_createNode(132);
 
   // * Two nodes added to linked list (first one added to tail, second one added to head)
-  List_insertTail(&head, firstNodePtr);
-  List_insertHead(&head, secondNodePtr);
-  assert(List_countNodes(head) == 2);
+  MemoryList_insertTail(&head, firstNodePtr);
+  MemoryList_insertHead(&head, secondNodePtr);
+  assert(MemoryList_countNodes(head) == 2);
 
   // * Free memory for firstNodePtr and secondNodePtr
   free(firstNodePtr);
   free(secondNodePtr);
 
   head = NULL;
-  firstNodePtr = List_createNode(22);
-  secondNodePtr = List_createNode(132);
+  firstNodePtr = MemoryList_createNode(22);
+  secondNodePtr = MemoryList_createNode(132);
 
   // * Two nodes added to linked list (first one added to head, second one added to tail)
-  List_insertHead(&head, firstNodePtr);
-  List_insertTail(&head, secondNodePtr);
-  assert(List_countNodes(head) == 2);
+  MemoryList_insertHead(&head, firstNodePtr);
+  MemoryList_insertTail(&head, secondNodePtr);
+  assert(MemoryList_countNodes(head) == 2);
 
   // * Free memory for secondNodePtr and firstNodePtr
   free(secondNodePtr);
@@ -196,10 +196,10 @@ int main (int argc, char **argv) {
   head = NULL;
 
   // * Three nodes added to linked list (added to tail)
-  List_insertTail(&head, thirdNodePtr);
-  List_insertTail(&head, fourthNodePtr);
-  List_insertTail(&head, fifthNodePtr);
-  assert(List_countNodes(head) == 3);
+  MemoryList_insertTail(&head, thirdNodePtr);
+  MemoryList_insertTail(&head, fourthNodePtr);
+  MemoryList_insertTail(&head, fifthNodePtr);
+  assert(MemoryList_countNodes(head) == 3);
 
   // * Free memory for fifthNodePtr, fourthNodePtr and thirdNodePtr
   free(fifthNodePtr);
@@ -207,25 +207,25 @@ int main (int argc, char **argv) {
   free(thirdNodePtr);
 
   /*
-   * Tests for List_findNode
+   * Tests for MemoryList_findNode
    */
   head = NULL;
-  firstNodePtr = List_createNode(22);
-  secondNodePtr = List_createNode(132);
-  thirdNodePtr = List_createNode(43);
-  fourthNodePtr = List_createNode(-123);
-  fifthNodePtr = List_createNode(-456);
+  firstNodePtr = MemoryList_createNode(22);
+  secondNodePtr = MemoryList_createNode(132);
+  thirdNodePtr = MemoryList_createNode(43);
+  fourthNodePtr = MemoryList_createNode(-123);
+  fifthNodePtr = MemoryList_createNode(-456);
 
   // * Four nodes added sequentially to the tail
-  List_insertTail(&head, firstNodePtr);
-  List_insertTail(&head, secondNodePtr);
-  List_insertTail(&head, thirdNodePtr);
-  List_insertTail(&head, fourthNodePtr);
-  assert(List_findNode(head, firstNodePtr->item) == firstNodePtr);
-  assert(List_findNode(head, secondNodePtr->item) == secondNodePtr);
-  assert(List_findNode(head, thirdNodePtr->item) == thirdNodePtr);
-  assert(List_findNode(head, fourthNodePtr->item) == fourthNodePtr);
-  assert(List_findNode(head, fifthNodePtr->item) == NULL);
+  MemoryList_insertTail(&head, firstNodePtr);
+  MemoryList_insertTail(&head, secondNodePtr);
+  MemoryList_insertTail(&head, thirdNodePtr);
+  MemoryList_insertTail(&head, fourthNodePtr);
+  assert(MemoryList_findNode(head, firstNodePtr->item) == firstNodePtr);
+  assert(MemoryList_findNode(head, secondNodePtr->item) == secondNodePtr);
+  assert(MemoryList_findNode(head, thirdNodePtr->item) == thirdNodePtr);
+  assert(MemoryList_findNode(head, fourthNodePtr->item) == fourthNodePtr);
+  assert(MemoryList_findNode(head, fifthNodePtr->item) == NULL);
 
   // * Free memory for fifthNodePtr, fourthNodePtr, thirdNodePtr, secondNodePtr and firstNodePtr
   free(fifthNodePtr);
@@ -235,82 +235,82 @@ int main (int argc, char **argv) {
   free(firstNodePtr);
 
   /*
-   * Tests for List_deleteNode
+   * Tests for MemoryList_deleteNode
    */
   head = NULL;
-  firstNodePtr = List_createNode(22);
-  secondNodePtr = List_createNode(132);
-  thirdNodePtr = List_createNode(43);
+  firstNodePtr = MemoryList_createNode(22);
+  secondNodePtr = MemoryList_createNode(132);
+  thirdNodePtr = MemoryList_createNode(43);
 
   // * Remove first node in a linked list with one node (added to the tail)
   int itemToBeRemoved = firstNodePtr->item;
-  List_insertTail(&head, firstNodePtr);
-  List_deleteNode(&head, firstNodePtr);
-  assert(List_findNode(head, itemToBeRemoved) == NULL);
+  MemoryList_insertTail(&head, firstNodePtr);
+  MemoryList_deleteNode(&head, firstNodePtr);
+  assert(MemoryList_findNode(head, itemToBeRemoved) == NULL);
   assert(head == NULL);
 
   // * Remove first node in a linked list with one node (added to the head)
-  firstNodePtr = List_createNode(100);
+  firstNodePtr = MemoryList_createNode(100);
   itemToBeRemoved = firstNodePtr->item;
-  List_insertHead(&head, firstNodePtr);
-  List_deleteNode(&head, firstNodePtr);
-  assert(List_findNode(head, itemToBeRemoved) == NULL);
+  MemoryList_insertHead(&head, firstNodePtr);
+  MemoryList_deleteNode(&head, firstNodePtr);
+  assert(MemoryList_findNode(head, itemToBeRemoved) == NULL);
   assert(head == NULL);
 
   // * Remove first node in a linked list with two nodes
-  firstNodePtr = List_createNode(102);
+  firstNodePtr = MemoryList_createNode(102);
   itemToBeRemoved = firstNodePtr->item;
-  List_insertTail(&head, firstNodePtr);
-  List_insertTail(&head, secondNodePtr);
-  List_deleteNode(&head, firstNodePtr);
-  assert(List_findNode(head, itemToBeRemoved) == NULL);
-  assert(List_findNode(head, secondNodePtr->item) == secondNodePtr);
+  MemoryList_insertTail(&head, firstNodePtr);
+  MemoryList_insertTail(&head, secondNodePtr);
+  MemoryList_deleteNode(&head, firstNodePtr);
+  assert(MemoryList_findNode(head, itemToBeRemoved) == NULL);
+  assert(MemoryList_findNode(head, secondNodePtr->item) == secondNodePtr);
   assert(head == secondNodePtr);
   assert(secondNodePtr->next == NULL);
 
   // * Remove last node in a linked list with two nodes
-  firstNodePtr = List_createNode(111);
+  firstNodePtr = MemoryList_createNode(111);
   itemToBeRemoved = secondNodePtr->item;
-  List_insertHead(&head, firstNodePtr);
-  List_deleteNode(&head, secondNodePtr);
-  assert(List_findNode(head, firstNodePtr->item) == firstNodePtr);
-  assert(List_findNode(head, itemToBeRemoved) == NULL);
+  MemoryList_insertHead(&head, firstNodePtr);
+  MemoryList_deleteNode(&head, secondNodePtr);
+  assert(MemoryList_findNode(head, firstNodePtr->item) == firstNodePtr);
+  assert(MemoryList_findNode(head, itemToBeRemoved) == NULL);
   assert(head == firstNodePtr);
   assert(firstNodePtr->next == NULL);
 
   // * Remove first node in a linked list with three nodes
   itemToBeRemoved = firstNodePtr->item;
-  secondNodePtr = List_createNode(32);
-  List_insertTail(&head, secondNodePtr);
-  List_insertTail(&head, thirdNodePtr);
-  List_deleteNode(&head, firstNodePtr);
-  assert(List_findNode(head, itemToBeRemoved) == NULL);
-  assert(List_findNode(head, secondNodePtr->item) == secondNodePtr);
-  assert(List_findNode(head, thirdNodePtr->item) == thirdNodePtr);
+  secondNodePtr = MemoryList_createNode(32);
+  MemoryList_insertTail(&head, secondNodePtr);
+  MemoryList_insertTail(&head, thirdNodePtr);
+  MemoryList_deleteNode(&head, firstNodePtr);
+  assert(MemoryList_findNode(head, itemToBeRemoved) == NULL);
+  assert(MemoryList_findNode(head, secondNodePtr->item) == secondNodePtr);
+  assert(MemoryList_findNode(head, thirdNodePtr->item) == thirdNodePtr);
   assert(head == secondNodePtr);
   assert(head->next == thirdNodePtr);
   assert(thirdNodePtr->next == NULL);
 
   // * Remove middle node in a linked list with three nodes
   itemToBeRemoved = secondNodePtr->item;
-  firstNodePtr = List_createNode(19);
-  List_insertHead(&head, firstNodePtr);
-  List_deleteNode(&head, secondNodePtr);
-  assert(List_findNode(head, firstNodePtr->item) == firstNodePtr);
-  assert(List_findNode(head, itemToBeRemoved) == NULL);
-  assert(List_findNode(head, thirdNodePtr->item) == thirdNodePtr);
+  firstNodePtr = MemoryList_createNode(19);
+  MemoryList_insertHead(&head, firstNodePtr);
+  MemoryList_deleteNode(&head, secondNodePtr);
+  assert(MemoryList_findNode(head, firstNodePtr->item) == firstNodePtr);
+  assert(MemoryList_findNode(head, itemToBeRemoved) == NULL);
+  assert(MemoryList_findNode(head, thirdNodePtr->item) == thirdNodePtr);
   assert(head == firstNodePtr);
   assert(firstNodePtr->next == thirdNodePtr);
   assert(thirdNodePtr->next == NULL);
 
   // * Remove last node in a linked list with three nodes
-  secondNodePtr = List_createNode(119);
+  secondNodePtr = MemoryList_createNode(119);
   itemToBeRemoved = secondNodePtr->item;
-  List_insertTail(&head, secondNodePtr);
-  List_deleteNode(&head, secondNodePtr);
-  assert(List_findNode(head, firstNodePtr->item) == firstNodePtr);
-  assert(List_findNode(head, thirdNodePtr->item) == thirdNodePtr);
-  assert(List_findNode(head, itemToBeRemoved) == NULL);
+  MemoryList_insertTail(&head, secondNodePtr);
+  MemoryList_deleteNode(&head, secondNodePtr);
+  assert(MemoryList_findNode(head, firstNodePtr->item) == firstNodePtr);
+  assert(MemoryList_findNode(head, thirdNodePtr->item) == thirdNodePtr);
+  assert(MemoryList_findNode(head, itemToBeRemoved) == NULL);
   assert(head == firstNodePtr);
   assert(firstNodePtr->next == thirdNodePtr);
   assert(thirdNodePtr->next == NULL);
@@ -320,38 +320,38 @@ int main (int argc, char **argv) {
   free(firstNodePtr);
 
   /*
-  * Tests for List_sort
+  * Tests for MemoryList_sort
   */
   head = NULL;
-  firstNodePtr = List_createNode(22);
-  secondNodePtr = List_createNode(132);
-  thirdNodePtr = List_createNode(43);
+  firstNodePtr = MemoryList_createNode(22);
+  secondNodePtr = MemoryList_createNode(132);
+  thirdNodePtr = MemoryList_createNode(43);
 
   // * Sorting an empty list
-  List_sort(&head);
+  MemoryList_sort(&head);
   assert(head == NULL);
 
   // * Sorting a list with one entry (added to the head)
-  List_insertHead(&head, firstNodePtr);
-  List_sort(&head);
+  MemoryList_insertHead(&head, firstNodePtr);
+  MemoryList_sort(&head);
   assert(head == firstNodePtr);
   assert(head->item == 22);
   assert(head->next == NULL);
 
   // * Free memory for firstNodePtr
-  List_deleteNode(&head, firstNodePtr);
+  MemoryList_deleteNode(&head, firstNodePtr);
 
   // * Sorting a list with one entry (added to the tail)
-  firstNodePtr = List_createNode(2);
-  List_insertTail(&head, firstNodePtr);
-  List_sort(&head);
+  firstNodePtr = MemoryList_createNode(2);
+  MemoryList_insertTail(&head, firstNodePtr);
+  MemoryList_sort(&head);
   assert(head == firstNodePtr);
   assert(head->item == 2);
   assert(head->next == NULL);
 
   // * Sorting a list with two entries (originally unsorted)
-  List_insertHead(&head, secondNodePtr);
-  List_sort(&head);
+  MemoryList_insertHead(&head, secondNodePtr);
+  MemoryList_sort(&head);
   assert(head == firstNodePtr);
   assert(head->item == 2);
   assert(head->next == secondNodePtr);
@@ -361,12 +361,12 @@ int main (int argc, char **argv) {
   assert(secondNodePtr->next == NULL);
 
   // * Free memory for secondNodePtr
-  List_deleteNode(&head, secondNodePtr);
+  MemoryList_deleteNode(&head, secondNodePtr);
 
   // * Sorting a list with two entries (originally sorted with different item values)
-  secondNodePtr = List_createNode(100);
-  List_insertTail(&head, secondNodePtr);
-  List_sort(&head);
+  secondNodePtr = MemoryList_createNode(100);
+  MemoryList_insertTail(&head, secondNodePtr);
+  MemoryList_sort(&head);
   assert(head == firstNodePtr);
   assert(head->item == 2);
   assert(head->next == secondNodePtr);
@@ -376,15 +376,15 @@ int main (int argc, char **argv) {
   assert(secondNodePtr->next == NULL);
 
   // * Free memory for secondNodePtr and firstNodePtr
-  List_deleteNode(&head, secondNodePtr);
-  List_deleteNode(&head, firstNodePtr);
+  MemoryList_deleteNode(&head, secondNodePtr);
+  MemoryList_deleteNode(&head, firstNodePtr);
 
   // * Sorting a list with two entries (originally sorted with the same item values)
-  firstNodePtr = List_createNode(7);
-  List_insertTail(&head, firstNodePtr);
-  secondNodePtr = List_createNode(7);
-  List_insertTail(&head, secondNodePtr);
-  List_sort(&head);
+  firstNodePtr = MemoryList_createNode(7);
+  MemoryList_insertTail(&head, firstNodePtr);
+  secondNodePtr = MemoryList_createNode(7);
+  MemoryList_insertTail(&head, secondNodePtr);
+  MemoryList_sort(&head);
   assert(head == firstNodePtr);
   assert(head->item == 7);
   assert(head->next == secondNodePtr);
@@ -394,16 +394,16 @@ int main (int argc, char **argv) {
   assert(secondNodePtr->next == NULL);
 
   // * Free memory for secondNodePtr and firstNodePtr
-  List_deleteNode(&head, secondNodePtr);
-  List_deleteNode(&head, firstNodePtr);
+  MemoryList_deleteNode(&head, secondNodePtr);
+  MemoryList_deleteNode(&head, firstNodePtr);
 
   // * Sorting a list with three entries (smallest at the front and largest at the end)
-  firstNodePtr = List_createNode(-20);
-  List_insertHead(&head, firstNodePtr);
-  secondNodePtr = List_createNode(10);
-  List_insertTail(&head, secondNodePtr);
-  List_insertTail(&head, thirdNodePtr);
-  List_sort(&head);
+  firstNodePtr = MemoryList_createNode(-20);
+  MemoryList_insertHead(&head, firstNodePtr);
+  secondNodePtr = MemoryList_createNode(10);
+  MemoryList_insertTail(&head, secondNodePtr);
+  MemoryList_insertTail(&head, thirdNodePtr);
+  MemoryList_sort(&head);
   assert(head == firstNodePtr);
   assert(head->item == -20);
   assert(head->next == secondNodePtr);
@@ -416,15 +416,15 @@ int main (int argc, char **argv) {
   assert(thirdNodePtr->next == NULL);
 
   // * Free memory for secondNodePtr and firstNodePtr
-  List_deleteNode(&head, secondNodePtr);
-  List_deleteNode(&head, firstNodePtr);
+  MemoryList_deleteNode(&head, secondNodePtr);
+  MemoryList_deleteNode(&head, firstNodePtr);
 
   // * Sorting a list with three entries (largest at the front and smallest at the end)
-  firstNodePtr = List_createNode(1);
-  List_insertTail(&head, firstNodePtr);
-  secondNodePtr = List_createNode(-20);
-  List_insertTail(&head, secondNodePtr);
-  List_sort(&head);
+  firstNodePtr = MemoryList_createNode(1);
+  MemoryList_insertTail(&head, firstNodePtr);
+  secondNodePtr = MemoryList_createNode(-20);
+  MemoryList_insertTail(&head, secondNodePtr);
+  MemoryList_sort(&head);
   assert(head == secondNodePtr);
   assert(head->item == -20);
   assert(head->next == firstNodePtr);
@@ -437,20 +437,20 @@ int main (int argc, char **argv) {
   assert(thirdNodePtr->next == NULL);
 
   // * Free memory for firstNodePtr, secondNodePtr and thirdNodePtr
-  List_deleteNode(&head, thirdNodePtr);
-  List_deleteNode(&head, firstNodePtr);
-  List_deleteNode(&head, secondNodePtr);
+  MemoryList_deleteNode(&head, thirdNodePtr);
+  MemoryList_deleteNode(&head, firstNodePtr);
+  MemoryList_deleteNode(&head, secondNodePtr);
 
   // * Sorting a list with four entries (smallest at the front and largest at the end)
-  firstNodePtr = List_createNode(0);
-  List_insertHead(&head, firstNodePtr);
-  secondNodePtr = List_createNode(5);
-  List_insertTail(&head, secondNodePtr);
-  thirdNodePtr = List_createNode(10);
-  List_insertTail(&head, thirdNodePtr);
-  fourthNodePtr = List_createNode(-20);
-  List_insertHead(&head, fourthNodePtr);
-  List_sort(&head);
+  firstNodePtr = MemoryList_createNode(0);
+  MemoryList_insertHead(&head, firstNodePtr);
+  secondNodePtr = MemoryList_createNode(5);
+  MemoryList_insertTail(&head, secondNodePtr);
+  thirdNodePtr = MemoryList_createNode(10);
+  MemoryList_insertTail(&head, thirdNodePtr);
+  fourthNodePtr = MemoryList_createNode(-20);
+  MemoryList_insertHead(&head, fourthNodePtr);
+  MemoryList_sort(&head);
   assert(head == fourthNodePtr);
   assert(head->next == firstNodePtr);
   assert(head->next->next == secondNodePtr);
@@ -466,23 +466,23 @@ int main (int argc, char **argv) {
   assert(thirdNodePtr->next == NULL);
 
   // * Free memory for firstNodePtr, secondNodePtr and thirdNodePtr
-  List_deleteNode(&head, thirdNodePtr);
-  List_deleteNode(&head, firstNodePtr);
-  List_deleteNode(&head, secondNodePtr);
-  List_deleteNode(&head, fourthNodePtr);
+  MemoryList_deleteNode(&head, thirdNodePtr);
+  MemoryList_deleteNode(&head, firstNodePtr);
+  MemoryList_deleteNode(&head, secondNodePtr);
+  MemoryList_deleteNode(&head, fourthNodePtr);
 
   // * Sorting a list with five entries (smallest at the front and largest at the end)
-  firstNodePtr = List_createNode(0);
-  List_insertHead(&head, firstNodePtr);
-  secondNodePtr = List_createNode(5);
-  List_insertTail(&head, secondNodePtr);
-  thirdNodePtr = List_createNode(5);
-  List_insertTail(&head, thirdNodePtr);
-  fourthNodePtr = List_createNode(-20);
-  List_insertHead(&head, fourthNodePtr);
-  fifthNodePtr = List_createNode(10);
-  List_insertTail(&head, fifthNodePtr);
-  List_sort(&head);
+  firstNodePtr = MemoryList_createNode(0);
+  MemoryList_insertHead(&head, firstNodePtr);
+  secondNodePtr = MemoryList_createNode(5);
+  MemoryList_insertTail(&head, secondNodePtr);
+  thirdNodePtr = MemoryList_createNode(5);
+  MemoryList_insertTail(&head, thirdNodePtr);
+  fourthNodePtr = MemoryList_createNode(-20);
+  MemoryList_insertHead(&head, fourthNodePtr);
+  fifthNodePtr = MemoryList_createNode(10);
+  MemoryList_insertTail(&head, fifthNodePtr);
+  MemoryList_sort(&head);
   assert(head == fourthNodePtr);
   assert(head->next == firstNodePtr);
   assert(head->next->next == secondNodePtr);
@@ -501,11 +501,11 @@ int main (int argc, char **argv) {
   assert(fifthNodePtr->next == NULL);
 
   // * Free memory for firstNodePtr, secondNodePtr and thirdNodePtr
-  List_deleteNode(&head, thirdNodePtr);
-  List_deleteNode(&head, firstNodePtr);
-  List_deleteNode(&head, secondNodePtr);
-  List_deleteNode(&head,fourthNodePtr);
-  List_deleteNode(&head,fifthNodePtr);
+  MemoryList_deleteNode(&head, thirdNodePtr);
+  MemoryList_deleteNode(&head, firstNodePtr);
+  MemoryList_deleteNode(&head, secondNodePtr);
+  MemoryList_deleteNode(&head,fourthNodePtr);
+  MemoryList_deleteNode(&head,fifthNodePtr);
 
   assert(head == NULL);
 
