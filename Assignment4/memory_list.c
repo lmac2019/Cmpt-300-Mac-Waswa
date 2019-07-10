@@ -101,6 +101,19 @@ void List_deleteNode (struct memoryNodePtr* headRef, struct memoryNodePtr node) 
   }
 }
 
+/*
+ * Deletes all nodes from the list and free memory allocated to them.
+ */
+void List_deleteAllNodes (struct memoryNodePtr* headRef) {
+  if (*headRef == NULL) {
+    return;
+  }
+
+  do {
+    List_deleteNode(headRef, *headRef);
+  } while (*headRef != NULL);
+}
+
  /*
   * Sort the list in ascending order based on the block size.
   * Any sorting algorithm is fine.

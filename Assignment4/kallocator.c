@@ -18,16 +18,24 @@ struct KAllocator kallocator;
  */
 void initialize_allocator (int _size, enum allocation_algorithm _aalgorithm) {
   assert(_size > 0);
+
+  // * Initialize allocation algorithm
   kallocator.aalgorithm = _aalgorithm;
+
+  // * Initialize contiguous memory chunk size
   kallocator.size = _size;
+
+  // * Initialize dynamic contiguous memory 
   kallocator.memory = malloc((size_t)kallocator.size);
 
+  // * Initialize free memory
   struct memoryNodePtr init_free_memory = (struct memoryNodePtr) malloc(sizeof(struct memoryNode));
   init_free_memory->current = kallocator.memory;
   init_free_memory->block_size = kallocator.size;
   init_free_memory->next = NULL;
   List_insertHead(&kallocator.free_memory_head, init_free_memory);
 
+  // * Initialize allocated memory
   kallocator.allocated_memory_head = NULL;
 }
 
@@ -35,8 +43,14 @@ void initialize_allocator (int _size, enum allocation_algorithm _aalgorithm) {
  * Frees all dynamic memory associated with the allocator
  */
 void destroy_allocator () {
+  // * Frees contiguous memory chunk
   free(kallocator.memory);
-  // free other dynamic allocated memory to avoid memory leak
+
+  // * Frees all free memory
+  List_deleteAllNodes(&kallocator.free_memory_head);
+
+  // * Frees all allocated memory
+  List_deleteAllNodes(&kallocator.allocated_memory_head);
 }
 
 /*

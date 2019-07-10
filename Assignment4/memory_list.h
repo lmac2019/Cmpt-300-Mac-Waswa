@@ -18,6 +18,7 @@ void List_insertTail(struct memoryNodePtr* headRef, struct memoryNodePtr node);
 int List_countNodes(struct memoryNodePtr head);
 struct memoryNodePtr List_findNode(struct memoryNodePtr head, voidPtr block);
 void List_deleteNode(struct memoryNodePtr* headRef, struct memoryNodePtr node);
+void List_deleteAllNodes(struct memoryNodePtr* headRef);
 void List_sort(struct memoryNodePtr* headRef);
 
 #endif
