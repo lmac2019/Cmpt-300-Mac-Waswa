@@ -83,6 +83,7 @@ voidPtr kalloc (int _size) {
           allocated_memory->block_size = _size;
           allocated_memory->next = NULL;
           MemoryList_insertTail(&kallocator.allocated_memory_head, allocated_memory);
+          MemoryList_sort(&kallocator.allocated_memory_head);
 
           break;
         }
@@ -111,6 +112,30 @@ voidPtr kalloc (int _size) {
  */
 void kfree (voidPtr _ptr) {
   assert(_ptr != NULL);
+
+  for (struct memoryNodePtr currentMemoryNodePtr = kallocator.allocated_memory_head; currentMemoryNodePtr != NULL; currentMemoryNodePtr = currentMemoryNodePtr->next) {
+    if (currentMemoryNodePtr->current == _ptr) {
+      struct memoryNodePtr free_memory = (struct memoryNodePtr) malloc(sizeof(struct memoryNode));
+
+      // * Add node to free memory
+      free_memory->current = currentMemoryNodePtr->current;
+      free_memory->block_size = currentMemoryNodePtr->block_size;
+      free_memory->next = NULL;
+      MemoryList_insertTail(&kallocator.free_memory_head, free_memory);
+      MemoryList_sort(&kallocator.free_memory_head);
+
+      if (free_memory->current + free_memory->block_size == ((struct memoryNodePtr)free_memory->next)->current) {
+        // * Combine consecutive free memory blocks
+        free_memory->block_size += ((struct memoryNodePtr)free_memory->next)->block_size;
+        MemoryList_deleteNode(&kallocator.free_memory_head, free_memory->next);
+      }
+
+      // * Remove node from allocated memory
+      MemoryList_deleteNode(&kallocator.allocated_memory_head, currentMemoryNodePtr);
+
+      break;
+    }
+  }
 }
 
 int compact_allocation (voidPtr* _before, voidPtr* _after) {

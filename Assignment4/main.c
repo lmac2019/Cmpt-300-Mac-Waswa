@@ -35,11 +35,11 @@ int main (int argc, charPtr argv[]) {
 
   printf("available_memory %d", available_memory());
 
-  voidPtr before[100] = { NULL };
-  voidPtr after[100] = { NULL };
-  compact_allocation(before, after);
+  // voidPtr before[100] = { NULL };
+  // voidPtr after[100] = { NULL };
+  // compact_allocation(before, after);
 
-  print_statistics();
+  // print_statistics();
 
   destroy_allocator();
 
