@@ -18,7 +18,7 @@ int main (int argc, charPtr argv[]) {
   }
   intPtr p[50] = { NULL };
   for (int i = 0; i < 10; ++i) {
-    p[i] = kalloc(sizeof(int));
+    p[i] = kalloc(i+4);
     if (p[i] == NULL) {
       print_allocator_message("Allocation failed");
       continue;
@@ -38,7 +38,14 @@ int main (int argc, charPtr argv[]) {
     kfree(p[i]);
     p[i] = NULL;
   }
-
+  print_statistics();
+  p[1] = kalloc(sizeof(int));
+  if (p[1] == NULL) {
+    print_allocator_message("Allocation failed");
+  }
+  *(p[1]) = 444;
+  printf("p[%d] = %p; *p[%d] = %d\n", 1, p[1], 1, *(p[1]));
+  print_statistics();
   printf("available_memory %d", available_memory());
 
   // voidPtr before[100] = { NULL };

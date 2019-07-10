@@ -122,6 +122,7 @@ voidPtr kalloc (int _size) {
       allocated_memory->next = NULL;
       MemoryList_insertTail(&kallocator.allocated_memory_head, allocated_memory);
       MemoryList_sort(&kallocator.allocated_memory_head);
+      break;
     }
     case WORST_FIT: {
       print_allocator_message("WORST FIT");
