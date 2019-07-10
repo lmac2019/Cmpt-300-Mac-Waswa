@@ -122,17 +122,27 @@ int compact_allocation (voidPtr* _before, voidPtr* _after) {
   return compacted_size;
 }
 
+/*
+ * Returns the available memory size
+ */
 int available_memory () {
   int available_memory_size = 0;
-  // Calculate available memory size
+
+  for (struct memoryNodePtr currentMemoryNodePtr = kallocator.free_memory_head; currentMemoryNodePtr != NULL; currentMemoryNodePtr = currentMemoryNodePtr->next) {
+    available_memory_size += currentMemoryNodePtr->block_size;
+  }
+
   return available_memory_size;
 }
 
+/*
+ * Prints the detailed statistics of the program
+ */
 void print_statistics () {
   int allocated_size = 0;
-  int allocated_chunks = 0;
-  int free_size = 0;
-  int free_chunks = 0;
+  int allocated_chunks = MemoryList_countNodes(kallocator.allocated_memory_head);
+  int free_size = available_memory();
+  int free_chunks = MemoryList_countNodes(kallocator.free_memory_head);
   int smallest_free_chunk_size = kallocator.size;
   int largest_free_chunk_size = 0;
 

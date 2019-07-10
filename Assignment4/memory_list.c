@@ -134,7 +134,7 @@ void MemoryList_sort (struct memoryNodePtr* headRef) {
 
     for (tempNodePtr = *headRef, previousNodePtr = *headRef; tempNodePtr->next != NULL; tempNodePtr = tempNodePtr->next) {
 
-      if ((tempNodePtr == previousNodePtr) && (tempNodePtr->block_size > ((struct memoryNodePtr)tempNodePtr->next)->block_size)) {
+      if ((tempNodePtr == previousNodePtr) && (tempNodePtr->current > ((struct memoryNodePtr)tempNodePtr->next)->current)) {
 
         struct memoryNodePtr afterTempNodePtrNextPtr = ((struct memoryNodePtr)tempNodePtr->next)->next;
 
@@ -147,7 +147,7 @@ void MemoryList_sort (struct memoryNodePtr* headRef) {
 
         sort = KEEP_SORTING;
 
-      } else if (tempNodePtr->block_size > ((struct memoryNodePtr)tempNodePtr->next)->block_size) {
+      } else if (tempNodePtr->current > ((struct memoryNodePtr)tempNodePtr->next)->current) {
 
         struct memoryNodePtr currentNodePtr = tempNodePtr;
         struct memoryNodePtr afterTempNodePtrNextPtr = ((struct memoryNodePtr)tempNodePtr->next)->next;
