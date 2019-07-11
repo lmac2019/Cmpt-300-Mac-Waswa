@@ -6,6 +6,5 @@
 #define voidPtr void*
 #define intPtr int*
 #define charPtr char*
-#define boolPtr bool*
 
 #endif

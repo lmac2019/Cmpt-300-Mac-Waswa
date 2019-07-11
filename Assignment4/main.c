@@ -33,13 +33,26 @@ int main (int argc, charPtr argv[]) {
     p[i] = NULL;
   }
 
-  printf("available_memory %d", available_memory());
+  printf("available_memory %d\n", available_memory());
 
-  // voidPtr before[100] = { NULL };
-  // voidPtr after[100] = { NULL };
-  // compact_allocation(before, after);
+  voidPtr before[100] = { NULL };
+  voidPtr after[100] = { NULL };
+  int num_compacted_blocks = compact_allocation(before, after);
 
-  // print_statistics();
+  for (int i = 0; i < num_compacted_blocks; i++) {
+    int j = -1;
+    do {
+      j++;
+    } while (before[i] != p[j]);
+    
+    p[j] = after[i];
+  }
+
+  print_statistics();
+
+  for (int i = 0; i < 10; i += 2) {
+    printf("p[%d] = %p; *p[%d] = %d\n", i, p[i], i, *(p[i]));
+  }
 
   destroy_allocator();
 

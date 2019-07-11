@@ -88,6 +88,7 @@ voidPtr kalloc (int _size) {
           break;
         }
       }
+
       break;
     }
     case BEST_FIT: {
@@ -138,11 +139,42 @@ void kfree (voidPtr _ptr) {
   }
 }
 
+/*
+ * Handles compaction of allocated memory into a contiguous block of allocated memory
+ * Returns the number of compacted memory blocks
+ * _before: an array of pointers of original locations of allocated memory that have been moved
+ * _after: an array of pointers of new locations of allocated memory that have been moved
+ */
 int compact_allocation (voidPtr* _before, voidPtr* _after) {
   int compacted_size = 0;
 
-  // compact allocated memory
-  // update _before, _after and compacted_size
+  MemoryList_sort(&kallocator.allocated_memory_head);
+
+  int nodePtrOffset = 0;
+  int location_index = 0;
+  for (struct memoryNodePtr currentNodePtr = kallocator.allocated_memory_head; currentNodePtr != NULL; currentNodePtr = currentNodePtr->next)  {
+    _before[location_index] = currentNodePtr->current;
+
+    memmove(kallocator.memory + nodePtrOffset, currentNodePtr->current, currentNodePtr->block_size);
+    currentNodePtr->current = kallocator.memory + nodePtrOffset;
+
+    _after[location_index] = currentNodePtr->current;
+    
+    nodePtrOffset += currentNodePtr->block_size;
+
+    location_index++;
+    compacted_size++;
+  }
+
+  if (MemoryList_countNodes(kallocator.free_memory_head) > 0) {
+    MemoryList_deleteAllNodes(&kallocator.free_memory_head);
+
+    struct memoryNodePtr free_memory = (struct memoryNodePtr) malloc(sizeof(struct memoryNode));
+    free_memory->current = kallocator.memory + nodePtrOffset;
+    free_memory->block_size = kallocator.size - allocated_memory();
+    free_memory->next = NULL;
+    MemoryList_insertTail(&kallocator.free_memory_head, free_memory);
+  }
 
   return compacted_size;
 }
