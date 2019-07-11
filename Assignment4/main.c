@@ -39,20 +39,37 @@ int main (int argc, charPtr argv[]) {
     p[i] = NULL;
   }
   print_statistics();
-  p[1] = kalloc(sizeof(int));
-  if (p[1] == NULL) {
-    print_allocator_message("Allocation failed");
-  }
-  *(p[1]) = 444;
-  printf("p[%d] = %p; *p[%d] = %d\n", 1, p[1], 1, *(p[1]));
-  print_statistics();
-  printf("available_memory %d", available_memory());
+
+  // p[1] = kalloc(sizeof(int));
+  // if (p[1] == NULL) {
+  //   print_allocator_message("Allocation failed");
+  // }
+  // *(p[1]) = 444;
+  // printf("p[%d] = %p; *p[%d] = %d\n", 1, p[1], 1, *(p[1]));
+  // print_statistics();
+  // printf("available_memory %d", available_memory());
 
   print_statistics();
 
-  for (int i = 0; i < 10; i += 2) {
-    printf("p[%d] = %p; *p[%d] = %d\n", i, p[i], i, *(p[i]));
-  }
+  printf("compact_allocation!\n");
+    voidPtr before[100] = { NULL };
+    voidPtr after[100] = { NULL };
+    int num_compacted_blocks = compact_allocation(before, after);
+
+    for (int i = 0; i < num_compacted_blocks; i++) {
+      int j = -1;
+      do {
+        j++;
+      } while (before[i] != p[j]);
+
+      p[j] = after[i];
+    }
+
+    print_statistics();
+
+    for (int i = 0; i < 10; i += 2) {
+      printf("p[%d] = %p; *p[%d] = %d\n", i, p[i], i, *(p[i]));
+    }
 
   destroy_allocator();
 
