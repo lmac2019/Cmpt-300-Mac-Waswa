@@ -186,10 +186,15 @@ void kfree (voidPtr _ptr) {
       MemoryList_insertTail(&kallocator.free_memory_head, free_memory);
       MemoryList_sort(&kallocator.free_memory_head);
 
-      if (free_memory->current + free_memory->block_size == ((struct memoryNodePtr)free_memory->next)->current) {
-        // * Combine consecutive free memory blocks
-        free_memory->block_size += ((struct memoryNodePtr)free_memory->next)->block_size;
-        MemoryList_deleteNode(&kallocator.free_memory_head, free_memory->next);
+      // * Merge consecutive free memory blocks
+      for (struct memoryNodePtr freeMemoryPtr = (struct memoryNodePtr) kallocator.free_memory_head; freeMemoryPtr != NULL; ) {
+        if (freeMemoryPtr->next && (freeMemoryPtr->current + freeMemoryPtr->block_size == ((struct memoryNodePtr) freeMemoryPtr->next)->current)) {
+          freeMemoryPtr->block_size += ((struct memoryNodePtr)freeMemoryPtr->next)->block_size;
+          MemoryList_deleteNode(&kallocator.free_memory_head, freeMemoryPtr->next);
+          continue;
+        } else {
+          freeMemoryPtr = freeMemoryPtr->next;
+        }
       }
 
       // * Remove node from allocated memory

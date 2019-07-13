@@ -1,77 +1,81 @@
 #include "kallocator.h"
-#include <string.h>
+#include "fit_tests.h"
 
 int main (int argc, charPtr argv[]) {
-  if(!strcmp(argv[1], "f")){
-    initialize_allocator(100, FIRST_FIT);
-    print_allocator_message("Using first fit algorithm on memory size 100");
-  }
+  // initialize_allocator(100, FIRST_FIT);
+  // print_allocator_message("Using first fit algorithm on memory size 100");
 
-  if(!strcmp(argv[1], "b")){
-    initialize_allocator(100, BEST_FIT);
-    printf("Using best fit algorithm on memory size 100\n");
-  }
+  // // initialize_allocator(100, BEST_FIT);
+  // // printf("Using best fit algorithm on memory size 100\n");
 
-  if(!strcmp(argv[1], "w")){
-    initialize_allocator(100, WORST_FIT);
-    printf("Using worst fit algorithm on memory size 100\n");
-  }
-  intPtr p[50] = { NULL };
-  for (int i = 0; i < 10; ++i) {
-    p[i] = kalloc(i+4);
-    if (p[i] == NULL) {
-      print_allocator_message("Allocation failed");
-      continue;
-    }
-    *(p[i]) = i;
-    printf("p[%d] = %p; *p[%d] = %d\n", i, p[i], i, *(p[i]));
-  }
+  // // initialize_allocator(100, WORST_FIT);
+  // // printf("Using worst fit algorithm on memory size 100\n");
 
-  print_statistics();
-
-  for (int i = 0; i < 10; ++i) {
-    if (i % 2 == 0) {
-      continue;
-    }
-
-    printf("Freeing p[%d]\n", i);
-    kfree(p[i]);
-    p[i] = NULL;
-  }
-  print_statistics();
-
-  // p[1] = kalloc(sizeof(int));
-  // if (p[1] == NULL) {
-  //   print_allocator_message("Allocation failed");
+  // intPtr p[50] = { NULL };
+  // for (int i = 0; i < 10; ++i) {
+  //   p[i] = kalloc(sizeof(int));
+  //   if (p[i] == NULL) {
+  //     print_allocator_message("Allocation failed");
+  //     continue;
+  //   }
+  //   *(p[i]) = i;
+  //   printf("p[%d] = %p; *p[%d] = %d\n", i, p[i], i, *(p[i]));
   // }
-  // *(p[1]) = 444;
-  // printf("p[%d] = %p; *p[%d] = %d\n", 1, p[1], 1, *(p[1]));
+
   // print_statistics();
-  // printf("available_memory %d", available_memory());
 
-  print_statistics();
+  // for (int i = 0; i < 10; ++i) {
+  //   if (i % 2 == 0) {
+  //     continue;
+  //   }
 
-  printf("compact_allocation!\n");
-    voidPtr before[100] = { NULL };
-    voidPtr after[100] = { NULL };
-    int num_compacted_blocks = compact_allocation(before, after);
+  //   printf("Freeing p[%d]\n", i);
+  //   kfree(p[i]);
+  //   p[i] = NULL;
+  // }
 
-    for (int i = 0; i < num_compacted_blocks; i++) {
-      int j = -1;
-      do {
-        j++;
-      } while (before[i] != p[j]);
+  // printf("available_memory %d\n", available_memory());
 
-      p[j] = after[i];
-    }
+  // voidPtr before[100] = { NULL };
+  // voidPtr after[100] = { NULL };
+  // int num_compacted_blocks = compact_allocation(before, after);
 
-    print_statistics();
+  // for (int i = 0; i < num_compacted_blocks; i++) {
+  //   int j = -1;
+  //   do {
+  //     j++;
+  //   } while (before[i] != p[j]);
 
-    for (int i = 0; i < 10; i += 2) {
-      printf("p[%d] = %p; *p[%d] = %d\n", i, p[i], i, *(p[i]));
-    }
+  //   p[j] = after[i];
+  // }
 
-  destroy_allocator();
+  // print_statistics();
+
+  // for (int i = 0; i < 10; i += 2) {
+  //   printf("p[%d] = %p; *p[%d] = %d\n", i, p[i], i, *(p[i]));
+  // }
+
+
+  // destroy_allocator();
+
+  // * First Fit Tests
+  fill_integers(FIRST_FIT);
+
+  larger_left_most_space_smaller_right_most_space(FIRST_FIT);
+  smaller_left_most_space_larger_right_most_space(FIRST_FIT);
+  equal_spaces_left_most_right_most(FIRST_FIT);
+
+  larger_left_most_space_smaller_to_the_right(FIRST_FIT);
+  smaller_left_most_space_larger_to_the_right(FIRST_FIT);
+  equal_spaces_left_most_to_the_right(FIRST_FIT);
+
+  larger_on_the_left_space_smaller_right_most_space(FIRST_FIT);
+  smaller_on_the_left_space_larger_right_most_space(FIRST_FIT);
+  equal_spaces_on_the_left_right_most(FIRST_FIT);
+
+  larger_on_left_space_smaller_to_the_right(FIRST_FIT);
+  smaller_on_left_space_larger_to_the_right(FIRST_FIT);
+  equal_spaces_on_the_left_to_the_right(FIRST_FIT);
 
   return 0;
 }
