@@ -1,5 +1,6 @@
 #include "kallocator.h"
 #include "fit_tests.h"
+#include "compact_allocation_tests.h"
 
 int main (int argc, charPtr argv[]) {
   // initialize_allocator(100, FIRST_FIT);

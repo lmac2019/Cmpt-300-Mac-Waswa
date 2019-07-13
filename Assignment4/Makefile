@@ -1,5 +1,5 @@
 TARGET = kallocation
-OBJS = main.o kallocator.o memory_list.o allocator_helpers.o fit_tests.o
+OBJS = main.o kallocator.o memory_list.o allocator_helpers.o fit_tests.o compact_allocation_tests.o
 
 CFLAGS = -Wall -g -std=c99 -D_POSIX_C_SOURCE=199309L
 CC = gcc
