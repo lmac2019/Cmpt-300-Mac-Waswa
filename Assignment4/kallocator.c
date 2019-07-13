@@ -59,6 +59,10 @@ void destroy_allocator () {
  * _size: the size of the block of memory to return
  */
 voidPtr kalloc (int _size) {
+  if(_size > MemoryList_findLargestBlockSize(kallocator.free_memory_head)){
+    printf("Error: inserting memory larger than largest free chunk\n");
+    exit(-1);
+  }
   voidPtr ptr = NULL;
   switch (kallocator.aalgorithm) {
     case FIRST_FIT: {
@@ -225,7 +229,7 @@ int compact_allocation (voidPtr* _before, voidPtr* _after) {
     currentNodePtr->current = kallocator.memory + nodePtrOffset;
 
     _after[location_index] = currentNodePtr->current;
-    
+
     nodePtrOffset += currentNodePtr->block_size;
 
     location_index++;
