@@ -59,6 +59,10 @@ void destroy_allocator () {
  * _size: the size of the block of memory to return
  */
 voidPtr kalloc (int _size) {
+  if(_size <= 0){
+    printf("Error: kalloc memory less or equal to 0\n");
+    exit(-1);
+  }
   if(_size > MemoryList_findLargestBlockSize(kallocator.free_memory_head)){
     printf("Error: inserting memory larger than largest free chunk\n");
     exit(-1);
