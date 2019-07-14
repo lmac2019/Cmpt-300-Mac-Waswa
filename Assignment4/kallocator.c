@@ -100,16 +100,16 @@ voidPtr kalloc (int _size) {
     }
     case BEST_FIT: {
       struct memoryNodePtr temp_memory;
-      int tempblock = 0;
+      int temp_block = 0;
       for (struct memoryNodePtr currentMemoryNodePtr = kallocator.free_memory_head; currentMemoryNodePtr != NULL; currentMemoryNodePtr = currentMemoryNodePtr->next) {
         if (_size <= currentMemoryNodePtr->block_size) {
-          if(tempblock == 0){
-            tempblock = currentMemoryNodePtr->block_size;
+          if (temp_block == 0){
+            temp_block = currentMemoryNodePtr->block_size;
             temp_memory = currentMemoryNodePtr;
             ptr = currentMemoryNodePtr->current;
           }
-          else if(tempblock > currentMemoryNodePtr->block_size){
-            tempblock = currentMemoryNodePtr->block_size;
+          else if (temp_block > currentMemoryNodePtr->block_size) {
+            temp_block = currentMemoryNodePtr->block_size;
             temp_memory = currentMemoryNodePtr;
             ptr = temp_memory -> current;
           }
