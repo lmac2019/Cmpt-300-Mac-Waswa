@@ -16,7 +16,7 @@ int main (int argc, charPtr argv[]) {
 
 
   // * Worst Fit Tests
-  fill_integers(WORST_FIT);
+  fit_fill_integers(WORST_FIT);
 
   larger_left_most_space_smaller_right_most_space(WORST_FIT);
   smaller_left_most_space_larger_right_most_space(WORST_FIT);
@@ -36,7 +36,7 @@ int main (int argc, charPtr argv[]) {
 
 
   // * Best Fit Tests
-  fill_integers(BEST_FIT);
+  fit_fill_integers(BEST_FIT);
 
   larger_left_most_space_smaller_right_most_space(BEST_FIT);
   smaller_left_most_space_larger_right_most_space(BEST_FIT);
@@ -53,6 +53,7 @@ int main (int argc, charPtr argv[]) {
   larger_on_left_space_smaller_to_the_right(BEST_FIT);
   smaller_on_left_space_larger_to_the_right(BEST_FIT);
   equal_spaces_on_the_left_to_the_right(BEST_FIT);
+
 
   // * Compact Allocation Tests
   compact_allocation_scattered_characters();
