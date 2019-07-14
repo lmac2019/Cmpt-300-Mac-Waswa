@@ -1,14 +1,13 @@
 #include "fit_tests.h"
 
 /*
- * Performs a test for integers that fill up the 
+ * Performs a fit test for integers that fill up the 
  * contiguous memory allocator
  * algorithm: type of allocation algorithm to be used
  */
-void fill_integers (enum allocation_algorithm algorithm) {
+void fit_fill_integers (enum allocation_algorithm algorithm) {
   int size = 24;
-  print_allocator_message("\nfill_integers\n");
-  printf("Initializing FIRST_FIT with %d bytes of memory\n", size);
+  print_allocator_message("\nfit_fill_integers\n");
 
   initialize_allocator(size, algorithm);
 
@@ -40,7 +39,6 @@ void fill_integers (enum allocation_algorithm algorithm) {
 void larger_left_most_space_smaller_right_most_space (enum allocation_algorithm algorithm) {
   int size = 24;
   print_allocator_message("\nlarger_left_most_space_smaller_right_most_space\n");
-  printf("Initializing FIRST_FIT with %d bytes of memory\n", size);
 
   initialize_allocator(size, algorithm);
 
@@ -101,7 +99,6 @@ void larger_left_most_space_smaller_right_most_space (enum allocation_algorithm 
 void smaller_left_most_space_larger_right_most_space (enum allocation_algorithm algorithm) {
   int size = 24;
   print_allocator_message("\nsmaller_left_most_space_larger_right_most_space\n");
-  printf("Initializing FIRST_FIT with %d bytes of memory\n", size);
 
   initialize_allocator(size, algorithm);
 
@@ -161,7 +158,6 @@ void smaller_left_most_space_larger_right_most_space (enum allocation_algorithm 
 void equal_spaces_left_most_right_most (enum allocation_algorithm algorithm) {
   int size = 24;
   print_allocator_message("\nequal_spaces_left_most_right_most\n");
-  printf("Initializing FIRST_FIT with %d bytes of memory\n", size);
 
   initialize_allocator(size, algorithm);
 
@@ -222,7 +218,6 @@ void equal_spaces_left_most_right_most (enum allocation_algorithm algorithm) {
 void larger_left_most_space_smaller_to_the_right (enum allocation_algorithm algorithm) {
   int size = 24;
   print_allocator_message("\nlarger_left_most_space_smaller_to_the_right\n");
-  printf("Initializing FIRST_FIT with %d bytes of memory\n", size);
 
   initialize_allocator(size, algorithm);
 
@@ -283,7 +278,6 @@ void larger_left_most_space_smaller_to_the_right (enum allocation_algorithm algo
 void smaller_left_most_space_larger_to_the_right (enum allocation_algorithm algorithm) {
   int size = 24;
   print_allocator_message("\nsmaller_left_most_space_larger_to_the_right\n");
-  printf("Initializing FIRST_FIT with %d bytes of memory\n", size);
 
   initialize_allocator(size, algorithm);
 
@@ -343,7 +337,6 @@ void smaller_left_most_space_larger_to_the_right (enum allocation_algorithm algo
 void equal_spaces_left_most_to_the_right (enum allocation_algorithm algorithm) {
   int size = 24;
   print_allocator_message("\nequal_spaces_left_most_to_the_right\n");
-  printf("Initializing FIRST_FIT with %d bytes of memory\n", size);
 
   initialize_allocator(size, algorithm);
 
@@ -404,7 +397,6 @@ void equal_spaces_left_most_to_the_right (enum allocation_algorithm algorithm) {
 void larger_on_the_left_space_smaller_right_most_space (enum allocation_algorithm algorithm) {
   int size = 24;
   print_allocator_message("\nlarger_on_the_left_space_smaller_right_most_space\n");
-  printf("Initializing FIRST_FIT with %d bytes of memory\n", size);
 
   initialize_allocator(size, algorithm);
 
@@ -465,7 +457,6 @@ void larger_on_the_left_space_smaller_right_most_space (enum allocation_algorith
 void smaller_on_the_left_space_larger_right_most_space (enum allocation_algorithm algorithm) {
   int size = 24;
   print_allocator_message("\nsmaller_on_the_left_space_larger_right_most_space\n");
-  printf("Initializing FIRST_FIT with %d bytes of memory\n", size);
 
   initialize_allocator(size, algorithm);
 
@@ -525,7 +516,6 @@ void smaller_on_the_left_space_larger_right_most_space (enum allocation_algorith
 void equal_spaces_on_the_left_right_most (enum allocation_algorithm algorithm) {
   int size = 24;
   print_allocator_message("\nequal_spaces_on_the_left_right_most\n");
-  printf("Initializing FIRST_FIT with %d bytes of memory\n", size);
 
   initialize_allocator(size, algorithm);
 
@@ -586,7 +576,6 @@ void equal_spaces_on_the_left_right_most (enum allocation_algorithm algorithm) {
 void larger_on_left_space_smaller_to_the_right (enum allocation_algorithm algorithm) {
   int size = 24;
   print_allocator_message("\nlarger_on_left_space_smaller_to_the_right\n");
-  printf("Initializing FIRST_FIT with %d bytes of memory\n", size);
 
   initialize_allocator(size, algorithm);
 
@@ -647,7 +636,6 @@ void larger_on_left_space_smaller_to_the_right (enum allocation_algorithm algori
 void smaller_on_left_space_larger_to_the_right (enum allocation_algorithm algorithm) {
   int size = 24;
   print_allocator_message("\nsmaller_on_left_space_larger_to_the_right\n");
-  printf("Initializing FIRST_FIT with %d bytes of memory\n", size);
 
   initialize_allocator(size, algorithm);
 
@@ -707,7 +695,6 @@ void smaller_on_left_space_larger_to_the_right (enum allocation_algorithm algori
 void equal_spaces_on_the_left_to_the_right (enum allocation_algorithm algorithm) {
   int size = 24;
   print_allocator_message("\nequal_spaces_on_the_left_to_the_right\n");
-  printf("Initializing FIRST_FIT with %d bytes of memory\n", size);
 
   initialize_allocator(size, algorithm);
 

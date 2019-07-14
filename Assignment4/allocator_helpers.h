@@ -7,5 +7,6 @@
 
 void print_allocator_message(charPtr message);
 void print_allocator_error_message(charPtr message);
+void assign_compacted_blocks(voidPtr* before, voidPtr* after, voidPtr* blocks, int num_compacted_blocks);
 
 #endif
