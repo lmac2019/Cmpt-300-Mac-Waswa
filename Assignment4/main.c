@@ -15,6 +15,26 @@ int main (int argc, charPtr argv[]) {
   equal_spaces_left_most_to_the_right(FIRST_FIT);
 
 
+  // * Best Fit Tests
+  fit_fill_integers(BEST_FIT);
+
+  larger_left_most_space_smaller_right_most_space(BEST_FIT);
+  smaller_left_most_space_larger_right_most_space(BEST_FIT);
+  equal_spaces_left_most_right_most(BEST_FIT);
+
+  larger_left_most_space_smaller_to_the_right(BEST_FIT);
+  smaller_left_most_space_larger_to_the_right(BEST_FIT);
+  equal_spaces_left_most_to_the_right(BEST_FIT);
+
+  larger_on_the_left_space_smaller_right_most_space(BEST_FIT);
+  smaller_on_the_left_space_larger_right_most_space(BEST_FIT);
+  equal_spaces_on_the_left_right_most(BEST_FIT);
+
+  larger_on_left_space_smaller_to_the_right(BEST_FIT);
+  smaller_on_left_space_larger_to_the_right(BEST_FIT);
+  equal_spaces_on_the_left_to_the_right(BEST_FIT);
+  
+  
   // * Worst Fit Tests
   fit_fill_integers(WORST_FIT);
 
@@ -35,28 +55,14 @@ int main (int argc, charPtr argv[]) {
   equal_spaces_on_the_left_to_the_right(WORST_FIT);
 
 
-  // * Best Fit Tests
-  fit_fill_integers(BEST_FIT);
-
-  larger_left_most_space_smaller_right_most_space(BEST_FIT);
-  smaller_left_most_space_larger_right_most_space(BEST_FIT);
-  equal_spaces_left_most_right_most(BEST_FIT);
-
-  larger_left_most_space_smaller_to_the_right(BEST_FIT);
-  smaller_left_most_space_larger_to_the_right(BEST_FIT);
-  equal_spaces_left_most_to_the_right(BEST_FIT);
-
-  larger_on_the_left_space_smaller_right_most_space(BEST_FIT);
-  smaller_on_the_left_space_larger_right_most_space(BEST_FIT);
-  equal_spaces_on_the_left_right_most(BEST_FIT);
-
-  larger_on_left_space_smaller_to_the_right(BEST_FIT);
-  smaller_on_left_space_larger_to_the_right(BEST_FIT);
-  equal_spaces_on_the_left_to_the_right(BEST_FIT);
-
-
   // * Compact Allocation Tests
-  compact_allocation_scattered_characters();
+  compact_allocation_unscattered_characters(FIRST_FIT);
+  compact_allocation_unscattered_characters(BEST_FIT);
+  compact_allocation_unscattered_characters(WORST_FIT);
+
+  compact_allocation_scattered_characters(FIRST_FIT);
+  compact_allocation_scattered_characters(BEST_FIT);
+  compact_allocation_scattered_characters(WORST_FIT);
 
   return 0;
 }

@@ -2,14 +2,58 @@
 #include "allocator_helpers.h"
 
 /*
+ * Performs a compaction test for characters that are unscattered in the 
+ * contiguous memory allocator
+ * algorithm: type of allocation algorithm to be used
+ */
+void compact_allocation_unscattered_characters (enum allocation_algorithm algorithm) {
+  int size = 24;
+  print_allocator_message("\ncompact_allocation_unscattered_characters\n");
+
+  initialize_allocator(size, algorithm);
+
+  charPtr characters[24] = { NULL };
+  for (int i = 0; i < 24; ++i) {
+    characters[i] = kalloc(sizeof(char));
+    if (characters[i] == NULL) {
+      print_allocator_message("Allocation failed");
+      continue;
+    }
+    *(characters[i]) = 'a' + i;
+    printf("characters[%d] = %p; *characters[%d] = %c\n", i, characters[i], i, *(characters[i]));
+  }
+
+  print_statistics();
+
+  voidPtr before[100] = { NULL };
+  voidPtr after[100] = { NULL };
+  int num_compacted_blocks = compact_allocation(before, after);
+
+  print_statistics();
+
+  assign_compacted_blocks(before, after, (voidPtr)characters, num_compacted_blocks);
+
+  for (int i = 0; i < 24; ++i) {
+    if (characters[i] != NULL) {
+      printf("characters[%2d] = %p; *characters[%2d] = %c\n", i, characters[i], i, *(characters[i]));
+    }
+  }
+
+  destroy_allocator();
+
+  return;
+}
+
+/*
  * Performs a compaction test for characters that are scattered in the 
  * contiguous memory allocator
+ * algorithm: type of allocation algorithm to be used
  */
-void compact_allocation_scattered_characters (void) {
+void compact_allocation_scattered_characters (enum allocation_algorithm algorithm) {
   int size = 24;
   print_allocator_message("\ncompact_allocation_scattered_characters\n");
 
-  initialize_allocator(size, FIRST_FIT);
+  initialize_allocator(size, algorithm);
 
   charPtr characters[24] = { NULL };
   for (int i = 0; i < 24; ++i) {
