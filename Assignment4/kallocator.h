@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "allocator_helpers.h"
 #include "macros.h"
 
 enum allocation_algorithm { 
@@ -13,6 +12,10 @@ enum allocation_algorithm {
   BEST_FIT, 
   WORST_FIT
 };
+
+void print_allocator_message(charPtr message);
+void print_allocator_error_message(charPtr message);
+void assign_compacted_blocks(voidPtr *before, voidPtr *after, voidPtr *blocks, int num_compacted_blocks);
 
 void initialize_allocator(int _size, enum allocation_algorithm _aalgorithm);
 voidPtr kalloc(int _size);
