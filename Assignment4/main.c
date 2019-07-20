@@ -1,47 +1,124 @@
 #include "kallocator.h"
+#include "fit_tests.h"
 
-int main(int argc, char* argv[]) {
-  initialize_allocator(100, FIRST_FIT);
-  // initialize_allocator(100, BEST_FIT);
-  // initialize_allocator(100, WORST_FIT);
-  printf("Using first fit algorithm on memory size 100\n");
+int main (int argc, charPtr argv[]) {
+  // initialize_allocator(100, FIRST_FIT);
+  // print_allocator_message("Using first fit algorithm on memory size 100");
 
-  intPtr p[50] = { NULL };
-  for (int i = 0; i < 10; ++i) {
-    p[i] = kalloc(sizeof(int));
-    if (p[i] == NULL) {
-      printf("Allocation failed\n");
-      continue;
-    }
-    *(p[i]) = i;
-    printf("p[%d] = %p; *p[%d] = %d\n", i, p[i], i, *(p[i]));
-  }
+  // // initialize_allocator(100, BEST_FIT);
+  // // printf("Using best fit algorithm on memory size 100\n");
 
-  print_statistics();
+  // // initialize_allocator(100, WORST_FIT);
+  // // printf("Using worst fit algorithm on memory size 100\n");
 
-  for (int i = 0; i < 10; ++i) {
-    if (i % 2 == 0) {
-      continue;
-    }
+  // intPtr p[50] = { NULL };
+  // for (int i = 0; i < 10; ++i) {
+  //   p[i] = kalloc(sizeof(int));
+  //   if (p[i] == NULL) {
+  //     print_allocator_message("Allocation failed");
+  //     continue;
+  //   }
+  //   *(p[i]) = i;
+  //   printf("p[%d] = %p; *p[%d] = %d\n", i, p[i], i, *(p[i]));
+  // }
 
-    printf("Freeing p[%d]\n", i);
-    kfree(p[i]);
-    p[i] = NULL;
-  }
+  // print_statistics();
 
-  printf("available_memory %d", available_memory());
+  // for (int i = 0; i < 10; ++i) {
+  //   if (i % 2 == 0) {
+  //     continue;
+  //   }
 
-  void* before[100] = {NULL};
-  void* after[100] = {NULL};
-  compact_allocation(before, after);
+  //   printf("Freeing p[%d]\n", i);
+  //   kfree(p[i]);
+  //   p[i] = NULL;
+  // }
 
-  print_statistics();
+  // printf("available_memory %d\n", available_memory());
 
-  // You can assume that the destroy_allocator will always be the 
-  // last funciton call of main function to avoid memory leak 
-  // before exit
+  // voidPtr before[100] = { NULL };
+  // voidPtr after[100] = { NULL };
+  // int num_compacted_blocks = compact_allocation(before, after);
 
-  destroy_allocator();
+  // for (int i = 0; i < num_compacted_blocks; i++) {
+  //   int j = -1;
+  //   do {
+  //     j++;
+  //   } while (before[i] != p[j]);
+
+  //   p[j] = after[i];
+  // }
+
+  // print_statistics();
+
+  // for (int i = 0; i < 10; i += 2) {
+  //   printf("p[%d] = %p; *p[%d] = %d\n", i, p[i], i, *(p[i]));
+  // }
+
+
+  // destroy_allocator();
+
+  // * First Fit Tests
+  // fill_integers(FIRST_FIT);
+  //
+  // larger_left_most_space_smaller_right_most_space(FIRST_FIT);
+  // smaller_left_most_space_larger_right_most_space(FIRST_FIT);
+  // equal_spaces_left_most_right_most(FIRST_FIT);
+  //
+  // larger_left_most_space_smaller_to_the_right(FIRST_FIT);
+  // smaller_left_most_space_larger_to_the_right(FIRST_FIT);
+  // equal_spaces_left_most_to_the_right(FIRST_FIT);
+  //
+  // larger_on_the_left_space_smaller_right_most_space(FIRST_FIT);
+  // smaller_on_the_left_space_larger_right_most_space(FIRST_FIT);
+  // equal_spaces_on_the_left_right_most(FIRST_FIT);
+  //
+  // larger_on_left_space_smaller_to_the_right(FIRST_FIT);
+  // smaller_on_left_space_larger_to_the_right(FIRST_FIT);
+  // equal_spaces_on_the_left_to_the_right(FIRST_FIT);
+
+
+
+
+  // fill_integers(BEST_FIT);
+  //
+  // larger_left_most_space_smaller_right_most_space(BEST_FIT);
+  // smaller_left_most_space_larger_right_most_space(BEST_FIT);
+  // equal_spaces_left_most_right_most(BEST_FIT);
+  //
+  // larger_left_most_space_smaller_to_the_right(BEST_FIT);
+  // smaller_left_most_space_larger_to_the_right(BEST_FIT);
+  // equal_spaces_left_most_to_the_right(BEST_FIT);
+  //
+  // larger_on_the_left_space_smaller_right_most_space(BEST_FIT);
+  // smaller_on_the_left_space_larger_right_most_space(BEST_FIT);
+  // equal_spaces_on_the_left_right_most(BEST_FIT);
+  //
+  // larger_on_left_space_smaller_to_the_right(BEST_FIT);
+  // smaller_on_left_space_larger_to_the_right(BEST_FIT);
+  // equal_spaces_on_the_left_to_the_right(BEST_FIT);
+
+
+
+  fill_integers(WORST_FIT);
+
+  larger_left_most_space_smaller_right_most_space(WORST_FIT);
+  smaller_left_most_space_larger_right_most_space(WORST_FIT);
+  equal_spaces_left_most_right_most(WORST_FIT);
+
+  larger_left_most_space_smaller_to_the_right(WORST_FIT);
+  smaller_left_most_space_larger_to_the_right(WORST_FIT);
+  equal_spaces_left_most_to_the_right(WORST_FIT);
+
+  larger_on_the_left_space_smaller_right_most_space(WORST_FIT);
+  smaller_on_the_left_space_larger_right_most_space(WORST_FIT);
+  equal_spaces_on_the_left_right_most(WORST_FIT);
+
+  larger_on_left_space_smaller_to_the_right(WORST_FIT);
+  smaller_on_left_space_larger_to_the_right(WORST_FIT);
+  equal_spaces_on_the_left_to_the_right(WORST_FIT);
+
+
 
   return 0;
 }

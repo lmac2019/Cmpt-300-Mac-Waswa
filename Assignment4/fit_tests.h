@@ -1,0 +1,24 @@
+#ifndef FIT_TESTS_H
+#define FIT_TESTS_H
+
+#include "kallocator.h"
+
+void fill_integers(enum allocation_algorithm algorithm);
+
+void larger_left_most_space_smaller_right_most_space(enum allocation_algorithm algorithm);
+void smaller_left_most_space_larger_right_most_space(enum allocation_algorithm algorithm);
+void equal_spaces_left_most_right_most(enum allocation_algorithm algorithm);
+
+void larger_left_most_space_smaller_to_the_right(enum allocation_algorithm algorithm);
+void smaller_left_most_space_larger_to_the_right(enum allocation_algorithm algorithm);
+void equal_spaces_left_most_to_the_right(enum allocation_algorithm algorithm);
+
+void larger_on_the_left_space_smaller_right_most_space(enum allocation_algorithm algorithm);
+void smaller_on_the_left_space_larger_right_most_space(enum allocation_algorithm algorithm);
+void equal_spaces_on_the_left_right_most(enum allocation_algorithm algorithm);
+
+void larger_on_left_space_smaller_to_the_right(enum allocation_algorithm algorithm);
+void smaller_on_left_space_larger_to_the_right(enum allocation_algorithm algorithm);
+void equal_spaces_on_the_left_to_the_right(enum allocation_algorithm algorithm);
+
+#endif
