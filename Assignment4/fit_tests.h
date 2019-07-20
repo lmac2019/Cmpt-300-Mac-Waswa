@@ -3,7 +3,7 @@
 
 #include "kallocator.h"
 
-void fill_integers(enum allocation_algorithm algorithm);
+void fit_fill_integers(enum allocation_algorithm algorithm);
 
 void larger_left_most_space_smaller_right_most_space(enum allocation_algorithm algorithm);
 void smaller_left_most_space_larger_right_most_space(enum allocation_algorithm algorithm);

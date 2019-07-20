@@ -72,7 +72,7 @@ voidPtr kalloc (int _size) {
     case FIRST_FIT: {
       for (struct memoryNodePtr currentMemoryNodePtr = kallocator.free_memory_head; currentMemoryNodePtr != NULL; currentMemoryNodePtr = currentMemoryNodePtr->next) {
         if (_size <= currentMemoryNodePtr->block_size) {
-          // * Assign ptr to the free memory
+          // * Assign ptr to memory
           ptr = currentMemoryNodePtr->current;
 
           if (_size == currentMemoryNodePtr->block_size) {
@@ -100,16 +100,16 @@ voidPtr kalloc (int _size) {
     }
     case BEST_FIT: {
       struct memoryNodePtr temp_memory;
-      int tempblock = 0;
+      int temp_block = 0;
       for (struct memoryNodePtr currentMemoryNodePtr = kallocator.free_memory_head; currentMemoryNodePtr != NULL; currentMemoryNodePtr = currentMemoryNodePtr->next) {
         if (_size <= currentMemoryNodePtr->block_size) {
-          if(tempblock == 0){
-            tempblock = currentMemoryNodePtr->block_size;
+          if (temp_block == 0){
+            temp_block = currentMemoryNodePtr->block_size;
             temp_memory = currentMemoryNodePtr;
             ptr = currentMemoryNodePtr->current;
           }
-          else if(tempblock > currentMemoryNodePtr->block_size){
-            tempblock = currentMemoryNodePtr->block_size;
+          else if (temp_block > currentMemoryNodePtr->block_size) {
+            temp_block = currentMemoryNodePtr->block_size;
             temp_memory = currentMemoryNodePtr;
             ptr = temp_memory -> current;
           }
@@ -177,6 +177,21 @@ voidPtr kalloc (int _size) {
 }
 
 /*
+ * Handles merging consecutive free memory blocks
+ */
+void merge_consecutive_free_memory_blocks (void) {
+  for (struct memoryNodePtr freeMemoryPtr = (struct memoryNodePtr) kallocator.free_memory_head; freeMemoryPtr != NULL; ) {
+    if (freeMemoryPtr->next && (freeMemoryPtr->current + freeMemoryPtr->block_size == ((struct memoryNodePtr) freeMemoryPtr->next)->current)) {
+      freeMemoryPtr->block_size += ((struct memoryNodePtr)freeMemoryPtr->next)->block_size;
+      MemoryList_deleteNode(&kallocator.free_memory_head, freeMemoryPtr->next);
+      continue;
+    } else {
+      freeMemoryPtr = freeMemoryPtr->next;
+    }
+  }
+}
+
+/*
  * Takes away the ownership of the block pointed by _ptr
  * _ptr: pointer referencing block of memory to be freed
  */
@@ -194,16 +209,7 @@ void kfree (voidPtr _ptr) {
       MemoryList_insertTail(&kallocator.free_memory_head, free_memory);
       MemoryList_sort(&kallocator.free_memory_head);
 
-      // * Merge consecutive free memory blocks
-      for (struct memoryNodePtr freeMemoryPtr = (struct memoryNodePtr) kallocator.free_memory_head; freeMemoryPtr != NULL; ) {
-        if (freeMemoryPtr->next && (freeMemoryPtr->current + freeMemoryPtr->block_size == ((struct memoryNodePtr) freeMemoryPtr->next)->current)) {
-          freeMemoryPtr->block_size += ((struct memoryNodePtr)freeMemoryPtr->next)->block_size;
-          MemoryList_deleteNode(&kallocator.free_memory_head, freeMemoryPtr->next);
-          continue;
-        } else {
-          freeMemoryPtr = freeMemoryPtr->next;
-        }
-      }
+      merge_consecutive_free_memory_blocks();
 
       // * Remove node from allocated memory
       MemoryList_deleteNode(&kallocator.allocated_memory_head, currentMemoryNodePtr);
@@ -224,30 +230,27 @@ int compact_allocation (voidPtr* _before, voidPtr* _after) {
 
   MemoryList_sort(&kallocator.allocated_memory_head);
 
-  int nodePtrOffset = 0;
   int location_index = 0;
-  for (struct memoryNodePtr currentNodePtr = kallocator.allocated_memory_head; currentNodePtr != NULL; currentNodePtr = currentNodePtr->next)  {
-    _before[location_index] = currentNodePtr->current;
+  for (struct memoryNodePtr freeMemoryPtr = kallocator.free_memory_head; freeMemoryPtr != NULL; freeMemoryPtr = freeMemoryPtr->next) {
+    for (struct memoryNodePtr allocatedMemoryPtr = kallocator.allocated_memory_head; allocatedMemoryPtr != NULL; allocatedMemoryPtr = allocatedMemoryPtr->next) {
+      if (allocatedMemoryPtr->current < freeMemoryPtr->current) {
+        continue;
+      } else {
+        _before[location_index] = allocatedMemoryPtr->current;
 
-    memmove(kallocator.memory + nodePtrOffset, currentNodePtr->current, currentNodePtr->block_size);
-    currentNodePtr->current = kallocator.memory + nodePtrOffset;
+        memmove(freeMemoryPtr->current, allocatedMemoryPtr->current, allocatedMemoryPtr->block_size);
+        freeMemoryPtr->current += allocatedMemoryPtr->block_size;
+        allocatedMemoryPtr->current -= freeMemoryPtr->block_size;
+        
+        merge_consecutive_free_memory_blocks();
 
-    _after[location_index] = currentNodePtr->current;
+        _after[location_index] = allocatedMemoryPtr->current;
 
-    nodePtrOffset += currentNodePtr->block_size;
-
-    location_index++;
-    compacted_size++;
-  }
-
-  if (MemoryList_countNodes(kallocator.free_memory_head) > 0) {
-    MemoryList_deleteAllNodes(&kallocator.free_memory_head);
-
-    struct memoryNodePtr free_memory = (struct memoryNodePtr) malloc(sizeof(struct memoryNode));
-    free_memory->current = kallocator.memory + nodePtrOffset;
-    free_memory->block_size = kallocator.size - allocated_memory();
-    free_memory->next = NULL;
-    MemoryList_insertTail(&kallocator.free_memory_head, free_memory);
+        location_index++;
+        
+        compacted_size++;
+      }
+    }
   }
 
   return compacted_size;
