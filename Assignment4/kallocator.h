@@ -5,7 +5,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "macros.h"
+#include <stdbool.h>
+
+#define voidPtr void*
+#define intPtr int*
+#define charPtr char*
 
 enum allocation_algorithm { 
   FIRST_FIT, 
