@@ -309,11 +309,11 @@ void destroy_allocator () {
 voidPtr kalloc (int _size) {
   if(_size <= 0){
     printf("Error: kalloc memory less or equal to 0\n");
-    exit(-1);
+    return NULL;
   }
   if(_size > MemoryList_findLargestBlockSize(kallocator.free_memory_head)){
     printf("Error: inserting memory larger than largest free chunk\n");
-    exit(-1);
+    return NULL;
   }
   voidPtr ptr = NULL;
   switch (kallocator.aalgorithm) {
@@ -489,13 +489,13 @@ int compact_allocation (voidPtr* _before, voidPtr* _after) {
         memmove(freeMemoryPtr->current, allocatedMemoryPtr->current, allocatedMemoryPtr->block_size);
         freeMemoryPtr->current += allocatedMemoryPtr->block_size;
         allocatedMemoryPtr->current -= freeMemoryPtr->block_size;
-        
+
         merge_consecutive_free_memory_blocks();
 
         _after[location_index] = allocatedMemoryPtr->current;
 
         location_index++;
-        
+
         compacted_size++;
       }
     }
