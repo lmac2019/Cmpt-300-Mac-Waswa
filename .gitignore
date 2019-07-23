@@ -25,3 +25,4 @@ Assignment4/fit_tests.o
 Assignment4/compact_allocation_tests.o
 Assignment5/test-syscall/cs300_testapp.o
 Assignment5/test-syscall/cs300_testapp
+Assignment5/debian_squeeze_amd64_standard.qcow2

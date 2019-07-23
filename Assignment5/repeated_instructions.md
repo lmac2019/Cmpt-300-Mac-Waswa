@@ -3,6 +3,7 @@
 
 ## Build linux
 
+
 # Setup the default config file for building the kernel:
 make defconfig
 
@@ -14,13 +15,26 @@ make -j4
 - Make sure linux has been built completely before executing the following
 - Both instructions to launch QEMU require you to be in the linux-stable/ folder as the current directory
 
+
 # Launch QEMU in the current terminal window:
 qemu-system-x86_64 -m 64M -hda ../debian_squeeze_amd64_standard.qcow2 -append "root=/dev/sda1 console=tty0 console=ttyS0,115200n8" -kernel arch/x86_64/boot/bzImage -nographic
+
 
 # Launch QEMU in its own terminal window
 qemu-system-x86_64 -m 64M -hda ../debian_squeeze_amd64_standard.qcow2 -append "root=/dev/sda1 console=tty0 console=ttyS0,115200n8" -kernel arch/x86_64/boot/bzImage
 
 
-## Power Off QEMU
+## Redirect port 2222 on the host OS to the QEMU VM's port 22
+qemu-system-x86_64 -m 64M -hda ../debian_squeeze_amd64_standard.qcow2 -append "root=/dev/sda1 console=tty0 console=ttyS0,115200n8" -kernel arch/x86_64/boot/bzImage -nographic -net nic,vlan=1 -net user,vlan=1 -redir tcp:2222::22
 
+
+## Copy your file (helloWorld, for example) to the QEMU virtual machine via SCP 
+scp -P 2222 helloWorld root@localhost:~
+
+
+## Copy multiple files (helloWorld, myApp, fooFile2, for example) to the QEMU virtual machine via SCP
+scp -P 2222 helloWorld myApp fooFile2 root@localhost:~
+
+
+## Power Off QEMU
 poweroff
