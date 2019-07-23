@@ -23,4 +23,5 @@ Assignment4/memory_list.o
 Assignment4/allocator_helpers.o
 Assignment4/fit_tests.o
 Assignment4/compact_allocation_tests.o
+Assignment5/test-syscall/cs300_testapp.o
 Assignment5/test-syscall/cs300_testapp
