@@ -24,16 +24,21 @@ qemu-system-x86_64 -m 64M -hda ../debian_squeeze_amd64_standard.qcow2 -append "r
 qemu-system-x86_64 -m 64M -hda ../debian_squeeze_amd64_standard.qcow2 -append "root=/dev/sda1 console=tty0 console=ttyS0,115200n8" -kernel arch/x86_64/boot/bzImage
 
 
-# Launch QEMU and redirect port 2222 on the host OS to the QEMU VM's port 22
-qemu-system-x86_64 -m 64M -hda ../debian_squeeze_amd64_standard.qcow2 -append "root=/dev/sda1 console=tty0 console=ttyS0,115200n8" -kernel arch/x86_64/boot/bzImage -nographic -net nic,vlan=1 -net user,vlan=1 -redir tcp:2222::22
+# Launch QEMU and redirect port 8888 on the host OS to the QEMU VM's port 22
+qemu-system-x86_64 -m 64M -hda ../debian_squeeze_amd64_standard.qcow2 -append "root=/dev sda1 console=tty0 console=ttyS0,115200n8" -kernel arch/x86_64/boot/bzImage -nographic -net user,hostfwd=tcp::8888-:22 -net nic
 
 
 ## Copy your file (helloWorld, for example) to the QEMU virtual machine via SCP 
-scp -P 2222 helloWorld root@localhost:~
+scp -P 8888 helloWorld root@localhost:~
 
 
 ## Copy multiple files (helloWorld, myApp, fooFile2, for example) to the QEMU virtual machine via SCP
-scp -P 2222 helloWorld myApp fooFile2 root@localhost:~
+scp -P 8888 helloWorld myApp fooFile2 root@localhost:~
+
+
+## SSH from host into guest VM
+# Make sure QEMU is running and you are logged in
+ssh root@localhost -p8888
 
 
 ## Power Off QEMU
