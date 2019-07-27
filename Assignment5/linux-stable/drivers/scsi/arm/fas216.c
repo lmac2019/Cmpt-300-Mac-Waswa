@@ -1,8 +1,11 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  *  linux/drivers/acorn/scsi/fas216.c
  *
  *  Copyright (C) 1997-2003 Russell King
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  *
  * Based on information in qlogicfas.c by Tom Zerucha, Michael Griffith, and
  * other sources, including:
@@ -2008,7 +2011,7 @@ static void fas216_rq_sns_done(FAS216_Info *info, struct scsi_cmnd *SCpnt,
 		 * have valid data in the sense buffer that could
 		 * confuse the higher levels.
 		 */
-		memset(SCpnt->sense_buffer, 0, SCSI_SENSE_BUFFERSIZE);
+		memset(SCpnt->sense_buffer, 0, sizeof(SCpnt->sense_buffer));
 //printk("scsi%d.%c: sense buffer: ", info->host->host_no, '0' + SCpnt->device->id);
 //{ int i; for (i = 0; i < 32; i++) printk("%02x ", SCpnt->sense_buffer[i]); printk("\n"); }
 	/*
@@ -2315,9 +2318,9 @@ DEF_SCSI_QCMD(fas216_noqueue_command)
  * Error handler timeout function.  Indicate that we timed out,
  * and wake up any error handler process so it can continue.
  */
-static void fas216_eh_timer(struct timer_list *t)
+static void fas216_eh_timer(unsigned long data)
 {
-	FAS216_Info *info = from_timer(info, t, eh_timer);
+	FAS216_Info *info = (FAS216_Info *)data;
 
 	fas216_log(info, LOG_ERROR, "error handling timed out\n");
 
@@ -2846,7 +2849,9 @@ int fas216_init(struct Scsi_Host *host)
 	info->rst_dev_status = -1;
 	info->rst_bus_status = -1;
 	init_waitqueue_head(&info->eh_wait);
-	timer_setup(&info->eh_timer, fas216_eh_timer, 0);
+	init_timer(&info->eh_timer);
+	info->eh_timer.data  = (unsigned long)info;
+	info->eh_timer.function = fas216_eh_timer;
 	
 	spin_lock_init(&info->host_lock);
 

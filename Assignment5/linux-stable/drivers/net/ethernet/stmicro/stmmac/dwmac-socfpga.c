@@ -1,10 +1,21 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /* Copyright Altera Corporation (C) 2014. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 2,
+ * as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * Adopted from dwmac-sti.c
  */
 
-#include <linux/mfd/altera-sysmgr.h>
+#include <linux/mfd/syscon.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_net.h>
@@ -44,7 +55,6 @@ struct socfpga_dwmac {
 	struct	device *dev;
 	struct regmap *sys_mgr_base_addr;
 	struct reset_control *stmmac_rst;
-	struct reset_control *stmmac_ocp_rst;
 	void __iomem *splitter_base;
 	bool f2h_ptp_ref_clk;
 	struct tse_pcs pcs;
@@ -103,8 +113,7 @@ static int socfpga_dwmac_parse_data(struct socfpga_dwmac *dwmac, struct device *
 
 	dwmac->interface = of_get_phy_mode(np);
 
-	sys_mgr_base_addr =
-		altr_sysmgr_regmap_lookup_by_phandle(np, "altr,sysmgr-syscon");
+	sys_mgr_base_addr = syscon_regmap_lookup_by_phandle(np, "altr,sysmgr-syscon");
 	if (IS_ERR(sys_mgr_base_addr)) {
 		dev_info(dev, "No sysmgr-syscon node found\n");
 		return PTR_ERR(sys_mgr_base_addr);
@@ -253,8 +262,8 @@ static int socfpga_dwmac_set_phy_mode(struct socfpga_dwmac *dwmac)
 		val = SYSMGR_EMACGRP_CTRL_PHYSEL_ENUM_GMII_MII;
 
 	/* Assert reset to the enet controller before changing the phy mode */
-	reset_control_assert(dwmac->stmmac_ocp_rst);
-	reset_control_assert(dwmac->stmmac_rst);
+	if (dwmac->stmmac_rst)
+		reset_control_assert(dwmac->stmmac_rst);
 
 	regmap_read(sys_mgr_base_addr, reg_offset, &ctrl);
 	ctrl &= ~(SYSMGR_EMACGRP_CTRL_PHYSEL_MASK << reg_shift);
@@ -279,8 +288,8 @@ static int socfpga_dwmac_set_phy_mode(struct socfpga_dwmac *dwmac)
 	/* Deassert reset for the phy configuration to be sampled by
 	 * the enet controller, and operation to start in requested mode
 	 */
-	reset_control_deassert(dwmac->stmmac_ocp_rst);
-	reset_control_deassert(dwmac->stmmac_rst);
+	if (dwmac->stmmac_rst)
+		reset_control_deassert(dwmac->stmmac_rst);
 	if (phymode == PHY_INTERFACE_MODE_SGMII) {
 		if (tse_pcs_init(dwmac->pcs.tse_pcs_base, &dwmac->pcs) != 0) {
 			dev_err(dwmac->dev, "Unable to initialize TSE PCS");
@@ -314,15 +323,6 @@ static int socfpga_dwmac_probe(struct platform_device *pdev)
 		ret = -ENOMEM;
 		goto err_remove_config_dt;
 	}
-
-	dwmac->stmmac_ocp_rst = devm_reset_control_get_optional(dev, "stmmaceth-ocp");
-	if (IS_ERR(dwmac->stmmac_ocp_rst)) {
-		ret = PTR_ERR(dwmac->stmmac_ocp_rst);
-		dev_err(dev, "error getting reset control of ocp %d\n", ret);
-		goto err_remove_config_dt;
-	}
-
-	reset_control_deassert(dwmac->stmmac_ocp_rst);
 
 	ret = socfpga_dwmac_parse_data(dwmac, dev);
 	if (ret) {

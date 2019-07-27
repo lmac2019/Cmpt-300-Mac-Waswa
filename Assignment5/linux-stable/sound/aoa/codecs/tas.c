@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Apple Onboard Audio driver for tas codec
  *
  * Copyright 2006 Johannes Berg <johannes@sipsolutions.net>
+ *
+ * GPL v2, can be found in COPYING.
  *
  * Open questions:
  *  - How to distinguish between 3004 and versions?
@@ -904,8 +905,8 @@ static int tas_i2c_probe(struct i2c_client *client,
 		goto fail;
 	}
 	printk(KERN_DEBUG
-	       "snd-aoa-codec-tas: tas found, addr 0x%02x on %pOF\n",
-	       (unsigned int)client->addr, node);
+	       "snd-aoa-codec-tas: tas found, addr 0x%02x on %s\n",
+	       (unsigned int)client->addr, node->full_name);
 	return 0;
  fail:
 	mutex_destroy(&tas->mtx);

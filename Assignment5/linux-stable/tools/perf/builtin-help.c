@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * builtin-help.c
  *
@@ -91,7 +90,7 @@ static int check_emacsclient_version(void)
 	 */
 	finish_command(&ec_process);
 
-	if (!strstarts(buffer.buf, "emacsclient")) {
+	if (prefixcmp(buffer.buf, "emacsclient")) {
 		fprintf(stderr, "Failed to parse emacsclient version.\n");
 		goto out;
 	}
@@ -189,7 +188,7 @@ static void add_man_viewer(const char *name)
 	while (*p)
 		p = &((*p)->next);
 	*p = zalloc(sizeof(**p) + len + 1);
-	strcpy((*p)->name, name);
+	strncpy((*p)->name, name, len);
 }
 
 static int supported_man_viewer(const char *name, size_t len)
@@ -284,7 +283,7 @@ static int perf_help_config(const char *var, const char *value, void *cb)
 		add_man_viewer(value);
 		return 0;
 	}
-	if (strstarts(var, "man."))
+	if (!prefixcmp(var, "man."))
 		return add_man_viewer_info(var, value);
 
 	return 0;
@@ -314,7 +313,7 @@ static const char *cmd_to_page(const char *perf_cmd)
 
 	if (!perf_cmd)
 		return "perf";
-	else if (strstarts(perf_cmd, "perf"))
+	else if (!prefixcmp(perf_cmd, "perf"))
 		return perf_cmd;
 
 	return asprintf(&s, "perf-%s", perf_cmd) < 0 ? NULL : s;
@@ -439,7 +438,7 @@ int cmd_help(int argc, const char **argv)
 #ifdef HAVE_LIBELF_SUPPORT
 		"probe",
 #endif
-#if defined(HAVE_LIBAUDIT_SUPPORT) || defined(HAVE_SYSCALL_TABLE_SUPPORT)
+#ifdef HAVE_LIBAUDIT_SUPPORT
 		"trace",
 #endif
 	NULL };

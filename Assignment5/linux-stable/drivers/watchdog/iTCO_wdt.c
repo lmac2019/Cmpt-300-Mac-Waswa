@@ -304,16 +304,17 @@ static int iTCO_wdt_ping(struct watchdog_device *wd_dev)
 
 	spin_lock(&p->io_lock);
 
-	/* Reload the timer by writing to the TCO Timer Counter register */
-	if (p->iTCO_version >= 2) {
-		outw(0x01, TCO_RLD(p));
-	} else if (p->iTCO_version == 1) {
-		/* Reset the timeout status bit so that the timer
-		 * needs to count down twice again before rebooting */
-		outw(0x0008, TCO1_STS(p));	/* write 1 to clear bit */
+	iTCO_vendor_pre_keepalive(p->smi_res, wd_dev->timeout);
 
+	/* Reset the timeout status bit so that the timer
+	 * needs to count down twice again before rebooting */
+	outw(0x0008, TCO1_STS(p));	/* write 1 to clear bit */
+
+	/* Reload the timer by writing to the TCO Timer Counter register */
+	if (p->iTCO_version >= 2)
+		outw(0x01, TCO_RLD(p));
+	else if (p->iTCO_version == 1)
 		outb(0x01, TCO_RLD(p));
-	}
 
 	spin_unlock(&p->io_lock);
 	return 0;
@@ -326,11 +327,8 @@ static int iTCO_wdt_set_timeout(struct watchdog_device *wd_dev, unsigned int t)
 	unsigned char val8;
 	unsigned int tmrval;
 
-	tmrval = seconds_to_ticks(p, t);
-
-	/* For TCO v1 the timer counts down twice before rebooting */
-	if (p->iTCO_version == 1)
-		tmrval /= 2;
+	/* The timer counts down twice before rebooting */
+	tmrval = seconds_to_ticks(p, t) / 2;
 
 	/* from the specs: */
 	/* "Values of 0h-3h are ignored and should not be attempted" */
@@ -339,6 +337,8 @@ static int iTCO_wdt_set_timeout(struct watchdog_device *wd_dev, unsigned int t)
 	if ((p->iTCO_version >= 2 && tmrval > 0x3ff) ||
 	    (p->iTCO_version == 1 && tmrval > 0x03f))
 		return -EINVAL;
+
+	iTCO_vendor_pre_set_heartbeat(tmrval);
 
 	/* Write new heartbeat to watchdog */
 	if (p->iTCO_version >= 2) {
@@ -381,6 +381,8 @@ static unsigned int iTCO_wdt_get_timeleft(struct watchdog_device *wd_dev)
 		spin_lock(&p->io_lock);
 		val16 = inw(TCO_RLD(p));
 		val16 &= 0x3ff;
+		if (!(inw(TCO1_STS(p)) & 0x0008))
+			val16 += (inw(TCOv2_TMR(p)) & 0x3ff);
 		spin_unlock(&p->io_lock);
 
 		time_left = ticks_to_seconds(p, val16);
@@ -545,7 +547,6 @@ static int iTCO_wdt_probe(struct platform_device *pdev)
 	}
 
 	watchdog_stop_on_reboot(&p->wddev);
-	watchdog_stop_on_unregister(&p->wddev);
 	ret = devm_watchdog_register_device(dev, &p->wddev);
 	if (ret != 0) {
 		pr_err("cannot register watchdog device (err=%d)\n", ret);
@@ -554,6 +555,17 @@ static int iTCO_wdt_probe(struct platform_device *pdev)
 
 	pr_info("initialized. heartbeat=%d sec (nowayout=%d)\n",
 		heartbeat, nowayout);
+
+	return 0;
+}
+
+static int iTCO_wdt_remove(struct platform_device *pdev)
+{
+	struct iTCO_wdt_private *p = platform_get_drvdata(pdev);
+
+	/* Stop the timer before we leave */
+	if (!nowayout)
+		iTCO_wdt_stop(&p->wddev);
 
 	return 0;
 }
@@ -610,6 +622,7 @@ static const struct dev_pm_ops iTCO_wdt_pm = {
 
 static struct platform_driver iTCO_wdt_driver = {
 	.probe          = iTCO_wdt_probe,
+	.remove         = iTCO_wdt_remove,
 	.driver         = {
 		.name   = DRV_NAME,
 		.pm     = ITCO_WDT_PM_OPS,

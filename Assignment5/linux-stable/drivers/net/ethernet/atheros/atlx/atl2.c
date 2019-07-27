@@ -1,10 +1,23 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Copyright(c) 2006 - 2007 Atheros Corporation. All rights reserved.
  * Copyright(c) 2007 - 2008 Chris Snook <csnook@redhat.com>
  *
  * Derived from Intel e1000 driver
  * Copyright(c) 1999 - 2005 Intel Corporation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program; if not, write to the Free Software Foundation, Inc., 59
+ * Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
 #include <linux/atomic.h>
@@ -540,7 +553,7 @@ static void atl2_intr_tx(struct atl2_adapter *adapter)
 			netdev->stats.tx_aborted_errors++;
 		if (txs->late_col)
 			netdev->stats.tx_window_errors++;
-		if (txs->underrun)
+		if (txs->underun)
 			netdev->stats.tx_fifo_errors++;
 	} while (1);
 
@@ -895,7 +908,8 @@ static netdev_tx_t atl2_xmit_frame(struct sk_buff *skb,
 	ATL2_WRITE_REGW(&adapter->hw, REG_MB_TXD_WR_IDX,
 		(adapter->txd_write_ptr >> 2));
 
-	dev_consume_skb_any(skb);
+	mmiowb();
+	dev_kfree_skb_any(skb);
 	return NETDEV_TX_OK;
 }
 
@@ -1014,9 +1028,9 @@ static void atl2_tx_timeout(struct net_device *netdev)
  * atl2_watchdog - Timer Call-back
  * @data: pointer to netdev cast into an unsigned long
  */
-static void atl2_watchdog(struct timer_list *t)
+static void atl2_watchdog(unsigned long data)
 {
-	struct atl2_adapter *adapter = from_timer(adapter, t, watchdog_timer);
+	struct atl2_adapter *adapter = (struct atl2_adapter *) data;
 
 	if (!test_bit(__ATL2_DOWN, &adapter->flags)) {
 		u32 drop_rxd, drop_rxs;
@@ -1039,10 +1053,9 @@ static void atl2_watchdog(struct timer_list *t)
  * atl2_phy_config - Timer Call-back
  * @data: pointer to netdev cast into an unsigned long
  */
-static void atl2_phy_config(struct timer_list *t)
+static void atl2_phy_config(unsigned long data)
 {
-	struct atl2_adapter *adapter = from_timer(adapter, t,
-						  phy_config_timer);
+	struct atl2_adapter *adapter = (struct atl2_adapter *) data;
 	struct atl2_hw *hw = &adapter->hw;
 	unsigned long flags;
 
@@ -1321,10 +1334,12 @@ static int atl2_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
 	struct net_device *netdev;
 	struct atl2_adapter *adapter;
-	static int cards_found = 0;
+	static int cards_found;
 	unsigned long mmio_start;
 	int mmio_len;
 	int err;
+
+	cards_found = 0;
 
 	err = pci_enable_device(pdev);
 	if (err)
@@ -1419,9 +1434,11 @@ static int atl2_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 
 	atl2_check_options(adapter);
 
-	timer_setup(&adapter->watchdog_timer, atl2_watchdog, 0);
+	setup_timer(&adapter->watchdog_timer, atl2_watchdog,
+		    (unsigned long)adapter);
 
-	timer_setup(&adapter->phy_config_timer, atl2_phy_config, 0);
+	setup_timer(&adapter->phy_config_timer, atl2_phy_config,
+		    (unsigned long)adapter);
 
 	INIT_WORK(&adapter->reset_task, atl2_reset_task);
 	INIT_WORK(&adapter->link_chg_task, atl2_link_chg_task);
@@ -1925,8 +1942,8 @@ static int atl2_get_eeprom(struct net_device *netdev,
 	first_dword = eeprom->offset >> 2;
 	last_dword = (eeprom->offset + eeprom->len - 1) >> 2;
 
-	eeprom_buff = kmalloc_array(last_dword - first_dword + 1, sizeof(u32),
-				    GFP_KERNEL);
+	eeprom_buff = kmalloc(sizeof(u32) * (last_dword - first_dword + 1),
+		GFP_KERNEL);
 	if (!eeprom_buff)
 		return -ENOMEM;
 
@@ -2930,7 +2947,7 @@ static int atl2_validate_option(int *value, struct atl2_option *opt)
 			if (*value == ent->i) {
 				if (ent->str[0] != '\0')
 					printk(KERN_INFO "%s\n", ent->str);
-				return 0;
+			return 0;
 			}
 		}
 		break;

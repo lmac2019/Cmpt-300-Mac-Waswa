@@ -1,6 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * DesignWare HDMI audio driver
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  *
  * Written and tested against the Designware HDMI Tx found in iMX6.
  */
@@ -514,7 +517,7 @@ static snd_pcm_uframes_t dw_hdmi_pointer(struct snd_pcm_substream *substream)
 	return bytes_to_frames(runtime, dw->buf_offset);
 }
 
-static const struct snd_pcm_ops snd_dw_hdmi_ops = {
+static struct snd_pcm_ops snd_dw_hdmi_ops = {
 	.open = dw_hdmi_open,
 	.close = dw_hdmi_close,
 	.ioctl = snd_pcm_lib_ioctl,
@@ -611,6 +614,7 @@ static int snd_dw_hdmi_suspend(struct device *dev)
 	struct snd_dw_hdmi *dw = dev_get_drvdata(dev);
 
 	snd_power_change_state(dw->card, SNDRV_CTL_POWER_D3cold);
+	snd_pcm_suspend_all(dw->pcm);
 
 	return 0;
 }

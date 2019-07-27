@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * This test checks the response of the system clock to frequency
  * steps made with adjtimex(). The frequency error and stability of
@@ -7,6 +6,15 @@
  * values from the second interval exceed specified limits.
  *
  * Copyright (C) Miroslav Lichvar <mlichvar@redhat.com>  2017
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  */
 
 #include <math.h>
@@ -24,10 +32,6 @@
 #define MAX_PRECISION 100e-9
 #define MAX_FREQ_ERROR 10e-6
 #define MAX_STDDEV 1000e-9
-
-#ifndef ADJ_SETOFFSET
-  #define ADJ_SETOFFSET 0x0100
-#endif
 
 struct sample {
 	double offset;
@@ -257,7 +261,7 @@ int main(int argc, char **argv)
 	set_frequency(0.0);
 
 	if (fails)
-		return ksft_exit_fail();
+		ksft_exit_fail();
 
-	return ksft_exit_pass();
+	ksft_exit_pass();
 }

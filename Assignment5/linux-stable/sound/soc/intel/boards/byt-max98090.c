@@ -1,7 +1,15 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Intel Baytrail SST MAX98090 machine driver
  * Copyright (c) 2014, Intel Corporation.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
  */
 
 #include <linux/init.h>
@@ -143,7 +151,7 @@ static int byt_max98090_probe(struct platform_device *pdev)
 	struct byt_max98090_private *priv;
 	int ret_val;
 
-	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
+	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_ATOMIC);
 	if (!priv) {
 		dev_err(&pdev->dev, "allocation failed\n");
 		return -ENOMEM;
@@ -165,8 +173,20 @@ static int byt_max98090_probe(struct platform_device *pdev)
 	return 0;
 }
 
+static int byt_max98090_remove(struct platform_device *pdev)
+{
+	struct snd_soc_card *card = platform_get_drvdata(pdev);
+	struct byt_max98090_private *priv = snd_soc_card_get_drvdata(card);
+
+	snd_soc_jack_free_gpios(&priv->jack, ARRAY_SIZE(hs_jack_gpios),
+				hs_jack_gpios);
+
+	return 0;
+}
+
 static struct platform_driver byt_max98090_driver = {
 	.probe = byt_max98090_probe,
+	.remove = byt_max98090_remove,
 	.driver = {
 		.name = "byt-max98090",
 		.pm = &snd_soc_pm_ops,

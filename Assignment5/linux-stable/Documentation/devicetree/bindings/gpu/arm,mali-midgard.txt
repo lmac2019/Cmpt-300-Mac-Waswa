@@ -17,7 +17,6 @@ Required properties:
   * which must be preceded by one of the following vendor specifics:
     + "amlogic,meson-gxm-mali"
     + "rockchip,rk3288-mali"
-    + "rockchip,rk3399-mali"
 
 - reg : Physical base address of the device and length of the register area.
 
@@ -34,23 +33,9 @@ Optional properties:
 - mali-supply : Phandle to regulator for the Mali device. Refer to
   Documentation/devicetree/bindings/regulator/regulator.txt for details.
 
-- operating-points-v2 : Refer to Documentation/devicetree/bindings/opp/opp.txt
+- operating-points-v2 : Refer to Documentation/devicetree/bindings/power/opp.txt
   for details.
 
-- resets : Phandle of the GPU reset line.
-
-Vendor-specific bindings
-------------------------
-
-The Mali GPU is integrated very differently from one SoC to
-another. In order to accomodate those differences, you have the option
-to specify one more vendor-specific compatible, among:
-
-- "amlogic,meson-gxm-mali"
-  Required properties:
-  - resets : Should contain phandles of :
-    + GPU reset line
-    + GPU APB glue reset line
 
 Example for a Mali-T760:
 

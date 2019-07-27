@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * OpenRISC Linux
  *
@@ -8,6 +7,10 @@
  *
  * Modifications for the OpenRISC architecture:
  * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
+ *
+ *      This program is free software; you can redistribute it and/or
+ *      modify it under the terms of the GNU General Public License
+ *      version 2 as published by the Free Software Foundation
  *
  * Precise Delay Loops
  */
@@ -22,7 +25,7 @@
 
 int read_current_timer(unsigned long *timer_value)
 {
-	*timer_value = get_cycles();
+	*timer_value = mfspr(SPR_TTCR);
 	return 0;
 }
 

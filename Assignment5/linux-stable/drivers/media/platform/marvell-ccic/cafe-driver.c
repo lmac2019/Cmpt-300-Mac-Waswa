@@ -1,11 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * A driver for the CMOS camera controller in the Marvell 88ALP01 "cafe"
  * multifunction chip.  Currently works with the Omnivision OV7670
  * sensor.
  *
  * The data sheet for this device can be found at:
- *    http://wiki.laptop.org/images/5/5c/88ALP01_Datasheet_July_2007.pdf
+ *    http://www.marvell.com/products/pc_connectivity/88alp01/
  *
  * Copyright 2006-11 One Laptop Per Child Association, Inc.
  * Copyright 2006-11 Jonathan Corbet <corbet@lwn.net>
@@ -14,6 +13,9 @@
  *
  * v4l2_device/v4l2_subdev conversion by:
  * Copyright (C) 2009 Hans Verkuil <hverkuil@xs4all.nl>
+ *
+ * This file may be distributed under the terms of the GNU General
+ * Public License, version 2.
  */
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -324,7 +326,7 @@ static u32 cafe_smbus_func(struct i2c_adapter *adapter)
 	       I2C_FUNC_SMBUS_WRITE_BYTE_DATA;
 }
 
-static const struct i2c_algorithm cafe_smbus_algo = {
+static struct i2c_algorithm cafe_smbus_algo = {
 	.smbus_xfer = cafe_smbus_xfer,
 	.functionality = cafe_smbus_func
 };
@@ -339,7 +341,7 @@ static int cafe_smbus_setup(struct cafe_camera *cam)
 		return -ENOMEM;
 	adap->owner = THIS_MODULE;
 	adap->algo = &cafe_smbus_algo;
-	strscpy(adap->name, "cafe_ccic", sizeof(adap->name));
+	strcpy(adap->name, "cafe_ccic");
 	adap->dev.parent = &cam->pdev->dev;
 	i2c_set_adapdata(adap, cam);
 	ret = i2c_add_adapter(adap);
@@ -610,7 +612,7 @@ static int cafe_pci_resume(struct pci_dev *pdev)
 
 #endif  /* CONFIG_PM */
 
-static const struct pci_device_id cafe_ids[] = {
+static struct pci_device_id cafe_ids[] = {
 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL,
 		     PCI_DEVICE_ID_MARVELL_88ALP01_CCIC) },
 	{ 0, }

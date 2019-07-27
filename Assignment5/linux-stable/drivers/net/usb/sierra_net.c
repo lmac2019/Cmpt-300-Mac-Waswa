@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * USB-to-WWAN Driver for Sierra Wireless modems
  *
@@ -10,6 +9,19 @@
  *
  * IMPORTANT DISCLAIMER: This driver is not commercially supported by
  * Sierra Wireless. Use at your own risk.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #define DRIVER_VERSION "v.2.0"
@@ -176,6 +188,9 @@ struct lsi_umts_dual {
 #define SIERRA_NET_LSI_UMTS_DS_LEN     (sizeof(struct lsi_umts_dual))
 #define SIERRA_NET_LSI_UMTS_DS_STATUS_LEN \
 	(SIERRA_NET_LSI_UMTS_DS_LEN - SIERRA_NET_LSI_COMMON_LEN)
+
+/* Forward definitions */
+static void sierra_sync_timer(unsigned long syncdata);
 
 /* Our own net device operations structure */
 static const struct net_device_ops sierra_net_device_ops = {
@@ -460,6 +475,8 @@ static void sierra_net_dosync(struct usbnet *dev)
 			"Send SYNC failed, status %d\n", status);
 
 	/* Now, start a timer and make sure we get the Restart Indication */
+	priv->sync_timer.function = sierra_sync_timer;
+	priv->sync_timer.data = (unsigned long) dev;
 	priv->sync_timer.expires = jiffies + SIERRA_NET_SYNCDELAY;
 	add_timer(&priv->sync_timer);
 }
@@ -576,10 +593,9 @@ static void sierra_net_defer_kevent(struct usbnet *dev, int work)
 /*
  * Sync Retransmit Timer Handler. On expiry, kick the work queue
  */
-static void sierra_sync_timer(struct timer_list *t)
+static void sierra_sync_timer(unsigned long syncdata)
 {
-	struct sierra_net_data *priv = from_timer(priv, t, sync_timer);
-	struct usbnet *dev = priv->usbnet;
+	struct usbnet *dev = (struct usbnet *)syncdata;
 
 	dev_dbg(&dev->udev->dev, "%s", __func__);
 	/* Kick the tasklet */
@@ -736,7 +752,7 @@ static int sierra_net_bind(struct usbnet *dev, struct usb_interface *intf)
 	INIT_WORK(&priv->sierra_net_kevent, sierra_net_kevent);
 
 	/* Only need to do this once */
-	timer_setup(&priv->sync_timer, sierra_sync_timer, 0);
+	init_timer(&priv->sync_timer);
 
 	/* verify fw attributes */
 	status = sierra_net_get_fw_attr(dev, &fwattr);

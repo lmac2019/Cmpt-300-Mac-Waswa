@@ -1,10 +1,13 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * udc.c - ChipIdea UDC driver
  *
  * Copyright (C) 2008 Chipidea - MIPS Technologies, Inc. All rights reserved.
  *
  * Author: David Lopo
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  */
 
 #include <linux/delay.h>
@@ -15,7 +18,6 @@
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/pm_runtime.h>
-#include <linux/pinctrl/consumer.h>
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
 #include <linux/usb/otg-fsm.h>
@@ -942,6 +944,7 @@ isr_setup_status_complete(struct usb_ep *ep, struct usb_request *req)
  */
 static int isr_setup_status_phase(struct ci_hdrc *ci)
 {
+	int retval;
 	struct ci_hw_ep *hwep;
 
 	/*
@@ -957,7 +960,9 @@ static int isr_setup_status_phase(struct ci_hdrc *ci)
 	ci->status->context = ci;
 	ci->status->complete = isr_setup_status_complete;
 
-	return _ep_queue(&hwep->ep, ci->status, GFP_ATOMIC);
+	retval = _ep_queue(&hwep->ep, ci->status, GFP_ATOMIC);
+
+	return retval;
 }
 
 /**
@@ -1524,10 +1529,6 @@ static int ci_udc_vbus_session(struct usb_gadget *_gadget, int is_active)
 		gadget_ready = 1;
 	spin_unlock_irqrestore(&ci->lock, flags);
 
-	if (ci->usb_phy)
-		usb_phy_set_charger_state(ci->usb_phy, is_active ?
-			USB_CHARGER_PRESENT : USB_CHARGER_ABSENT);
-
 	if (gadget_ready) {
 		if (is_active) {
 			pm_runtime_get_sync(&_gadget->dev);
@@ -1622,25 +1623,6 @@ static int ci_udc_pullup(struct usb_gadget *_gadget, int is_on)
 static int ci_udc_start(struct usb_gadget *gadget,
 			 struct usb_gadget_driver *driver);
 static int ci_udc_stop(struct usb_gadget *gadget);
-
-/* Match ISOC IN from the highest endpoint */
-static struct usb_ep *ci_udc_match_ep(struct usb_gadget *gadget,
-			      struct usb_endpoint_descriptor *desc,
-			      struct usb_ss_ep_comp_descriptor *comp_desc)
-{
-	struct ci_hdrc *ci = container_of(gadget, struct ci_hdrc, gadget);
-	struct usb_ep *ep;
-
-	if (usb_endpoint_xfer_isoc(desc) && usb_endpoint_dir_in(desc)) {
-		list_for_each_entry_reverse(ep, &ci->gadget.ep_list, ep_list) {
-			if (ep->caps.dir_in && !ep->claimed)
-				return ep;
-		}
-	}
-
-	return NULL;
-}
-
 /**
  * Device operations part of the API to the USB controller hardware,
  * which don't involve endpoints (or i/o)
@@ -1654,7 +1636,6 @@ static const struct usb_gadget_ops usb_gadget_ops = {
 	.vbus_draw	= ci_udc_vbus_draw,
 	.udc_start	= ci_udc_start,
 	.udc_stop	= ci_udc_stop,
-	.match_ep 	= ci_udc_match_ep,
 };
 
 static int init_eps(struct ci_hdrc *ci)
@@ -1918,9 +1899,6 @@ static int udc_start(struct ci_hdrc *ci)
 	ci->gadget.name         = ci->platdata->name;
 	ci->gadget.otg_caps	= otg_caps;
 
-	if (ci->platdata->flags & CI_HDRC_REQUIRES_ALIGNED_DMA)
-		ci->gadget.quirk_avoids_skb_reserve = 1;
-
 	if (ci->is_otg && (otg_caps->hnp_support || otg_caps->srp_support ||
 						otg_caps->adp_support))
 		ci->gadget.is_otg = 1;
@@ -1986,10 +1964,6 @@ void ci_hdrc_gadget_destroy(struct ci_hdrc *ci)
 
 static int udc_id_switch_for_device(struct ci_hdrc *ci)
 {
-	if (ci->platdata->pins_device)
-		pinctrl_select_state(ci->platdata->pctl,
-				     ci->platdata->pins_device);
-
 	if (ci->is_otg)
 		/* Clear and enable BSV irq */
 		hw_write_otgsc(ci, OTGSC_BSVIS | OTGSC_BSVIE,
@@ -2008,10 +1982,6 @@ static void udc_id_switch_for_host(struct ci_hdrc *ci)
 		hw_write_otgsc(ci, OTGSC_BSVIE | OTGSC_BSVIS, OTGSC_BSVIS);
 
 	ci->vbus_active = 0;
-
-	if (ci->platdata->pins_device && ci->platdata->pins_default)
-		pinctrl_select_state(ci->platdata->pctl,
-				     ci->platdata->pins_default);
 }
 
 /**

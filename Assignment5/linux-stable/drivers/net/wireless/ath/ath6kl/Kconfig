@@ -1,4 +1,3 @@
-# SPDX-License-Identifier: GPL-2.0-only
 config ATH6KL
 	tristate "Atheros mobile chipsets support"
 	depends on CFG80211

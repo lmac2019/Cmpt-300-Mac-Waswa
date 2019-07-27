@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * hfcmulti.c  low level driver for hfc-4s/hfc-8s/hfc-e1 based cards
  *
@@ -10,6 +9,21 @@
  * Copyright 1999  by Werner Cornelius (werner@isdn-development.de)
  * Copyright 2008  by Karsten Keil (kkeil@suse.de)
  * Copyright 2008  by Andreas Eversberg (jolly@eversberg.eu)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
  *
  * Thanks to Cologne Chip AG for this great controller!
  */
@@ -2841,7 +2855,7 @@ irq_notforus:
  */
 
 static void
-hfcmulti_dbusy_timer(struct timer_list *t)
+hfcmulti_dbusy_timer(struct hfc_multi *hc)
 {
 }
 
@@ -3863,7 +3877,8 @@ hfcmulti_initmode(struct dchannel *dch)
 		if (hc->dnum[pt]) {
 			mode_hfcmulti(hc, dch->slot, dch->dev.D.protocol,
 				      -1, 0, -1, 0);
-			timer_setup(&dch->timer, hfcmulti_dbusy_timer, 0);
+			setup_timer(&dch->timer, (void *)hfcmulti_dbusy_timer,
+				    (long)dch);
 		}
 		for (i = 1; i <= 31; i++) {
 			if (!((1 << i) & hc->bmask[pt])) /* skip unused chan */
@@ -3969,7 +3984,8 @@ hfcmulti_initmode(struct dchannel *dch)
 		hc->chan[i].slot_rx = -1;
 		hc->chan[i].conf = -1;
 		mode_hfcmulti(hc, i, dch->dev.D.protocol, -1, 0, -1, 0);
-		timer_setup(&dch->timer, hfcmulti_dbusy_timer, 0);
+		setup_timer(&dch->timer, (void *)hfcmulti_dbusy_timer,
+			    (long)dch);
 		hc->chan[i - 2].slot_tx = -1;
 		hc->chan[i - 2].slot_rx = -1;
 		hc->chan[i - 2].conf = -1;
@@ -4351,8 +4367,7 @@ setup_pci(struct hfc_multi *hc, struct pci_dev *pdev,
 	if (m->clock2)
 		test_and_set_bit(HFC_CHIP_CLOCK2, &hc->chip);
 
-	if (ent->vendor == PCI_VENDOR_ID_DIGIUM &&
-	    ent->device == PCI_DEVICE_ID_DIGIUM_HFC4S) {
+	if (ent->device == 0xB410) {
 		test_and_set_bit(HFC_CHIP_B410P, &hc->chip);
 		test_and_set_bit(HFC_CHIP_PCM_MASTER, &hc->chip);
 		test_and_clear_bit(HFC_CHIP_PCM_SLAVE, &hc->chip);

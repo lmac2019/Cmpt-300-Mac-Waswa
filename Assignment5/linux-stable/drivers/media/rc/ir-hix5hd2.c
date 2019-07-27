@@ -1,7 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2014 Linaro Ltd.
  * Copyright (c) 2014 Hisilicon Limited.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
  */
 
 #include <linux/clk.h>
@@ -68,10 +71,9 @@ struct hix5hd2_ir_priv {
 	unsigned long		rate;
 };
 
-static int hix5hd2_ir_enable(struct hix5hd2_ir_priv *dev, bool on)
+static void hix5hd2_ir_enable(struct hix5hd2_ir_priv *dev, bool on)
 {
 	u32 val;
-	int ret = 0;
 
 	if (dev->regmap) {
 		regmap_read(dev->regmap, IR_CLK, &val);
@@ -85,11 +87,10 @@ static int hix5hd2_ir_enable(struct hix5hd2_ir_priv *dev, bool on)
 		regmap_write(dev->regmap, IR_CLK, val);
 	} else {
 		if (on)
-			ret = clk_prepare_enable(dev->clock);
+			clk_prepare_enable(dev->clock);
 		else
 			clk_disable_unprepare(dev->clock);
 	}
-	return ret;
 }
 
 static int hix5hd2_ir_config(struct hix5hd2_ir_priv *priv)
@@ -126,18 +127,9 @@ static int hix5hd2_ir_config(struct hix5hd2_ir_priv *priv)
 static int hix5hd2_ir_open(struct rc_dev *rdev)
 {
 	struct hix5hd2_ir_priv *priv = rdev->priv;
-	int ret;
 
-	ret = hix5hd2_ir_enable(priv, true);
-	if (ret)
-		return ret;
-
-	ret = hix5hd2_ir_config(priv);
-	if (ret) {
-		hix5hd2_ir_enable(priv, false);
-		return ret;
-	}
-	return 0;
+	hix5hd2_ir_enable(priv, true);
+	return hix5hd2_ir_config(priv);
 }
 
 static void hix5hd2_ir_close(struct rc_dev *rdev)
@@ -172,7 +164,7 @@ static irqreturn_t hix5hd2_ir_rx_interrupt(int irq, void *data)
 	}
 
 	if ((irq_sr & INTMS_SYMBRCV) || (irq_sr & INTMS_TIMEOUT)) {
-		struct ir_raw_event ev = {};
+		DEFINE_IR_RAW_EVENT(ev);
 
 		symb_num = readl_relaxed(priv->base + IR_DATAH);
 		for (i = 0; i < symb_num; i++) {
@@ -247,19 +239,17 @@ static int hix5hd2_ir_probe(struct platform_device *pdev)
 		ret = PTR_ERR(priv->clock);
 		goto err;
 	}
-	ret = clk_prepare_enable(priv->clock);
-	if (ret)
-		goto err;
+	clk_prepare_enable(priv->clock);
 	priv->rate = clk_get_rate(priv->clock);
 
-	rdev->allowed_protocols = RC_PROTO_BIT_ALL_IR_DECODER;
+	rdev->allowed_protocols = RC_BIT_ALL_IR_DECODER;
 	rdev->priv = priv;
 	rdev->open = hix5hd2_ir_open;
 	rdev->close = hix5hd2_ir_close;
 	rdev->driver_name = IR_HIX5HD2_NAME;
 	map_name = of_get_property(node, "linux,rc-map-name", NULL);
 	rdev->map_name = map_name ?: RC_MAP_EMPTY;
-	rdev->device_name = IR_HIX5HD2_NAME;
+	rdev->input_name = IR_HIX5HD2_NAME;
 	rdev->input_phys = IR_HIX5HD2_NAME "/input0";
 	rdev->input_id.bustype = BUS_HOST;
 	rdev->input_id.vendor = 0x0001;
@@ -319,17 +309,9 @@ static int hix5hd2_ir_suspend(struct device *dev)
 static int hix5hd2_ir_resume(struct device *dev)
 {
 	struct hix5hd2_ir_priv *priv = dev_get_drvdata(dev);
-	int ret;
 
-	ret = hix5hd2_ir_enable(priv, true);
-	if (ret)
-		return ret;
-
-	ret = clk_prepare_enable(priv->clock);
-	if (ret) {
-		hix5hd2_ir_enable(priv, false);
-		return ret;
-	}
+	hix5hd2_ir_enable(priv, true);
+	clk_prepare_enable(priv->clock);
 
 	writel_relaxed(0x01, priv->base + IR_ENABLE);
 	writel_relaxed(0x00, priv->base + IR_INTM);

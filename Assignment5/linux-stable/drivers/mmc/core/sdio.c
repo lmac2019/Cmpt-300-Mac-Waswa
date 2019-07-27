@@ -1,8 +1,12 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  *  linux/drivers/mmc/sdio.c
  *
  *  Copyright 2006-2007 Pierre Ossman
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
  */
 
 #include <linux/err.h>
@@ -440,7 +444,6 @@ static int sdio_set_bus_speed_mode(struct mmc_card *card)
 	unsigned int bus_speed, timing;
 	int err;
 	unsigned char speed;
-	unsigned int max_rate;
 
 	/*
 	 * If the host doesn't support any of the UHS-I modes, fallback on
@@ -497,12 +500,9 @@ static int sdio_set_bus_speed_mode(struct mmc_card *card)
 	if (err)
 		return err;
 
-	max_rate = min_not_zero(card->quirk_max_rate,
-				card->sw_caps.uhs_max_dtr);
-
 	if (bus_speed) {
 		mmc_set_timing(card->host, timing);
-		mmc_set_clock(card->host, max_rate);
+		mmc_set_clock(card->host, card->sw_caps.uhs_max_dtr);
 	}
 
 	return 0;
@@ -518,10 +518,11 @@ static int mmc_sdio_init_uhs_card(struct mmc_card *card)
 	if (!card->scr.sda_spec3)
 		return 0;
 
-	/* Switch to wider bus */
-	err = sdio_enable_4bit_bus(card);
-	if (err)
-		goto out;
+	/*
+	 * Switch to wider bus (if supported).
+	 */
+	if (card->host->caps & MMC_CAP_4_BIT_DATA)
+		err = sdio_enable_4bit_bus(card);
 
 	/* Set the driver strength for the card */
 	sdio_select_driver_type(card);
@@ -613,8 +614,6 @@ try_again:
 		if (oldcard && (oldcard->type != MMC_TYPE_SD_COMBO ||
 		    memcmp(card->raw_cid, oldcard->raw_cid, sizeof(card->raw_cid)) != 0)) {
 			mmc_remove_card(card);
-			pr_debug("%s: Perhaps the card was replaced\n",
-				mmc_hostname(host));
 			return -ENOENT;
 		}
 	} else {
@@ -622,8 +621,6 @@ try_again:
 
 		if (oldcard && oldcard->type != MMC_TYPE_SDIO) {
 			mmc_remove_card(card);
-			pr_debug("%s: Perhaps the card was replaced\n",
-				mmc_hostname(host));
 			return -ENOENT;
 		}
 	}
@@ -736,11 +733,8 @@ try_again:
 		int same = (card->cis.vendor == oldcard->cis.vendor &&
 			    card->cis.device == oldcard->cis.device);
 		mmc_remove_card(card);
-		if (!same) {
-			pr_debug("%s: Perhaps the card was replaced\n",
-				mmc_hostname(host));
+		if (!same)
 			return -ENOENT;
-		}
 
 		card = oldcard;
 	}
@@ -795,14 +789,6 @@ try_again:
 		if (err)
 			goto remove;
 	}
-
-	if (host->caps2 & MMC_CAP2_AVOID_3_3V &&
-	    host->ios.signal_voltage == MMC_SIGNAL_VOLTAGE_330) {
-		pr_err("%s: Host failed to negotiate down from 3.3V\n",
-			mmc_hostname(host));
-		err = -EINVAL;
-		goto remove;
-	}
 finish:
 	if (!oldcard)
 		host->card = card;
@@ -814,22 +800,6 @@ remove:
 
 err:
 	return err;
-}
-
-static int mmc_sdio_reinit_card(struct mmc_host *host, bool powered_resume)
-{
-	int ret;
-
-	sdio_reset(host);
-	mmc_go_idle(host);
-	mmc_send_if_cond(host, host->card->ocr);
-
-	ret = mmc_send_io_op_cond(host, 0, NULL);
-	if (ret)
-		return ret;
-
-	return mmc_sdio_init_card(host, host->card->ocr, host->card,
-				  powered_resume);
 }
 
 /*
@@ -937,10 +907,6 @@ static int mmc_sdio_pre_suspend(struct mmc_host *host)
  */
 static int mmc_sdio_suspend(struct mmc_host *host)
 {
-	/* Prevent processing of SDIO IRQs in suspended state. */
-	mmc_card_set_suspended(host->card);
-	cancel_delayed_work_sync(&host->sdio_irq_work);
-
 	mmc_claim_host(host);
 
 	if (mmc_card_keep_power(host) && mmc_card_wake_sdio_irq(host))
@@ -983,26 +949,26 @@ static int mmc_sdio_resume(struct mmc_host *host)
 
 	/* No need to reinitialize powered-resumed nonremovable cards */
 	if (mmc_card_is_removable(host) || !mmc_card_keep_power(host)) {
-		err = mmc_sdio_reinit_card(host, mmc_card_keep_power(host));
+		sdio_reset(host);
+		mmc_go_idle(host);
+		mmc_send_if_cond(host, host->card->ocr);
+		err = mmc_send_io_op_cond(host, 0, NULL);
+		if (!err)
+			err = mmc_sdio_init_card(host, host->card->ocr,
+						 host->card,
+						 mmc_card_keep_power(host));
 	} else if (mmc_card_keep_power(host) && mmc_card_wake_sdio_irq(host)) {
 		/* We may have switched to 1-bit mode during suspend */
 		err = sdio_enable_4bit_bus(host->card);
 	}
 
-	if (err)
-		goto out;
-
-	/* Allow SDIO IRQs to be processed again. */
-	mmc_card_clr_suspended(host->card);
-
-	if (host->sdio_irqs) {
+	if (!err && host->sdio_irqs) {
 		if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD))
 			wake_up_process(host->sdio_irq_thread);
 		else if (host->caps & MMC_CAP_SDIO_IRQ)
 			host->ops->enable_sdio_irq(host, 1);
 	}
 
-out:
 	mmc_release_host(host);
 
 	host->pm_flags &= ~MMC_PM_KEEP_POWER;
@@ -1012,6 +978,8 @@ out:
 static int mmc_sdio_power_restore(struct mmc_host *host)
 {
 	int ret;
+
+	mmc_claim_host(host);
 
 	/*
 	 * Reset the card by performing the same steps that are taken by
@@ -1030,12 +998,20 @@ static int mmc_sdio_power_restore(struct mmc_host *host)
 	 *
 	 */
 
-	mmc_claim_host(host);
+	sdio_reset(host);
+	mmc_go_idle(host);
+	mmc_send_if_cond(host, host->card->ocr);
 
-	ret = mmc_sdio_reinit_card(host, mmc_card_keep_power(host));
+	ret = mmc_send_io_op_cond(host, 0, NULL);
+	if (ret)
+		goto out;
+
+	ret = mmc_sdio_init_card(host, host->card->ocr, host->card,
+				mmc_card_keep_power(host));
 	if (!ret && host->sdio_irqs)
 		mmc_signal_sdio_irq(host);
 
+out:
 	mmc_release_host(host);
 
 	return ret;
@@ -1064,22 +1040,10 @@ static int mmc_sdio_runtime_resume(struct mmc_host *host)
 	return ret;
 }
 
-static int mmc_sdio_hw_reset(struct mmc_host *host)
+static int mmc_sdio_reset(struct mmc_host *host)
 {
 	mmc_power_cycle(host, host->card->ocr);
 	return mmc_sdio_power_restore(host);
-}
-
-static int mmc_sdio_sw_reset(struct mmc_host *host)
-{
-	mmc_set_clock(host, host->f_init);
-	sdio_reset(host);
-	mmc_go_idle(host);
-
-	mmc_set_initial_state(host);
-	mmc_set_initial_signal_voltage(host);
-
-	return mmc_sdio_reinit_card(host, 0);
 }
 
 static const struct mmc_bus_ops mmc_sdio_ops = {
@@ -1090,9 +1054,9 @@ static const struct mmc_bus_ops mmc_sdio_ops = {
 	.resume = mmc_sdio_resume,
 	.runtime_suspend = mmc_sdio_runtime_suspend,
 	.runtime_resume = mmc_sdio_runtime_resume,
+	.power_restore = mmc_sdio_power_restore,
 	.alive = mmc_sdio_alive,
-	.hw_reset = mmc_sdio_hw_reset,
-	.sw_reset = mmc_sdio_sw_reset,
+	.reset = mmc_sdio_reset,
 };
 
 

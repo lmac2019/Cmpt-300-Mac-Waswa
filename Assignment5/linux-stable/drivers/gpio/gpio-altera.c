@@ -1,13 +1,24 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Copyright (C) 2013 Altera Corporation
  * Based on gpio-mpc8xxx.c
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <linux/io.h>
 #include <linux/module.h>
-#include <linux/gpio/driver.h>
-#include <linux/of_gpio.h> /* For of_mm_gpio_chip */
+#include <linux/of_gpio.h>
 #include <linux/platform_device.h>
 
 #define ALTERA_GPIO_MAX_NGPIO		32
@@ -20,9 +31,9 @@
 * struct altera_gpio_chip
 * @mmchip		: memory mapped chip structure.
 * @gpio_lock		: synchronization lock so that new irq/set/get requests
-*			  will be blocked until the current one completes.
+			  will be blocked until the current one completes.
 * @interrupt_trigger	: specifies the hardware configured IRQ trigger type
-*			  (rising, falling, both, high)
+			  (rising, falling, both, high)
 * @mapped_irq		: kernel mapped irq number.
 */
 struct altera_gpio_chip {
@@ -200,7 +211,7 @@ static void altera_gpio_irq_edge_handler(struct irq_desc *desc)
 	altera_gc = gpiochip_get_data(irq_desc_get_handler_data(desc));
 	chip = irq_desc_get_chip(desc);
 	mm_gc = &altera_gc->mmchip;
-	irqdomain = altera_gc->mmchip.gc.irq.domain;
+	irqdomain = altera_gc->mmchip.gc.irqdomain;
 
 	chained_irq_enter(chip, desc);
 
@@ -228,7 +239,7 @@ static void altera_gpio_irq_leveL_high_handler(struct irq_desc *desc)
 	altera_gc = gpiochip_get_data(irq_desc_get_handler_data(desc));
 	chip = irq_desc_get_chip(desc);
 	mm_gc = &altera_gc->mmchip;
-	irqdomain = altera_gc->mmchip.gc.irq.domain;
+	irqdomain = altera_gc->mmchip.gc.irqdomain;
 
 	chained_irq_enter(chip, desc);
 
@@ -313,8 +324,8 @@ skip_irq:
 	return 0;
 teardown:
 	of_mm_gpiochip_remove(&altera_gc->mmchip);
-	pr_err("%pOF: registration failed with status %d\n",
-		node, ret);
+	pr_err("%s: registration failed with status %d\n",
+		node->full_name, ret);
 
 	return ret;
 }

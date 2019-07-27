@@ -1,9 +1,15 @@
-// SPDX-License-Identifier: GPL-2.0
-//
-// Copyright (c) 2003-2004 Simtec Electronics
-//	Ben Dooks <ben@simtec.co.uk>
-//
-// http://www.handhelds.org/projects/rx3715.html
+/* linux/arch/arm/mach-s3c2440/mach-rx3715.c
+ *
+ * Copyright (c) 2003-2004 Simtec Electronics
+ *	Ben Dooks <ben@simtec.co.uk>
+ *
+ * http://www.handhelds.org/projects/rx3715.html
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+*/
 
 #include <linux/kernel.h>
 #include <linux/types.h>
@@ -21,7 +27,7 @@
 #include <linux/serial.h>
 #include <linux/io.h>
 #include <linux/mtd/mtd.h>
-#include <linux/mtd/rawnand.h>
+#include <linux/mtd/nand.h>
 #include <linux/mtd/nand_ecc.h>
 #include <linux/mtd/partitions.h>
 

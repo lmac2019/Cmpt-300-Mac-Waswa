@@ -1,4 +1,3 @@
-# SPDX-License-Identifier: GPL-2.0
 #
 # Makefile for ACPICA Core interpreter
 #
@@ -19,7 +18,6 @@ acpi-y :=		\
 	dsmthdat.o	\
 	dsobject.o	\
 	dsopcode.o	\
-	dspkginit.o	\
 	dsutils.o	\
 	dswexec.o	\
 	dswload.o	\
@@ -65,7 +63,6 @@ acpi-y +=		\
 	exresnte.o	\
 	exresolv.o	\
 	exresop.o	\
-	exserial.o	\
 	exstore.o	\
 	exstoren.o	\
 	exstorob.o	\
@@ -77,13 +74,13 @@ acpi-y +=		\
 	hwacpi.o	\
 	hwesleep.o	\
 	hwgpe.o		\
+	hwpci.o		\
 	hwregs.o	\
 	hwsleep.o	\
 	hwvalid.o	\
 	hwxface.o	\
 	hwxfsleep.o
 
-acpi-$(CONFIG_PCI) += hwpci.o
 acpi-$(ACPI_FUTURE_USAGE) += hwtimer.o
 
 acpi-y +=		\
@@ -179,7 +176,6 @@ acpi-y +=		\
 	utresrc.o	\
 	utstate.o	\
 	utstring.o	\
-	utstrsuppt.o	\
 	utstrtoul64.o	\
 	utxface.o	\
 	utxfinit.o	\

@@ -1,7 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2011-2016 Synaptics Incorporated
  * Copyright (c) 2011 Unixphere
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published by
+ * the Free Software Foundation.
  */
 
 #include <linux/kernel.h>
@@ -331,7 +334,7 @@ static struct attribute *rmi_f01_attrs[] = {
 	NULL
 };
 
-static const struct attribute_group rmi_f01_attr_group = {
+static struct attribute_group rmi_f01_attr_group = {
 	.attrs = rmi_f01_attrs,
 };
 
@@ -576,7 +579,6 @@ static int rmi_f01_probe(struct rmi_function *fn)
 
 static void rmi_f01_remove(struct rmi_function *fn)
 {
-	/* Note that the bus device is used, not the F01 device */
 	sysfs_remove_group(&fn->rmi_dev->dev.kobj, &rmi_f01_attr_group);
 }
 
@@ -678,9 +680,9 @@ static int rmi_f01_resume(struct rmi_function *fn)
 	return 0;
 }
 
-static irqreturn_t rmi_f01_attention(int irq, void *ctx)
+static int rmi_f01_attention(struct rmi_function *fn,
+			     unsigned long *irq_bits)
 {
-	struct rmi_function *fn = ctx;
 	struct rmi_device *rmi_dev = fn->rmi_dev;
 	int error;
 	u8 device_status;
@@ -689,7 +691,7 @@ static irqreturn_t rmi_f01_attention(int irq, void *ctx)
 	if (error) {
 		dev_err(&fn->dev,
 			"Failed to read device status: %d.\n", error);
-		return IRQ_RETVAL(error);
+		return error;
 	}
 
 	if (RMI_F01_STATUS_BOOTLOADER(device_status))
@@ -701,11 +703,11 @@ static irqreturn_t rmi_f01_attention(int irq, void *ctx)
 		error = rmi_dev->driver->reset_handler(rmi_dev);
 		if (error) {
 			dev_err(&fn->dev, "Device reset failed: %d\n", error);
-			return IRQ_RETVAL(error);
+			return error;
 		}
 	}
 
-	return IRQ_HANDLED;
+	return 0;
 }
 
 struct rmi_function_handler rmi_f01_handler = {

@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * kexec trampoline
  *
@@ -7,9 +6,21 @@
  * Copyright (C) 2004 - 2005, Milton D Miller II, IBM Corporation
  * Copyright (C) 2006, Mohan Kumar M, IBM Corporation
  * Copyright (C) 2013, Anton Blanchard, IBM Corporation
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free
+ * Software Foundation (version 2 of the License).
  */
 
-#include <asm/asm-compat.h>
+#if defined(__LITTLE_ENDIAN__)
+#define STWX_BE	stwbrx
+#define LWZX_BE	lwbrx
+#elif defined(__BIG_ENDIAN__)
+#define STWX_BE	stwx
+#define LWZX_BE	lwzx
+#else
+#error no endianness defined!
+#endif
 
 	.machine ppc64
 	.balign 256
@@ -56,7 +67,7 @@ master:
 	mr	%r16,%r3	/* save dt address in reg16 */
 	li	%r4,20
 	LWZX_BE	%r6,%r3,%r4	/* fetch __be32 version number at byte 20 */
-	cmpwi	%cr0,%r6,2	/* v2 or later? */
+	cmpwi	%r0,%r6,2	/* v2 or later? */
 	blt	1f
 	li	%r4,28
 	STWX_BE	%r17,%r3,%r4	/* Store my cpu as __be32 at byte 28 */
@@ -93,13 +104,13 @@ master:
 	.balign 8
 	.globl kernel
 kernel:
-	.8byte  0x0
+	.llong  0x0
 	.size kernel, . - kernel
 
 	.balign 8
 	.globl dt_offset
 dt_offset:
-	.8byte  0x0
+	.llong  0x0
 	.size dt_offset, . - dt_offset
 
 

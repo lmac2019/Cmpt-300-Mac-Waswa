@@ -1,9 +1,17 @@
-// SPDX-License-Identifier: GPL-2.0
-/*
+/******************************************************************************
  * Copyright(c) 2008 - 2010 Realtek Corporation. All rights reserved.
  *
- * Contact Information: wlanfae <wlanfae@realtek.com>
- */
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * The full GNU General Public License is included in this distribution in the
+ * file called LICENSE.
+ *
+ * Contact Information:
+ * wlanfae <wlanfae@realtek.com>
+ *****************************************************************************/
 #include "rtl_core.h"
 #include "rtl_dm.h"
 #include "r8192E_hw.h"
@@ -188,7 +196,7 @@ static	void _rtl92e_dm_check_txrateandretrycount(struct net_device *dev);
 static  void _rtl92e_dm_check_ac_dc_power(struct net_device *dev);
 static void _rtl92e_dm_check_fsync(struct net_device *dev);
 static void _rtl92e_dm_check_rf_ctrl_gpio(void *data);
-static void _rtl92e_dm_fsync_timer_callback(struct timer_list *t);
+static void _rtl92e_dm_fsync_timer_callback(unsigned long data);
 
 /*---------------------Define local function prototype-----------------------*/
 
@@ -988,7 +996,7 @@ static void _rtl92e_dm_check_tx_power_tracking_tssi(struct net_device *dev)
 	tx_power_track_counter++;
 
 
-	if (tx_power_track_counter >= 180) {
+	 if (tx_power_track_counter >= 180) {
 		schedule_delayed_work(&priv->txpower_tracking_wq, 0);
 		tx_power_track_counter = 0;
 	}
@@ -2117,7 +2125,8 @@ static void _rtl92e_dm_init_fsync(struct net_device *dev)
 	priv->rtllib->fsync_state = Default_Fsync;
 	priv->framesyncMonitor = 1;
 
-	timer_setup(&priv->fsync_timer, _rtl92e_dm_fsync_timer_callback, 0);
+	setup_timer(&priv->fsync_timer, _rtl92e_dm_fsync_timer_callback,
+		    (unsigned long)dev);
 }
 
 
@@ -2128,10 +2137,10 @@ static void _rtl92e_dm_deinit_fsync(struct net_device *dev)
 	del_timer_sync(&priv->fsync_timer);
 }
 
-static void _rtl92e_dm_fsync_timer_callback(struct timer_list *t)
+static void _rtl92e_dm_fsync_timer_callback(unsigned long data)
 {
-	struct r8192_priv *priv = from_timer(priv, t, fsync_timer);
-	struct net_device *dev = priv->rtllib->dev;
+	struct net_device *dev = (struct net_device *)data;
+	struct r8192_priv *priv = rtllib_priv((struct net_device *)data);
 	u32 rate_index, rate_count = 0, rate_count_diff = 0;
 	bool		bSwitchFromCountDiff = false;
 	bool		bDoubleTimeInterval = false;

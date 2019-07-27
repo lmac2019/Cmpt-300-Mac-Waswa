@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /* sun3_pgalloc.h --
  * reorganization around 2.3.39, routines moved from sun3_pgtable.h
  *
@@ -35,7 +34,8 @@ do {							\
 	tlb_remove_page((tlb), pte);			\
 } while (0)
 
-static inline pte_t *pte_alloc_one_kernel(struct mm_struct *mm)
+static inline pte_t *pte_alloc_one_kernel(struct mm_struct *mm,
+					  unsigned long address)
 {
 	unsigned long page = __get_free_page(GFP_KERNEL);
 
@@ -46,7 +46,8 @@ static inline pte_t *pte_alloc_one_kernel(struct mm_struct *mm)
 	return (pte_t *) (page);
 }
 
-static inline pgtable_t pte_alloc_one(struct mm_struct *mm)
+static inline pgtable_t pte_alloc_one(struct mm_struct *mm,
+					unsigned long address)
 {
         struct page *page = alloc_pages(GFP_KERNEL, 0);
 

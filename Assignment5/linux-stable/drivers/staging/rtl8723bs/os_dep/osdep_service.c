@@ -1,7 +1,15 @@
-// SPDX-License-Identifier: GPL-2.0
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2012 Realtek Corporation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
  ******************************************************************************/
 
@@ -22,17 +30,22 @@ inline int RTW_STATUS_CODE(int error_code)
 	return _FAIL;
 }
 
-void *_rtw_malloc(u32 sz)
+u8 *_rtw_malloc(u32 sz)
 {
-	return kmalloc(sz, in_interrupt() ? GFP_ATOMIC : GFP_KERNEL);
+	u8 *pbuf = NULL;
+
+	pbuf = kmalloc(sz, in_interrupt() ? GFP_ATOMIC : GFP_KERNEL);
+
+	return pbuf;
 }
 
-void *_rtw_zmalloc(u32 sz)
+u8 *_rtw_zmalloc(u32 sz)
 {
-	void *pbuf = _rtw_malloc(sz);
+	u8 *pbuf = _rtw_malloc(sz);
 
-	if (pbuf)
+	if (pbuf != NULL) {
 		memset(pbuf, 0, sz);
+	}
 
 	return pbuf;
 }
@@ -56,6 +69,13 @@ inline int _rtw_netif_rx(_nic_hdl ndev, struct sk_buff *skb)
 {
 	skb->dev = ndev;
 	return netif_rx(skb);
+}
+
+void rtw_init_timer(_timer *ptimer, void *padapter, void *pfunc)
+{
+	struct adapter *adapter = (struct adapter *)padapter;
+
+	_init_timer(ptimer, adapter->pnetdev, pfunc, adapter);
 }
 
 void _rtw_init_queue(struct __queue *pqueue)
@@ -107,7 +127,7 @@ static int readFile(struct file *fp, char *buf, int len)
 		return -EPERM;
 
 	while (sum<len) {
-		rlen = kernel_read(fp, buf + sum, len - sum, &fp->f_pos);
+		rlen =fp->f_op->read(fp, (char __force __user *)buf+sum, len-sum, &fp->f_pos);
 		if (rlen>0)
 			sum+=rlen;
 		else if (0 != rlen)
@@ -116,7 +136,7 @@ static int readFile(struct file *fp, char *buf, int len)
 			break;
 	}
 
-	return sum;
+	return  sum;
 
 }
 
@@ -129,16 +149,22 @@ static int isFileReadable(char *path)
 {
 	struct file *fp;
 	int ret = 0;
+	mm_segment_t oldfs;
 	char buf;
 
 	fp =filp_open(path, O_RDONLY, 0);
-	if (IS_ERR(fp))
-		return PTR_ERR(fp);
+	if (IS_ERR(fp)) {
+		ret = PTR_ERR(fp);
+	}
+	else {
+		oldfs = get_fs(); set_fs(get_ds());
 
-	if (readFile(fp, &buf, 1) != 1)
-		ret = -EINVAL;
+		if (1!=readFile(fp, &buf, 1))
+			ret = -EINVAL;
 
-	filp_close(fp, NULL);
+		set_fs(oldfs);
+		filp_close(fp, NULL);
+	}
 	return ret;
 }
 
@@ -152,15 +178,16 @@ static int isFileReadable(char *path)
 static int retriveFromFile(char *path, u8 *buf, u32 sz)
 {
 	int ret =-1;
+	mm_segment_t oldfs;
 	struct file *fp;
 
 	if (path && buf) {
-		ret = openFile(&fp, path, O_RDONLY, 0);
-
-		if (ret == 0) {
+		if (0 == (ret =openFile(&fp, path, O_RDONLY, 0))) {
 			DBG_871X("%s openFile path:%s fp =%p\n", __func__, path , fp);
 
+			oldfs = get_fs(); set_fs(get_ds());
 			ret =readFile(fp, buf, sz);
+			set_fs(oldfs);
 			closeFile(fp);
 
 			DBG_871X("%s readFile, ret:%d\n", __func__, ret);
@@ -241,7 +268,7 @@ RETURN:
 	return pnetdev;
 }
 
-void rtw_free_netdev(struct net_device *netdev)
+void rtw_free_netdev(struct net_device * netdev)
 {
 	struct rtw_netdev_priv_indicator *pnpi;
 
@@ -443,7 +470,7 @@ struct rtw_cbuf *rtw_cbuf_alloc(u32 size)
 {
 	struct rtw_cbuf *cbuf;
 
-	cbuf = rtw_malloc(sizeof(*cbuf) + sizeof(void *) * size);
+	cbuf = (struct rtw_cbuf *)rtw_malloc(sizeof(*cbuf) + sizeof(void*)*size);
 
 	if (cbuf) {
 		cbuf->write = cbuf->read = 0;

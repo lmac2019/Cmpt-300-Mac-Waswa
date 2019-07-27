@@ -1,10 +1,11 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * STMicroelectronics pressures driver
  *
  * Copyright 2013 STMicroelectronics Inc.
  *
  * Denis Ciocca <denis.ciocca@st.com>
+ *
+ * Licensed under the GPL-2.
  */
 
 #include <linux/kernel.h>
@@ -279,28 +280,14 @@ static const struct st_sensor_settings st_press_sensors_settings[] = {
 			.mask = 0x04,
 		},
 		.drdy_irq = {
-			.int1 = {
-				.addr = 0x22,
-				.mask = 0x04,
-				.addr_od = 0x22,
-				.mask_od = 0x40,
-			},
-			.int2 = {
-				.addr = 0x22,
-				.mask = 0x20,
-				.addr_od = 0x22,
-				.mask_od = 0x40,
-			},
+			.addr = 0x22,
+			.mask_int1 = 0x04,
+			.mask_int2 = 0x20,
 			.addr_ihl = 0x22,
 			.mask_ihl = 0x80,
-			.stat_drdy = {
-				.addr = ST_SENSORS_DEFAULT_STAT_ADDR,
-				.mask = 0x03,
-			},
-		},
-		.sim = {
-			.addr = 0x20,
-			.value = BIT(0),
+			.addr_od = 0x22,
+			.mask_od = 0x40,
+			.addr_stat_drdy = ST_SENSORS_DEFAULT_STAT_ADDR,
 		},
 		.multi_read_bit = true,
 		.bootime = 2,
@@ -348,9 +335,8 @@ static const struct st_sensor_settings st_press_sensors_settings[] = {
 			.addr = 0x20,
 			.mask = 0x04,
 		},
-		.sim = {
-			.addr = 0x20,
-			.value = BIT(0),
+		.drdy_irq = {
+			.addr = 0,
 		},
 		.multi_read_bit = true,
 		.bootime = 2,
@@ -402,22 +388,14 @@ static const struct st_sensor_settings st_press_sensors_settings[] = {
 			.mask = 0x04,
 		},
 		.drdy_irq = {
-			.int1 = {
-				.addr = 0x23,
-				.mask = 0x01,
-				.addr_od = 0x22,
-				.mask_od = 0x40,
-			},
+			.addr = 0x23,
+			.mask_int1 = 0x01,
+			.mask_int2 = 0x10,
 			.addr_ihl = 0x22,
 			.mask_ihl = 0x80,
-			.stat_drdy = {
-				.addr = ST_SENSORS_DEFAULT_STAT_ADDR,
-				.mask = 0x03,
-			},
-		},
-		.sim = {
-			.addr = 0x20,
-			.value = BIT(0),
+			.addr_od = 0x22,
+			.mask_od = 0x40,
+			.addr_stat_drdy = ST_SENSORS_DEFAULT_STAT_ADDR,
 		},
 		.multi_read_bit = true,
 		.bootime = 2,
@@ -432,8 +410,6 @@ static const struct st_sensor_settings st_press_sensors_settings[] = {
 		.wai_addr = ST_SENSORS_DEFAULT_WAI_ADDRESS,
 		.sensors_supported = {
 			[0] = LPS22HB_PRESS_DEV_NAME,
-			[1] = LPS33HW_PRESS_DEV_NAME,
-			[2] = LPS35HW_PRESS_DEV_NAME,
 		},
 		.ch = (struct iio_chan_spec *)st_press_lps22hb_channels,
 		.num_ch = ARRAY_SIZE(st_press_lps22hb_channels),
@@ -471,91 +447,14 @@ static const struct st_sensor_settings st_press_sensors_settings[] = {
 			.mask = 0x02,
 		},
 		.drdy_irq = {
-			.int1 = {
-				.addr = 0x12,
-				.mask = 0x04,
-				.addr_od = 0x12,
-				.mask_od = 0x40,
-			},
+			.addr = 0x12,
+			.mask_int1 = 0x04,
+			.mask_int2 = 0x08,
 			.addr_ihl = 0x12,
 			.mask_ihl = 0x80,
-			.stat_drdy = {
-				.addr = ST_SENSORS_DEFAULT_STAT_ADDR,
-				.mask = 0x03,
-			},
-		},
-		.sim = {
-			.addr = 0x10,
-			.value = BIT(0),
-		},
-		.multi_read_bit = false,
-		.bootime = 2,
-	},
-	{
-		/*
-		 * CUSTOM VALUES FOR LPS22HH SENSOR
-		 * See LPS22HH datasheet:
-		 * http://www2.st.com/resource/en/datasheet/lps22hh.pdf
-		 */
-		.wai = 0xb3,
-		.wai_addr = ST_SENSORS_DEFAULT_WAI_ADDRESS,
-		.sensors_supported = {
-			[0] = LPS22HH_PRESS_DEV_NAME,
-		},
-		.ch = (struct iio_chan_spec *)st_press_lps22hb_channels,
-		.num_ch = ARRAY_SIZE(st_press_lps22hb_channels),
-		.odr = {
-			.addr = 0x10,
-			.mask = 0x70,
-			.odr_avl = {
-				{ .hz = 1, .value = 0x01 },
-				{ .hz = 10, .value = 0x02 },
-				{ .hz = 25, .value = 0x03 },
-				{ .hz = 50, .value = 0x04 },
-				{ .hz = 75, .value = 0x05 },
-				{ .hz = 100, .value = 0x06 },
-				{ .hz = 200, .value = 0x07 },
-			},
-		},
-		.pw = {
-			.addr = 0x10,
-			.mask = 0x70,
-			.value_off = ST_SENSORS_DEFAULT_POWER_OFF_VALUE,
-		},
-		.fs = {
-			.fs_avl = {
-				/*
-				 * Pressure and temperature sensitivity values
-				 * as defined in table 3 of LPS22HH datasheet.
-				 */
-				[0] = {
-					.num = ST_PRESS_FS_AVL_1260MB,
-					.gain = ST_PRESS_KPASCAL_NANO_SCALE,
-					.gain2 = ST_PRESS_LPS22HB_LSB_PER_CELSIUS,
-				},
-			},
-		},
-		.bdu = {
-			.addr = 0x10,
-			.mask = BIT(1),
-		},
-		.drdy_irq = {
-			.int1 = {
-				.addr = 0x12,
-				.mask = BIT(2),
-				.addr_od = 0x11,
-				.mask_od = BIT(5),
-			},
-			.addr_ihl = 0x11,
-			.mask_ihl = BIT(6),
-			.stat_drdy = {
-				.addr = ST_SENSORS_DEFAULT_STAT_ADDR,
-				.mask = 0x03,
-			},
-		},
-		.sim = {
-			.addr = 0x10,
-			.value = BIT(0),
+			.addr_od = 0x12,
+			.mask_od = 0x40,
+			.addr_stat_drdy = ST_SENSORS_DEFAULT_STAT_ADDR,
 		},
 		.multi_read_bit = false,
 		.bootime = 2,
@@ -648,6 +547,7 @@ static const struct attribute_group st_press_attribute_group = {
 };
 
 static const struct iio_info press_info = {
+	.driver_module = THIS_MODULE,
 	.attrs = &st_press_attribute_group,
 	.read_raw = &st_press_read_raw,
 	.write_raw = &st_press_write_raw,
@@ -656,6 +556,7 @@ static const struct iio_info press_info = {
 
 #ifdef CONFIG_IIO_TRIGGER
 static const struct iio_trigger_ops st_press_trigger_ops = {
+	.owner = THIS_MODULE,
 	.set_trigger_state = ST_PRESS_TRIGGER_SET_STATE,
 	.validate_device = st_sensors_validate_device,
 };
@@ -704,11 +605,10 @@ int st_press_common_probe(struct iio_dev *indio_dev)
 	press_data->odr = press_data->sensor_settings->odr.odr_avl[0].hz;
 
 	/* Some devices don't support a data ready pin. */
-	if (!pdata && (press_data->sensor_settings->drdy_irq.int1.addr ||
-		       press_data->sensor_settings->drdy_irq.int2.addr))
+	if (!pdata && press_data->sensor_settings->drdy_irq.addr)
 		pdata =	(struct st_sensors_platform_data *)&default_press_pdata;
 
-	err = st_sensors_init_sensor(indio_dev, pdata);
+	err = st_sensors_init_sensor(indio_dev, press_data->dev->platform_data);
 	if (err < 0)
 		goto st_press_power_off;
 

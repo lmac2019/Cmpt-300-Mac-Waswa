@@ -49,8 +49,7 @@
 		stdout-path = "serial0:115200n8";
 	};
 
-	memory@80000000 {
-		device_type = "memory";
+	memory {
 		reg = <0x80000000 0x20000000>;
 	};
 
@@ -97,10 +96,6 @@
 	status = "okay";
 };
 
-&edma1 {
-	status = "okay";
-};
-
 &esdhc1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_esdhc1>;
@@ -138,7 +133,7 @@
 	pinctrl-names = "default", "gpio";
 	pinctrl-0 = <&pinctrl_i2c0>;
 	pinctrl-1 = <&pinctrl_i2c0_gpio>;
-	scl-gpios = <&gpio1 4 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
+	scl-gpios = <&gpio1 4 GPIO_ACTIVE_HIGH>;
 	sda-gpios = <&gpio1 5 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 
@@ -147,12 +142,12 @@
 		reg = <0x48>;
 	};
 
-	eeprom@50 {
+	at24c04@50 {
 		compatible = "atmel,24c04";
 		reg = <0x50>;
 	};
 
-	eeprom@52 {
+	at24c04@52 {
 		compatible = "atmel,24c04";
 		reg = <0x52>;
 	};
@@ -221,10 +216,6 @@
 
 &usbphy1 {
 	status = "okay";
-};
-
-&tempsensor {
-	io-channels = <&adc0 16>;
 };
 
 &iomuxc {

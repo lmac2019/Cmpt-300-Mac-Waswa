@@ -1,9 +1,14 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * Host AP crypto routines
  *
  * Copyright (c) 2002-2003, Jouni Malinen <jkmaline@cc.hut.fi>
  * Portions Copyright (C) 2004, Intel Corporation <jketreno@linux.intel.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation. See README and COPYING for
+ * more details.
+ *
  */
 
 #include <linux/module.h>
@@ -52,9 +57,9 @@ void ieee80211_crypt_deinit_entries(struct ieee80211_device *ieee,
 	}
 }
 
-void ieee80211_crypt_deinit_handler(struct timer_list *t)
+void ieee80211_crypt_deinit_handler(unsigned long data)
 {
-	struct ieee80211_device *ieee = from_timer(ieee, t, crypt_deinit_timer);
+	struct ieee80211_device *ieee = (struct ieee80211_device *)data;
 	unsigned long flags;
 
 	spin_lock_irqsave(&ieee->lock, flags);

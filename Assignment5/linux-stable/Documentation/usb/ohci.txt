@@ -1,7 +1,3 @@
-====
-OHCI
-====
-
 23-Aug-2002
 
 The "ohci-hcd" driver is a USB Host Controller Driver (HCD) that is derived
@@ -33,3 +29,4 @@ work on while the OS is getting around to the relevant IRQ processing.
 
 - David Brownell
   <dbrownell@users.sourceforge.net>
+

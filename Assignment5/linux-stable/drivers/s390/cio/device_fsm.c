@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * finite state machine for device handling
  *
@@ -92,12 +91,12 @@ static void ccw_timeout_log(struct ccw_device *cdev)
 /*
  * Timeout function. It just triggers a DEV_EVENT_TIMEOUT.
  */
-void
-ccw_device_timeout(struct timer_list *t)
+static void
+ccw_device_timeout(unsigned long data)
 {
-	struct ccw_device_private *priv = from_timer(priv, t, timer);
-	struct ccw_device *cdev = priv->cdev;
+	struct ccw_device *cdev;
 
+	cdev = (struct ccw_device *) data;
 	spin_lock_irq(cdev->ccwlock);
 	if (timeout_log_enabled)
 		ccw_timeout_log(cdev);
@@ -119,6 +118,8 @@ ccw_device_set_timeout(struct ccw_device *cdev, int expires)
 		if (mod_timer(&cdev->private->timer, jiffies + expires))
 			return;
 	}
+	cdev->private->timer.function = ccw_device_timeout;
+	cdev->private->timer.data = (unsigned long) cdev;
 	cdev->private->timer.expires = jiffies + expires;
 	add_timer(&cdev->private->timer);
 }
@@ -475,17 +476,6 @@ static void create_fake_irb(struct irb *irb, int type)
 	}
 }
 
-static void ccw_device_handle_broken_paths(struct ccw_device *cdev)
-{
-	struct subchannel *sch = to_subchannel(cdev->dev.parent);
-	u8 broken_paths = (sch->schib.pmcw.pam & sch->opm) ^ sch->vpm;
-
-	if (broken_paths && (cdev->private->path_broken_mask != broken_paths))
-		ccw_device_schedule_recovery();
-
-	cdev->private->path_broken_mask = broken_paths;
-}
-
 void ccw_device_verify_done(struct ccw_device *cdev, int err)
 {
 	struct subchannel *sch;
@@ -518,7 +508,6 @@ callback:
 			memset(&cdev->private->irb, 0, sizeof(struct irb));
 		}
 		ccw_device_report_path_events(cdev);
-		ccw_device_handle_broken_paths(cdev);
 		break;
 	case -ETIME:
 	case -EUSERS:
@@ -795,7 +784,6 @@ ccw_device_online_timeout(struct ccw_device *cdev, enum dev_event dev_event)
 
 	ccw_device_set_timeout(cdev, 0);
 	cdev->private->iretry = 255;
-	cdev->private->async_kill_io_rc = -ETIMEDOUT;
 	ret = ccw_device_cancel_halt_clear(cdev);
 	if (ret == -EBUSY) {
 		ccw_device_set_timeout(cdev, 3*HZ);
@@ -872,7 +860,7 @@ ccw_device_killing_irq(struct ccw_device *cdev, enum dev_event dev_event)
 	/* OK, i/o is dead now. Call interrupt handler. */
 	if (cdev->handler)
 		cdev->handler(cdev, cdev->private->intparm,
-			      ERR_PTR(cdev->private->async_kill_io_rc));
+			      ERR_PTR(-EIO));
 }
 
 static void
@@ -889,16 +877,14 @@ ccw_device_killing_timeout(struct ccw_device *cdev, enum dev_event dev_event)
 	ccw_device_online_verify(cdev, 0);
 	if (cdev->handler)
 		cdev->handler(cdev, cdev->private->intparm,
-			      ERR_PTR(cdev->private->async_kill_io_rc));
+			      ERR_PTR(-EIO));
 }
 
 void ccw_device_kill_io(struct ccw_device *cdev)
 {
 	int ret;
 
-	ccw_device_set_timeout(cdev, 0);
 	cdev->private->iretry = 255;
-	cdev->private->async_kill_io_rc = -EIO;
 	ret = ccw_device_cancel_halt_clear(cdev);
 	if (ret == -EBUSY) {
 		ccw_device_set_timeout(cdev, 3*HZ);

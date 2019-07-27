@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Xen event channels
  *
@@ -29,7 +28,7 @@
 #include <linux/irq.h>
 #include <linux/moduleparam.h>
 #include <linux/string.h>
-#include <linux/memblock.h>
+#include <linux/bootmem.h>
 #include <linux/slab.h>
 #include <linux/irqnr.h>
 #include <linux/pci.h>
@@ -139,7 +138,7 @@ static int set_evtchn_to_irq(unsigned evtchn, unsigned irq)
 		clear_evtchn_to_irq_row(row);
 	}
 
-	evtchn_to_irq[row][col] = irq;
+	evtchn_to_irq[EVTCHN_ROW(evtchn)][EVTCHN_COL(evtchn)] = irq;
 	return 0;
 }
 
@@ -629,6 +628,8 @@ static void __unbind_from_irq(unsigned int irq)
 		xen_irq_info_cleanup(info);
 	}
 
+	BUG_ON(info_for_irq(irq)->type == IRQT_UNBOUND);
+
 	xen_free_irq(irq);
 }
 
@@ -754,8 +755,8 @@ out:
 	mutex_unlock(&irq_mapping_update_lock);
 	return irq;
 error_irq:
-	while (nvec--)
-		__unbind_from_irq(irq + nvec);
+	for (; i >= 0; i--)
+		__unbind_from_irq(irq + i);
 	mutex_unlock(&irq_mapping_update_lock);
 	return ret;
 }
@@ -1651,9 +1652,11 @@ void xen_callback_vector(void)
 			xen_have_vector_callback = 0;
 			return;
 		}
-		pr_info_once("Xen HVM callback vector for event delivery is enabled\n");
-		alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR,
-				xen_hvm_callback_vector);
+		pr_info("Xen HVM callback vector for event delivery is enabled\n");
+		/* in the restore case the vector has already been allocated */
+		if (!test_bit(HYPERVISOR_CALLBACK_VECTOR, used_vectors))
+			alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR,
+					xen_hvm_callback_vector);
 	}
 }
 #else
@@ -1688,6 +1691,7 @@ void __init xen_init_IRQ(void)
 
 #ifdef CONFIG_X86
 	if (xen_pv_domain()) {
+		irq_ctx_init(smp_processor_id());
 		if (xen_initial_domain())
 			pci_xen_initial_domain();
 	}

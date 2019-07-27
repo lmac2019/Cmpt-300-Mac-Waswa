@@ -1,8 +1,11 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2016 Marek Vasut <marex@denx.de>
  *
  * Driver for Hope RF HP03 digital temperature and pressure sensor.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  */
 
 #define pr_fmt(fmt) "hp03: " fmt
@@ -205,6 +208,7 @@ static int hp03_read_raw(struct iio_dev *indio_dev,
 }
 
 static const struct iio_info hp03_info = {
+	.driver_module	= THIS_MODULE,
 	.read_raw	= &hp03_read_raw,
 };
 

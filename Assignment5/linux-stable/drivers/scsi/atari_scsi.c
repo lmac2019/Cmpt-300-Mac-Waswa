@@ -671,7 +671,7 @@ static void atari_scsi_falcon_reg_write(unsigned int reg, u8 value)
 
 #include "NCR5380.c"
 
-static int atari_scsi_host_reset(struct scsi_cmnd *cmd)
+static int atari_scsi_bus_reset(struct scsi_cmnd *cmd)
 {
 	int rv;
 	unsigned long flags;
@@ -688,7 +688,7 @@ static int atari_scsi_host_reset(struct scsi_cmnd *cmd)
 		atari_dma_orig_addr = NULL;
 	}
 
-	rv = NCR5380_host_reset(cmd);
+	rv = NCR5380_bus_reset(cmd);
 
 	/* The 5380 raises its IRQ line while _RST is active but the ST DMA
 	 * "lock" has been released so this interrupt may end up handled by
@@ -711,10 +711,10 @@ static struct scsi_host_template atari_scsi_template = {
 	.info			= atari_scsi_info,
 	.queuecommand		= atari_scsi_queue_command,
 	.eh_abort_handler	= atari_scsi_abort,
-	.eh_host_reset_handler	= atari_scsi_host_reset,
+	.eh_bus_reset_handler	= atari_scsi_bus_reset,
 	.this_id		= 7,
 	.cmd_per_lun		= 2,
-	.dma_boundary		= PAGE_SIZE - 1,
+	.use_clustering		= DISABLE_CLUSTERING,
 	.cmd_size		= NCR5380_CMD_SIZE,
 };
 
@@ -757,17 +757,15 @@ static int __init atari_scsi_probe(struct platform_device *pdev)
 
 	if (setup_hostid >= 0) {
 		atari_scsi_template.this_id = setup_hostid & 7;
-	} else if (IS_REACHABLE(CONFIG_NVRAM)) {
+	} else {
 		/* Test if a host id is set in the NVRam */
-		if (ATARIHW_PRESENT(TT_CLK)) {
-			unsigned char b;
-			loff_t offset = 16;
-			ssize_t count = nvram_read(&b, 1, &offset);
+		if (ATARIHW_PRESENT(TT_CLK) && nvram_check_checksum()) {
+			unsigned char b = nvram_read_byte(16);
 
 			/* Arbitration enabled? (for TOS)
 			 * If yes, use configured host ID
 			 */
-			if ((count == 1) && (b & 0x80))
+			if (b & 0x80)
 				atari_scsi_template.this_id = b & 7;
 		}
 	}

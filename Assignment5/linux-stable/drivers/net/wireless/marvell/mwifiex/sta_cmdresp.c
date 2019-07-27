@@ -70,7 +70,11 @@ mwifiex_process_cmdresp_error(struct mwifiex_private *priv,
 		break;
 	case HostCmd_CMD_802_11_SCAN:
 	case HostCmd_CMD_802_11_SCAN_EXT:
-		mwifiex_cancel_scan(adapter);
+		mwifiex_cancel_pending_scan_cmd(adapter);
+
+		spin_lock_irqsave(&adapter->mwifiex_cmd_lock, flags);
+		adapter->scan_processing = false;
+		spin_unlock_irqrestore(&adapter->mwifiex_cmd_lock, flags);
 		break;
 
 	case HostCmd_CMD_MAC_CONTROL:
@@ -294,8 +298,9 @@ static int mwifiex_ret_tx_rate_cfg(struct mwifiex_private *priv,
 			priv->bitmap_rates[1] =
 				le16_to_cpu(rate_scope->ofdm_rate_bitmap);
 			for (i = 0;
-			     i < ARRAY_SIZE(rate_scope->ht_mcs_rate_bitmap);
-			     i++)
+			     i <
+			     sizeof(rate_scope->ht_mcs_rate_bitmap) /
+			     sizeof(u16); i++)
 				priv->bitmap_rates[2 + i] =
 					le16_to_cpu(rate_scope->
 						    ht_mcs_rate_bitmap[i]);
@@ -1025,14 +1030,17 @@ mwifiex_create_custom_regdomain(struct mwifiex_private *priv,
 	struct ieee80211_regdomain *regd;
 	struct ieee80211_reg_rule *rule;
 	bool new_rule;
-	int idx, freq, prev_freq = 0;
+	int regd_size, idx, freq, prev_freq = 0;
 	u32 bw, prev_bw = 0;
 	u8 chflags, prev_chflags = 0, valid_rules = 0;
 
 	if (WARN_ON_ONCE(num_chan > NL80211_MAX_SUPP_REG_RULES))
 		return ERR_PTR(-EINVAL);
 
-	regd = kzalloc(struct_size(regd, reg_rules, num_chan), GFP_KERNEL);
+	regd_size = sizeof(struct ieee80211_regdomain) +
+		    num_chan * sizeof(struct ieee80211_reg_rule);
+
+	regd = kzalloc(regd_size, GFP_KERNEL);
 	if (!regd)
 		return ERR_PTR(-ENOMEM);
 
@@ -1163,22 +1171,6 @@ static int mwifiex_ret_pkt_aggr_ctrl(struct mwifiex_private *priv,
 				le16_to_cpu(pkt_aggr_ctrl->tx_aggr_max_num);
 	adapter->bus_aggr.tx_aggr_align =
 				le16_to_cpu(pkt_aggr_ctrl->tx_aggr_align);
-
-	return 0;
-}
-
-static int mwifiex_ret_get_chan_info(struct mwifiex_private *priv,
-				     struct host_cmd_ds_command *resp,
-				     struct mwifiex_channel_band *channel_band)
-{
-	struct host_cmd_ds_sta_configure *sta_cfg_cmd = &resp->params.sta_cfg;
-	struct host_cmd_tlv_channel_band *tlv_band_channel;
-
-	tlv_band_channel =
-	(struct host_cmd_tlv_channel_band *)sta_cfg_cmd->tlv_buffer;
-	memcpy(&channel_band->band_config, &tlv_band_channel->band_config,
-	       sizeof(struct mwifiex_band_config));
-	channel_band->channel = tlv_band_channel->channel;
 
 	return 0;
 }
@@ -1405,9 +1397,6 @@ int mwifiex_process_sta_cmdresp(struct mwifiex_private *priv, u16 cmdresp_no,
 		break;
 	case HostCmd_CMD_CHAN_REGION_CFG:
 		ret = mwifiex_ret_chan_region_cfg(priv, resp);
-		break;
-	case HostCmd_CMD_STA_CONFIGURE:
-		ret = mwifiex_ret_get_chan_info(priv, resp, data_buf);
 		break;
 	default:
 		mwifiex_dbg(adapter, ERROR,

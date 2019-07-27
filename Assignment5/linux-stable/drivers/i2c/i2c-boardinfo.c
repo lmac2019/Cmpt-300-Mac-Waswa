@@ -1,6 +1,15 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * i2c-boardinfo.c - collect pre-declarations of I2C devices
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  */
 
 #include <linux/export.h>
@@ -77,7 +86,6 @@ int i2c_register_board_info(int busnum, struct i2c_board_info const *info, unsig
 					property_entries_dup(info->properties);
 			if (IS_ERR(devinfo->board_info.properties)) {
 				status = PTR_ERR(devinfo->board_info.properties);
-				kfree(devinfo);
 				break;
 			}
 		}
@@ -90,7 +98,6 @@ int i2c_register_board_info(int busnum, struct i2c_board_info const *info, unsig
 					GFP_KERNEL);
 			if (!devinfo->board_info.resources) {
 				status = -ENOMEM;
-				kfree(devinfo);
 				break;
 			}
 		}

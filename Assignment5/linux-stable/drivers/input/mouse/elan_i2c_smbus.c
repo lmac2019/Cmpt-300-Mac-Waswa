@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Elan I2C/SMBus Touchpad driver - SMBus interface
  *
@@ -9,6 +8,10 @@
  * Based on cyapa driver:
  * copyright (c) 2011-2012 Cypress Semiconductor, Inc.
  * copyright (c) 2011-2012 Google, Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation.
  *
  * Trademarks are the property of their respective owners.
  */
@@ -53,7 +56,7 @@
 static int elan_smbus_initialize(struct i2c_client *client)
 {
 	u8 check[ETP_SMBUS_HELLOPACKET_LEN] = { 0x55, 0x55, 0x55, 0x55, 0x55 };
-	u8 values[I2C_SMBUS_BLOCK_MAX] = {0};
+	u8 values[ETP_SMBUS_HELLOPACKET_LEN] = { 0, 0, 0, 0, 0 };
 	int len, error;
 
 	/* Get hello packet */
@@ -114,16 +117,12 @@ static int elan_smbus_calibrate(struct i2c_client *client)
 static int elan_smbus_calibrate_result(struct i2c_client *client, u8 *val)
 {
 	int error;
-	u8 buf[I2C_SMBUS_BLOCK_MAX] = {0};
-
-	BUILD_BUG_ON(ETP_CALIBRATE_MAX_LEN > sizeof(buf));
 
 	error = i2c_smbus_read_block_data(client,
-					  ETP_SMBUS_CALIBRATE_QUERY, buf);
+					  ETP_SMBUS_CALIBRATE_QUERY, val);
 	if (error < 0)
 		return error;
 
-	memcpy(val, buf, ETP_CALIBRATE_MAX_LEN);
 	return 0;
 }
 
@@ -131,7 +130,7 @@ static int elan_smbus_get_baseline_data(struct i2c_client *client,
 					bool max_baseline, u8 *value)
 {
 	int error;
-	u8 val[I2C_SMBUS_BLOCK_MAX] = {0};
+	u8 val[3];
 
 	error = i2c_smbus_read_block_data(client,
 					  max_baseline ?
@@ -150,7 +149,7 @@ static int elan_smbus_get_version(struct i2c_client *client,
 				  bool iap, u8 *version)
 {
 	int error;
-	u8 val[I2C_SMBUS_BLOCK_MAX] = {0};
+	u8 val[3];
 
 	error = i2c_smbus_read_block_data(client,
 					  iap ? ETP_SMBUS_IAP_VERSION_CMD :
@@ -167,11 +166,10 @@ static int elan_smbus_get_version(struct i2c_client *client,
 }
 
 static int elan_smbus_get_sm_version(struct i2c_client *client,
-				     u16 *ic_type, u8 *version,
-				     u8 *clickpad)
+				     u16 *ic_type, u8 *version)
 {
 	int error;
-	u8 val[I2C_SMBUS_BLOCK_MAX] = {0};
+	u8 val[3];
 
 	error = i2c_smbus_read_block_data(client,
 					  ETP_SMBUS_SM_VERSION_CMD, val);
@@ -182,14 +180,13 @@ static int elan_smbus_get_sm_version(struct i2c_client *client,
 
 	*version = val[0];
 	*ic_type = val[1];
-	*clickpad = val[0] & 0x10;
 	return 0;
 }
 
 static int elan_smbus_get_product_id(struct i2c_client *client, u16 *id)
 {
 	int error;
-	u8 val[I2C_SMBUS_BLOCK_MAX] = {0};
+	u8 val[3];
 
 	error = i2c_smbus_read_block_data(client,
 					  ETP_SMBUS_UNIQUEID_CMD, val);
@@ -206,7 +203,7 @@ static int elan_smbus_get_checksum(struct i2c_client *client,
 				   bool iap, u16 *csum)
 {
 	int error;
-	u8 val[I2C_SMBUS_BLOCK_MAX] = {0};
+	u8 val[3];
 
 	error = i2c_smbus_read_block_data(client,
 					  iap ? ETP_SMBUS_FW_CHECKSUM_CMD :
@@ -227,7 +224,7 @@ static int elan_smbus_get_max(struct i2c_client *client,
 {
 	int ret;
 	int error;
-	u8 val[I2C_SMBUS_BLOCK_MAX] = {0};
+	u8 val[3];
 
 	ret = i2c_smbus_read_block_data(client, ETP_SMBUS_RANGE_CMD, val);
 	if (ret != 3) {
@@ -247,7 +244,7 @@ static int elan_smbus_get_resolution(struct i2c_client *client,
 {
 	int ret;
 	int error;
-	u8 val[I2C_SMBUS_BLOCK_MAX] = {0};
+	u8 val[3];
 
 	ret = i2c_smbus_read_block_data(client, ETP_SMBUS_RESOLUTION_CMD, val);
 	if (ret != 3) {
@@ -268,7 +265,7 @@ static int elan_smbus_get_num_traces(struct i2c_client *client,
 {
 	int ret;
 	int error;
-	u8 val[I2C_SMBUS_BLOCK_MAX] = {0};
+	u8 val[3];
 
 	ret = i2c_smbus_read_block_data(client, ETP_SMBUS_XY_TRACENUM_CMD, val);
 	if (ret != 3) {
@@ -295,7 +292,7 @@ static int elan_smbus_iap_get_mode(struct i2c_client *client,
 {
 	int error;
 	u16 constant;
-	u8 val[I2C_SMBUS_BLOCK_MAX] = {0};
+	u8 val[3];
 
 	error = i2c_smbus_read_block_data(client, ETP_SMBUS_IAP_CTRL_CMD, val);
 	if (error < 0) {
@@ -346,7 +343,7 @@ static int elan_smbus_prepare_fw_update(struct i2c_client *client)
 	int len;
 	int error;
 	enum tp_mode mode;
-	u8 val[I2C_SMBUS_BLOCK_MAX] = {0};
+	u8 val[3];
 	u8 cmd[4] = {0x0F, 0x78, 0x00, 0x06};
 	u16 password;
 
@@ -384,7 +381,7 @@ static int elan_smbus_prepare_fw_update(struct i2c_client *client)
 		len = i2c_smbus_read_block_data(client,
 						ETP_SMBUS_IAP_PASSWORD_READ,
 						val);
-		if (len < (int)sizeof(u16)) {
+		if (len < sizeof(u16)) {
 			error = len < 0 ? len : -EIO;
 			dev_err(dev, "failed to read iap password: %d\n",
 				error);
@@ -420,7 +417,7 @@ static int elan_smbus_write_fw_block(struct i2c_client *client,
 	struct device *dev = &client->dev;
 	int error;
 	u16 result;
-	u8 val[I2C_SMBUS_BLOCK_MAX] = {0};
+	u8 val[3];
 
 	/*
 	 * Due to the limitation of smbus protocol limiting
@@ -472,8 +469,6 @@ static int elan_smbus_write_fw_block(struct i2c_client *client,
 static int elan_smbus_get_report(struct i2c_client *client, u8 *report)
 {
 	int len;
-
-	BUILD_BUG_ON(I2C_SMBUS_BLOCK_MAX > ETP_SMBUS_REPORT_LEN);
 
 	len = i2c_smbus_read_block_data(client,
 					ETP_SMBUS_PACKET_QUERY,

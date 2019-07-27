@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * This contains encryption functions for per-file encryption.
  *
@@ -28,7 +27,6 @@
 #include <linux/dcache.h>
 #include <linux/namei.h>
 #include <crypto/aes.h>
-#include <crypto/skcipher.h>
 #include "fscrypt_private.h"
 
 static unsigned int num_prealloc_crypto_pages = 32;
@@ -46,17 +44,11 @@ static mempool_t *fscrypt_bounce_page_pool = NULL;
 static LIST_HEAD(fscrypt_free_ctxs);
 static DEFINE_SPINLOCK(fscrypt_ctx_lock);
 
-static struct workqueue_struct *fscrypt_read_workqueue;
+struct workqueue_struct *fscrypt_read_workqueue;
 static DEFINE_MUTEX(fscrypt_init_mutex);
 
 static struct kmem_cache *fscrypt_ctx_cachep;
 struct kmem_cache *fscrypt_info_cachep;
-
-void fscrypt_enqueue_decrypt_work(struct work_struct *work)
-{
-	queue_work(fscrypt_read_workqueue, work);
-}
-EXPORT_SYMBOL(fscrypt_enqueue_decrypt_work);
 
 /**
  * fscrypt_release_ctx() - Releases an encryption context
@@ -88,16 +80,22 @@ EXPORT_SYMBOL(fscrypt_release_ctx);
 
 /**
  * fscrypt_get_ctx() - Gets an encryption context
+ * @inode:       The inode for which we are doing the crypto
  * @gfp_flags:   The gfp flag for memory allocation
  *
  * Allocates and initializes an encryption context.
  *
- * Return: A new encryption context on success; an ERR_PTR() otherwise.
+ * Return: An allocated and initialized encryption context on success; error
+ * value or NULL otherwise.
  */
-struct fscrypt_ctx *fscrypt_get_ctx(gfp_t gfp_flags)
+struct fscrypt_ctx *fscrypt_get_ctx(const struct inode *inode, gfp_t gfp_flags)
 {
-	struct fscrypt_ctx *ctx;
+	struct fscrypt_ctx *ctx = NULL;
+	struct fscrypt_info *ci = inode->i_crypt_info;
 	unsigned long flags;
+
+	if (ci == NULL)
+		return ERR_PTR(-ENOKEY);
 
 	/*
 	 * We first try getting the ctx from a free list because in
@@ -128,17 +126,19 @@ struct fscrypt_ctx *fscrypt_get_ctx(gfp_t gfp_flags)
 }
 EXPORT_SYMBOL(fscrypt_get_ctx);
 
-void fscrypt_generate_iv(union fscrypt_iv *iv, u64 lblk_num,
-			 const struct fscrypt_info *ci)
+/**
+ * page_crypt_complete() - completion callback for page crypto
+ * @req: The asynchronous cipher request context
+ * @res: The result of the cipher operation
+ */
+static void page_crypt_complete(struct crypto_async_request *req, int res)
 {
-	memset(iv, 0, ci->ci_mode->ivsize);
-	iv->lblk_num = cpu_to_le64(lblk_num);
+	struct fscrypt_completion_result *ecr = req->data;
 
-	if (ci->ci_flags & FS_POLICY_FLAG_DIRECT_KEY)
-		memcpy(iv->nonce, ci->ci_nonce, FS_KEY_DERIVATION_NONCE_SIZE);
-
-	if (ci->ci_essiv_tfm != NULL)
-		crypto_cipher_encrypt_one(ci->ci_essiv_tfm, iv->raw, iv->raw);
+	if (res == -EINPROGRESS)
+		return;
+	ecr->res = res;
+	complete(&ecr->completion);
 }
 
 int fscrypt_do_page_crypto(const struct inode *inode, fscrypt_direction_t rw,
@@ -146,9 +146,12 @@ int fscrypt_do_page_crypto(const struct inode *inode, fscrypt_direction_t rw,
 			   struct page *dest_page, unsigned int len,
 			   unsigned int offs, gfp_t gfp_flags)
 {
-	union fscrypt_iv iv;
+	struct {
+		__le64 index;
+		u8 padding[FS_IV_SIZE - sizeof(__le64)];
+	} iv;
 	struct skcipher_request *req = NULL;
-	DECLARE_CRYPTO_WAIT(wait);
+	DECLARE_FS_COMPLETION_RESULT(ecr);
 	struct scatterlist dst, src;
 	struct fscrypt_info *ci = inode->i_crypt_info;
 	struct crypto_skcipher *tfm = ci->ci_ctfm;
@@ -156,15 +159,27 @@ int fscrypt_do_page_crypto(const struct inode *inode, fscrypt_direction_t rw,
 
 	BUG_ON(len == 0);
 
-	fscrypt_generate_iv(&iv, lblk_num, ci);
+	BUILD_BUG_ON(sizeof(iv) != FS_IV_SIZE);
+	BUILD_BUG_ON(AES_BLOCK_SIZE != FS_IV_SIZE);
+	iv.index = cpu_to_le64(lblk_num);
+	memset(iv.padding, 0, sizeof(iv.padding));
+
+	if (ci->ci_essiv_tfm != NULL) {
+		crypto_cipher_encrypt_one(ci->ci_essiv_tfm, (u8 *)&iv,
+					  (u8 *)&iv);
+	}
 
 	req = skcipher_request_alloc(tfm, gfp_flags);
-	if (!req)
+	if (!req) {
+		printk_ratelimited(KERN_ERR
+				"%s: crypto_request_alloc() failed\n",
+				__func__);
 		return -ENOMEM;
+	}
 
 	skcipher_request_set_callback(
 		req, CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP,
-		crypto_req_done, &wait);
+		page_crypt_complete, &ecr);
 
 	sg_init_table(&dst, 1);
 	sg_set_page(&dst, dest_page, len, offs);
@@ -172,15 +187,19 @@ int fscrypt_do_page_crypto(const struct inode *inode, fscrypt_direction_t rw,
 	sg_set_page(&src, src_page, len, offs);
 	skcipher_request_set_crypt(req, &src, &dst, len, &iv);
 	if (rw == FS_DECRYPT)
-		res = crypto_wait_req(crypto_skcipher_decrypt(req), &wait);
+		res = crypto_skcipher_decrypt(req);
 	else
-		res = crypto_wait_req(crypto_skcipher_encrypt(req), &wait);
+		res = crypto_skcipher_encrypt(req);
+	if (res == -EINPROGRESS || res == -EBUSY) {
+		BUG_ON(req->base.data != &ecr);
+		wait_for_completion(&ecr.completion);
+		res = ecr.res;
+	}
 	skcipher_request_free(req);
 	if (res) {
-		fscrypt_err(inode->i_sb,
-			    "%scryption failed for inode %lu, block %llu: %d",
-			    (rw == FS_DECRYPT ? "de" : "en"),
-			    inode->i_ino, lblk_num, res);
+		printk_ratelimited(KERN_ERR
+			"%s: crypto_skcipher_encrypt() returned %d\n",
+			__func__, res);
 		return res;
 	}
 	return 0;
@@ -253,9 +272,9 @@ struct page *fscrypt_encrypt_page(const struct inode *inode,
 
 	BUG_ON(!PageLocked(page));
 
-	ctx = fscrypt_get_ctx(gfp_flags);
+	ctx = fscrypt_get_ctx(inode, gfp_flags);
 	if (IS_ERR(ctx))
-		return ERR_CAST(ctx);
+		return (struct page *)ctx;
 
 	/* The encryption operation will require a bounce page. */
 	ciphertext_page = fscrypt_alloc_bounce_page(ctx, gfp_flags);
@@ -308,52 +327,52 @@ int fscrypt_decrypt_page(const struct inode *inode, struct page *page,
 EXPORT_SYMBOL(fscrypt_decrypt_page);
 
 /*
- * Validate dentries in encrypted directories to make sure we aren't potentially
- * caching stale dentries after a key has been added.
+ * Validate dentries for encrypted directories to make sure we aren't
+ * potentially caching stale data after a key has been added or
+ * removed.
  */
 static int fscrypt_d_revalidate(struct dentry *dentry, unsigned int flags)
 {
 	struct dentry *dir;
-	int err;
-	int valid;
-
-	/*
-	 * Plaintext names are always valid, since fscrypt doesn't support
-	 * reverting to ciphertext names without evicting the directory's inode
-	 * -- which implies eviction of the dentries in the directory.
-	 */
-	if (!(dentry->d_flags & DCACHE_ENCRYPTED_NAME))
-		return 1;
-
-	/*
-	 * Ciphertext name; valid if the directory's key is still unavailable.
-	 *
-	 * Although fscrypt forbids rename() on ciphertext names, we still must
-	 * use dget_parent() here rather than use ->d_parent directly.  That's
-	 * because a corrupted fs image may contain directory hard links, which
-	 * the VFS handles by moving the directory's dentry tree in the dcache
-	 * each time ->lookup() finds the directory and it already has a dentry
-	 * elsewhere.  Thus ->d_parent can be changing, and we must safely grab
-	 * a reference to some ->d_parent to prevent it from being freed.
-	 */
+	int dir_has_key, cached_with_key;
 
 	if (flags & LOOKUP_RCU)
 		return -ECHILD;
 
 	dir = dget_parent(dentry);
-	err = fscrypt_get_encryption_info(d_inode(dir));
-	valid = !fscrypt_has_encryption_key(d_inode(dir));
+	if (!d_inode(dir)->i_sb->s_cop->is_encrypted(d_inode(dir))) {
+		dput(dir);
+		return 0;
+	}
+
+	/* this should eventually be an flag in d_flags */
+	spin_lock(&dentry->d_lock);
+	cached_with_key = dentry->d_flags & DCACHE_ENCRYPTED_WITH_KEY;
+	spin_unlock(&dentry->d_lock);
+	dir_has_key = (d_inode(dir)->i_crypt_info != NULL);
 	dput(dir);
 
-	if (err < 0)
-		return err;
-
-	return valid;
+	/*
+	 * If the dentry was cached without the key, and it is a
+	 * negative dentry, it might be a valid name.  We can't check
+	 * if the key has since been made available due to locking
+	 * reasons, so we fail the validation so ext4_lookup() can do
+	 * this check.
+	 *
+	 * We also fail the validation if the dentry was created with
+	 * the key present, but we no longer have the key, or vice versa.
+	 */
+	if ((!cached_with_key && d_is_negative(dentry)) ||
+			(!cached_with_key && dir_has_key) ||
+			(cached_with_key && !dir_has_key))
+		return 0;
+	return 1;
 }
 
 const struct dentry_operations fscrypt_d_ops = {
 	.d_revalidate = fscrypt_d_revalidate,
 };
+EXPORT_SYMBOL(fscrypt_d_ops);
 
 void fscrypt_restore_control_page(struct page *page)
 {
@@ -391,8 +410,11 @@ int fscrypt_initialize(unsigned int cop_flags)
 {
 	int i, res = -ENOMEM;
 
-	/* No need to allocate a bounce page pool if this FS won't use it. */
-	if (cop_flags & FS_CFLG_OWN_PAGES)
+	/*
+	 * No need to allocate a bounce page pool if there already is one or
+	 * this FS won't use it.
+	 */
+	if (cop_flags & FS_CFLG_OWN_PAGES || fscrypt_bounce_page_pool)
 		return 0;
 
 	mutex_lock(&fscrypt_init_mutex);
@@ -422,43 +444,13 @@ fail:
 	return res;
 }
 
-void fscrypt_msg(struct super_block *sb, const char *level,
-		 const char *fmt, ...)
-{
-	static DEFINE_RATELIMIT_STATE(rs, DEFAULT_RATELIMIT_INTERVAL,
-				      DEFAULT_RATELIMIT_BURST);
-	struct va_format vaf;
-	va_list args;
-
-	if (!__ratelimit(&rs))
-		return;
-
-	va_start(args, fmt);
-	vaf.fmt = fmt;
-	vaf.va = &args;
-	if (sb)
-		printk("%sfscrypt (%s): %pV\n", level, sb->s_id, &vaf);
-	else
-		printk("%sfscrypt: %pV\n", level, &vaf);
-	va_end(args);
-}
-
 /**
  * fscrypt_init() - Set up for fs encryption.
  */
 static int __init fscrypt_init(void)
 {
-	/*
-	 * Use an unbound workqueue to allow bios to be decrypted in parallel
-	 * even when they happen to complete on the same CPU.  This sacrifices
-	 * locality, but it's worthwhile since decryption is CPU-intensive.
-	 *
-	 * Also use a high-priority workqueue to prioritize decryption work,
-	 * which blocks reads from completing, over regular application tasks.
-	 */
 	fscrypt_read_workqueue = alloc_workqueue("fscrypt_read_queue",
-						 WQ_UNBOUND | WQ_HIGHPRI,
-						 num_online_cpus());
+							WQ_HIGHPRI, 0);
 	if (!fscrypt_read_workqueue)
 		goto fail;
 

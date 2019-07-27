@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _KERNEL_H
 #define _KERNEL_H
 
@@ -14,12 +13,9 @@
 #include "../../../include/linux/kconfig.h"
 
 #define printk printf
-#define pr_info printk
 #define pr_debug printk
 #define pr_cont printk
 
-#define __acquires(x)
-#define __releases(x)
-#define __must_hold(x)
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 #endif /* _KERNEL_H */

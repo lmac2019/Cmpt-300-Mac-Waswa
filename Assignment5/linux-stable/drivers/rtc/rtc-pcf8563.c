@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * An I2C driver for the Philips PCF8563 RTC
  * Copyright 2005-06 Tower Technologies
@@ -9,6 +8,10 @@
  * based on the other drivers in this same directory.
  *
  * http://www.semiconductors.philips.com/acrobat/datasheets/PCF8563-04.pdf
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  */
 
 #include <linux/clk-provider.h>
@@ -384,7 +387,7 @@ static int pcf8563_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *tm)
 	if (err)
 		return err;
 
-	return pcf8563_set_alarm_mode(client, !!tm->enabled);
+	return pcf8563_set_alarm_mode(client, 1);
 }
 
 static int pcf8563_irq_enable(struct device *dev, unsigned int enabled)
@@ -419,7 +422,7 @@ static unsigned long pcf8563_clkout_recalc_rate(struct clk_hw *hw,
 		return 0;
 
 	buf &= PCF8563_REG_CLKO_F_MASK;
-	return clkout_rates[buf];
+	return clkout_rates[ret];
 }
 
 static long pcf8563_clkout_round_rate(struct clk_hw *hw, unsigned long rate,

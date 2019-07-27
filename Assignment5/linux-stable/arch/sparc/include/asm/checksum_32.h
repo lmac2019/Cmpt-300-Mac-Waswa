@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef __SPARC_CHECKSUM_H
 #define __SPARC_CHECKSUM_H
 
@@ -87,7 +86,7 @@ static inline __wsum
 csum_partial_copy_to_user(const void *src, void __user *dst, int len,
 			  __wsum sum, int *err)
 {
-	if (!access_ok(dst, len)) {
+	if (!access_ok (VERIFY_WRITE, dst, len)) {
 		*err = -EFAULT;
 		return sum;
 	} else {

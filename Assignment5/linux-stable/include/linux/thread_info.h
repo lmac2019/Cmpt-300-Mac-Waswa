@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /* thread_info.h: common low-level thread information accessors
  *
  * Copyright (C) 2002  David Howells (dhowells@redhat.com)
@@ -39,11 +38,12 @@ enum {
 
 #ifdef __KERNEL__
 
-#ifndef THREAD_ALIGN
-#define THREAD_ALIGN	THREAD_SIZE
+#ifdef CONFIG_DEBUG_STACK_USAGE
+# define THREADINFO_GFP		(GFP_KERNEL_ACCOUNT | __GFP_NOTRACK | \
+				 __GFP_ZERO)
+#else
+# define THREADINFO_GFP		(GFP_KERNEL_ACCOUNT | __GFP_NOTRACK)
 #endif
-
-#define THREADINFO_GFP		(GFP_KERNEL_ACCOUNT | __GFP_ZERO)
 
 /*
  * flag set/clear/test wrappers
@@ -58,15 +58,6 @@ static inline void set_ti_thread_flag(struct thread_info *ti, int flag)
 static inline void clear_ti_thread_flag(struct thread_info *ti, int flag)
 {
 	clear_bit(flag, (unsigned long *)&ti->flags);
-}
-
-static inline void update_ti_thread_flag(struct thread_info *ti, int flag,
-					 bool value)
-{
-	if (value)
-		set_ti_thread_flag(ti, flag);
-	else
-		clear_ti_thread_flag(ti, flag);
 }
 
 static inline int test_and_set_ti_thread_flag(struct thread_info *ti, int flag)
@@ -88,8 +79,6 @@ static inline int test_ti_thread_flag(struct thread_info *ti, int flag)
 	set_ti_thread_flag(current_thread_info(), flag)
 #define clear_thread_flag(flag) \
 	clear_ti_thread_flag(current_thread_info(), flag)
-#define update_thread_flag(flag, value) \
-	update_ti_thread_flag(current_thread_info(), flag, value)
 #define test_and_set_thread_flag(flag) \
 	test_and_set_ti_thread_flag(current_thread_info(), flag)
 #define test_and_clear_thread_flag(flag) \

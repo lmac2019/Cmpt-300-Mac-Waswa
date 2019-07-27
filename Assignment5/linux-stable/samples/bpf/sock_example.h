@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #include <stdlib.h>
 #include <stdio.h>
 #include <linux/unistd.h>
@@ -9,6 +8,7 @@
 #include <net/if.h>
 #include <linux/if_packet.h>
 #include <arpa/inet.h>
+#include "libbpf.h"
 
 static inline int open_raw_sock(const char *name)
 {

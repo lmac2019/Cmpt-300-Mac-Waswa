@@ -1,11 +1,17 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * ff-pcm.c - a part of driver for RME Fireface series
  *
  * Copyright (c) 2015-2017 Takashi Sakamoto
+ *
+ * Licensed under the terms of the GNU General Public License, version 2.
  */
 
 #include "ff.h"
+
+static inline unsigned int get_multiplier_mode_with_index(unsigned int index)
+{
+	return ((int)index - 1) / 2;
+}
 
 static int hw_rule_rate(struct snd_pcm_hw_params *params,
 			struct snd_pcm_hw_rule *rule)
@@ -18,16 +24,10 @@ static int hw_rule_rate(struct snd_pcm_hw_params *params,
 	struct snd_interval t = {
 		.min = UINT_MAX, .max = 0, .integer = 1
 	};
-	unsigned int i;
+	unsigned int i, mode;
 
 	for (i = 0; i < ARRAY_SIZE(amdtp_rate_table); i++) {
-		enum snd_ff_stream_mode mode;
-		int err;
-
-		err = snd_ff_stream_get_multiplier_mode(i, &mode);
-		if (err < 0)
-			continue;
-
+		mode = get_multiplier_mode_with_index(i);
 		if (!snd_interval_test(c, pcm_channels[mode]))
 			continue;
 
@@ -49,16 +49,10 @@ static int hw_rule_channels(struct snd_pcm_hw_params *params,
 	struct snd_interval t = {
 		.min = UINT_MAX, .max = 0, .integer = 1
 	};
-	unsigned int i;
+	unsigned int i, mode;
 
 	for (i = 0; i < ARRAY_SIZE(amdtp_rate_table); i++) {
-		enum snd_ff_stream_mode mode;
-		int err;
-
-		err = snd_ff_stream_get_multiplier_mode(i, &mode);
-		if (err < 0)
-			continue;
-
+		mode = get_multiplier_mode_with_index(i);
 		if (!snd_interval_test(r, amdtp_rate_table[i]))
 			continue;
 
@@ -72,6 +66,7 @@ static int hw_rule_channels(struct snd_pcm_hw_params *params,
 static void limit_channels_and_rates(struct snd_pcm_hardware *hw,
 				     const unsigned int *pcm_channels)
 {
+	unsigned int mode;
 	unsigned int rate, channels;
 	int i;
 
@@ -81,12 +76,7 @@ static void limit_channels_and_rates(struct snd_pcm_hardware *hw,
 	hw->rate_max = 0;
 
 	for (i = 0; i < ARRAY_SIZE(amdtp_rate_table); i++) {
-		enum snd_ff_stream_mode mode;
-		int err;
-
-		err = snd_ff_stream_get_multiplier_mode(i, &mode);
-		if (err < 0)
-			continue;
+		mode = get_multiplier_mode_with_index(i);
 
 		channels = pcm_channels[mode];
 		if (pcm_channels[mode] == 0)
@@ -148,12 +138,16 @@ static int pcm_open(struct snd_pcm_substream *substream)
 		return err;
 
 	err = pcm_init_hw_params(ff, substream);
-	if (err < 0)
-		goto release_lock;
+	if (err < 0) {
+		snd_ff_stream_lock_release(ff);
+		return err;
+	}
 
 	err = ff->spec->protocol->get_clock(ff, &rate, &src);
-	if (err < 0)
-		goto release_lock;
+	if (err < 0) {
+		snd_ff_stream_lock_release(ff);
+		return err;
+	}
 
 	if (src != SND_FF_CLOCK_SRC_INTERNAL) {
 		for (i = 0; i < CIP_SFC_COUNT; ++i) {
@@ -165,8 +159,8 @@ static int pcm_open(struct snd_pcm_substream *substream)
 		 * streaming engine can't support.
 		 */
 		if (i >= CIP_SFC_COUNT) {
-			err = -EIO;
-			goto release_lock;
+			snd_ff_stream_lock_release(ff);
+			return -EIO;
 		}
 
 		substream->runtime->hw.rate_min = rate;
@@ -183,10 +177,6 @@ static int pcm_open(struct snd_pcm_substream *substream)
 	snd_pcm_set_sync(substream);
 
 	return 0;
-
-release_lock:
-	snd_ff_stream_lock_release(ff);
-	return err;
 }
 
 static int pcm_close(struct snd_pcm_substream *substream)
@@ -393,6 +383,7 @@ int snd_ff_create_pcm_devices(struct snd_ff *ff)
 		.pointer	= pcm_playback_pointer,
 		.ack		= pcm_playback_ack,
 		.page		= snd_pcm_lib_get_vmalloc_page,
+		.mmap		= snd_pcm_lib_mmap_vmalloc,
 	};
 	struct snd_pcm *pcm;
 	int err;

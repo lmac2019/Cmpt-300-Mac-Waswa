@@ -1,23 +1,27 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Driver for Atmel AC97C
  *
  * Copyright (C) 2005-2009 Atmel Corporation
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published by
+ * the Free Software Foundation.
  */
 #include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/bitmap.h>
 #include <linux/device.h>
 #include <linux/atmel_pdc.h>
-#include <linux/gpio/consumer.h>
 #include <linux/init.h>
 #include <linux/interrupt.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/mutex.h>
+#include <linux/gpio.h>
 #include <linux/types.h>
 #include <linux/io.h>
 #include <linux/of.h>
+#include <linux/of_gpio.h>
 #include <linux/of_device.h>
 
 #include <sound/core.h>
@@ -25,6 +29,7 @@
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <sound/ac97_codec.h>
+#include <sound/atmel-ac97c.h>
 #include <sound/memalloc.h>
 
 #include "ac97c.h"
@@ -51,7 +56,7 @@ struct atmel_ac97c {
 	void __iomem			*regs;
 	int				irq;
 	int				opened;
-	struct gpio_desc		*reset_pin;
+	int				reset_pin;
 };
 
 #define get_chip(card) ((struct atmel_ac97c *)(card)->private_data)
@@ -61,7 +66,7 @@ struct atmel_ac97c {
 #define ac97c_readl(chip, reg)				\
 	__raw_readl((chip)->regs + AC97C_##reg)
 
-static const struct snd_pcm_hardware atmel_ac97c_hw = {
+static struct snd_pcm_hardware atmel_ac97c_hw = {
 	.info			= (SNDRV_PCM_INFO_MMAP
 				  | SNDRV_PCM_INFO_MMAP_VALID
 				  | SNDRV_PCM_INFO_INTERLEAVED
@@ -456,7 +461,7 @@ atmel_ac97c_capture_pointer(struct snd_pcm_substream *substream)
 	return frames;
 }
 
-static const struct snd_pcm_ops atmel_ac97_playback_ops = {
+static struct snd_pcm_ops atmel_ac97_playback_ops = {
 	.open		= atmel_ac97c_playback_open,
 	.close		= atmel_ac97c_playback_close,
 	.ioctl		= snd_pcm_lib_ioctl,
@@ -467,7 +472,7 @@ static const struct snd_pcm_ops atmel_ac97_playback_ops = {
 	.pointer	= atmel_ac97c_playback_pointer,
 };
 
-static const struct snd_pcm_ops atmel_ac97_capture_ops = {
+static struct snd_pcm_ops atmel_ac97_capture_ops = {
 	.open		= atmel_ac97c_capture_open,
 	.close		= atmel_ac97c_capture_close,
 	.ioctl		= snd_pcm_lib_ioctl,
@@ -553,7 +558,7 @@ static irqreturn_t atmel_ac97c_interrupt(int irq, void *dev)
 	return retval;
 }
 
-static const struct ac97_pcm at91_ac97_pcm_defs[] = {
+static struct ac97_pcm at91_ac97_pcm_defs[] = {
 	/* Playback */
 	{
 		.exclusive = 1,
@@ -600,9 +605,11 @@ static int atmel_ac97c_pcm_new(struct atmel_ac97c *chip)
 	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &atmel_ac97_capture_ops);
 	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &atmel_ac97_playback_ops);
 
-	snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_DEV,
+	retval = snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_DEV,
 			&chip->pdev->dev, hw.periods_min * hw.period_bytes_min,
 			hw.buffer_bytes_max);
+	if (retval)
+		return retval;
 
 	pcm->private_data = chip;
 	pcm->info_flags = 0;
@@ -693,11 +700,11 @@ static void atmel_ac97c_reset(struct atmel_ac97c *chip)
 	ac97c_writel(chip, CAMR, 0);
 	ac97c_writel(chip, COMR, 0);
 
-	if (!IS_ERR(chip->reset_pin)) {
-		gpiod_set_value(chip->reset_pin, 0);
+	if (gpio_is_valid(chip->reset_pin)) {
+		gpio_set_value(chip->reset_pin, 0);
 		/* AC97 v2.2 specifications says minimum 1 us. */
 		udelay(2);
-		gpiod_set_value(chip->reset_pin, 1);
+		gpio_set_value(chip->reset_pin, 1);
 	} else {
 		ac97c_writel(chip, MR, AC97C_MR_WRST | AC97C_MR_ENA);
 		udelay(2);
@@ -705,18 +712,45 @@ static void atmel_ac97c_reset(struct atmel_ac97c *chip)
 	}
 }
 
+#ifdef CONFIG_OF
 static const struct of_device_id atmel_ac97c_dt_ids[] = {
 	{ .compatible = "atmel,at91sam9263-ac97c", },
 	{ }
 };
 MODULE_DEVICE_TABLE(of, atmel_ac97c_dt_ids);
 
+static struct ac97c_platform_data *atmel_ac97c_probe_dt(struct device *dev)
+{
+	struct ac97c_platform_data *pdata;
+	struct device_node *node = dev->of_node;
+
+	if (!node) {
+		dev_err(dev, "Device does not have associated DT data\n");
+		return ERR_PTR(-EINVAL);
+	}
+
+	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+	if (!pdata)
+		return ERR_PTR(-ENOMEM);
+
+	pdata->reset_pin = of_get_named_gpio(dev->of_node, "ac97-gpios", 2);
+
+	return pdata;
+}
+#else
+static struct ac97c_platform_data *atmel_ac97c_probe_dt(struct device *dev)
+{
+	dev_err(dev, "no platform data defined\n");
+	return ERR_PTR(-ENXIO);
+}
+#endif
+
 static int atmel_ac97c_probe(struct platform_device *pdev)
 {
-	struct device			*dev = &pdev->dev;
 	struct snd_card			*card;
 	struct atmel_ac97c		*chip;
 	struct resource			*regs;
+	struct ac97c_platform_data	*pdata;
 	struct clk			*pclk;
 	static struct snd_ac97_bus_ops	ops = {
 		.write	= atmel_ac97c_write,
@@ -731,6 +765,13 @@ static int atmel_ac97c_probe(struct platform_device *pdev)
 		return -ENXIO;
 	}
 
+	pdata = dev_get_platdata(&pdev->dev);
+	if (!pdata) {
+		pdata = atmel_ac97c_probe_dt(&pdev->dev);
+		if (IS_ERR(pdata))
+			return PTR_ERR(pdata);
+	}
+
 	irq = platform_get_irq(pdev, 0);
 	if (irq < 0) {
 		dev_dbg(&pdev->dev, "could not get irq: %d\n", irq);
@@ -742,9 +783,7 @@ static int atmel_ac97c_probe(struct platform_device *pdev)
 		dev_dbg(&pdev->dev, "no peripheral clock\n");
 		return PTR_ERR(pclk);
 	}
-	retval = clk_prepare_enable(pclk);
-	if (retval)
-		goto err_prepare_enable;
+	clk_prepare_enable(pclk);
 
 	retval = snd_card_new(&pdev->dev, SNDRV_DEFAULT_IDX1,
 			      SNDRV_DEFAULT_STR1, THIS_MODULE,
@@ -780,9 +819,17 @@ static int atmel_ac97c_probe(struct platform_device *pdev)
 		goto err_ioremap;
 	}
 
-	chip->reset_pin = devm_gpiod_get_index(dev, "ac97", 2, GPIOD_OUT_HIGH);
-	if (IS_ERR(chip->reset_pin))
-		dev_dbg(dev, "reset pin not available\n");
+	if (gpio_is_valid(pdata->reset_pin)) {
+		if (gpio_request(pdata->reset_pin, "reset_pin")) {
+			dev_dbg(&pdev->dev, "reset pin not available\n");
+			chip->reset_pin = -ENODEV;
+		} else {
+			gpio_direction_output(pdata->reset_pin, 1);
+			chip->reset_pin = pdata->reset_pin;
+		}
+	} else {
+		chip->reset_pin = -EINVAL;
+	}
 
 	atmel_ac97c_reset(chip);
 
@@ -822,6 +869,9 @@ static int atmel_ac97c_probe(struct platform_device *pdev)
 	return 0;
 
 err_ac97_bus:
+	if (gpio_is_valid(chip->reset_pin))
+		gpio_free(chip->reset_pin);
+
 	iounmap(chip->regs);
 err_ioremap:
 	free_irq(irq, chip);
@@ -829,7 +879,6 @@ err_request_irq:
 	snd_card_free(card);
 err_snd_card_new:
 	clk_disable_unprepare(pclk);
-err_prepare_enable:
 	clk_put(pclk);
 	return retval;
 }
@@ -848,9 +897,9 @@ static int atmel_ac97c_resume(struct device *pdev)
 {
 	struct snd_card *card = dev_get_drvdata(pdev);
 	struct atmel_ac97c *chip = card->private_data;
-	int ret = clk_prepare_enable(chip->pclk);
 
-	return ret;
+	clk_prepare_enable(chip->pclk);
+	return 0;
 }
 
 static SIMPLE_DEV_PM_OPS(atmel_ac97c_pm, atmel_ac97c_suspend, atmel_ac97c_resume);
@@ -863,6 +912,9 @@ static int atmel_ac97c_remove(struct platform_device *pdev)
 {
 	struct snd_card *card = platform_get_drvdata(pdev);
 	struct atmel_ac97c *chip = get_chip(card);
+
+	if (gpio_is_valid(chip->reset_pin))
+		gpio_free(chip->reset_pin);
 
 	ac97c_writel(chip, CAMR, 0);
 	ac97c_writel(chip, COMR, 0);
@@ -884,7 +936,7 @@ static struct platform_driver atmel_ac97c_driver = {
 	.driver		= {
 		.name	= "atmel_ac97c",
 		.pm	= ATMEL_AC97C_PM_OPS,
-		.of_match_table = atmel_ac97c_dt_ids,
+		.of_match_table = of_match_ptr(atmel_ac97c_dt_ids),
 	},
 };
 module_platform_driver(atmel_ac97c_driver);

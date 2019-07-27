@@ -1,8 +1,11 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * MAXIM MAX77620 GPIO driver
  *
  * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
  */
 
 #include <linux/gpio/driver.h>
@@ -22,96 +25,64 @@ struct max77620_gpio {
 
 static const struct regmap_irq max77620_gpio_irqs[] = {
 	[0] = {
-		.reg_offset = 0,
 		.mask = MAX77620_IRQ_LVL2_GPIO_EDGE0,
-		.type = {
-			.type_rising_val = MAX77620_CNFG_GPIO_INT_RISING,
-			.type_falling_val = MAX77620_CNFG_GPIO_INT_FALLING,
-			.type_reg_mask = MAX77620_CNFG_GPIO_INT_MASK,
-			.type_reg_offset = 0,
-			.types_supported = IRQ_TYPE_EDGE_BOTH,
-		},
+		.type_rising_mask = MAX77620_CNFG_GPIO_INT_RISING,
+		.type_falling_mask = MAX77620_CNFG_GPIO_INT_FALLING,
+		.reg_offset = 0,
+		.type_reg_offset = 0,
 	},
 	[1] = {
-		.reg_offset = 0,
 		.mask = MAX77620_IRQ_LVL2_GPIO_EDGE1,
-		.type = {
-			.type_rising_val = MAX77620_CNFG_GPIO_INT_RISING,
-			.type_falling_val = MAX77620_CNFG_GPIO_INT_FALLING,
-			.type_reg_mask = MAX77620_CNFG_GPIO_INT_MASK,
-			.type_reg_offset = 1,
-			.types_supported = IRQ_TYPE_EDGE_BOTH,
-		},
+		.type_rising_mask = MAX77620_CNFG_GPIO_INT_RISING,
+		.type_falling_mask = MAX77620_CNFG_GPIO_INT_FALLING,
+		.reg_offset = 0,
+		.type_reg_offset = 1,
 	},
 	[2] = {
-		.reg_offset = 0,
 		.mask = MAX77620_IRQ_LVL2_GPIO_EDGE2,
-		.type = {
-			.type_rising_val = MAX77620_CNFG_GPIO_INT_RISING,
-			.type_falling_val = MAX77620_CNFG_GPIO_INT_FALLING,
-			.type_reg_mask = MAX77620_CNFG_GPIO_INT_MASK,
-			.type_reg_offset = 2,
-			.types_supported = IRQ_TYPE_EDGE_BOTH,
-		},
+		.type_rising_mask = MAX77620_CNFG_GPIO_INT_RISING,
+		.type_falling_mask = MAX77620_CNFG_GPIO_INT_FALLING,
+		.reg_offset = 0,
+		.type_reg_offset = 2,
 	},
 	[3] = {
-		.reg_offset = 0,
 		.mask = MAX77620_IRQ_LVL2_GPIO_EDGE3,
-		.type = {
-			.type_rising_val = MAX77620_CNFG_GPIO_INT_RISING,
-			.type_falling_val = MAX77620_CNFG_GPIO_INT_FALLING,
-			.type_reg_mask = MAX77620_CNFG_GPIO_INT_MASK,
-			.type_reg_offset = 3,
-			.types_supported = IRQ_TYPE_EDGE_BOTH,
-		},
+		.type_rising_mask = MAX77620_CNFG_GPIO_INT_RISING,
+		.type_falling_mask = MAX77620_CNFG_GPIO_INT_FALLING,
+		.reg_offset = 0,
+		.type_reg_offset = 3,
 	},
 	[4] = {
-		.reg_offset = 0,
 		.mask = MAX77620_IRQ_LVL2_GPIO_EDGE4,
-		.type = {
-			.type_rising_val = MAX77620_CNFG_GPIO_INT_RISING,
-			.type_falling_val = MAX77620_CNFG_GPIO_INT_FALLING,
-			.type_reg_mask = MAX77620_CNFG_GPIO_INT_MASK,
-			.type_reg_offset = 4,
-			.types_supported = IRQ_TYPE_EDGE_BOTH,
-		},
+		.type_rising_mask = MAX77620_CNFG_GPIO_INT_RISING,
+		.type_falling_mask = MAX77620_CNFG_GPIO_INT_FALLING,
+		.reg_offset = 0,
+		.type_reg_offset = 4,
 	},
 	[5] = {
-		.reg_offset = 0,
 		.mask = MAX77620_IRQ_LVL2_GPIO_EDGE5,
-		.type = {
-			.type_rising_val = MAX77620_CNFG_GPIO_INT_RISING,
-			.type_falling_val = MAX77620_CNFG_GPIO_INT_FALLING,
-			.type_reg_mask = MAX77620_CNFG_GPIO_INT_MASK,
-			.type_reg_offset = 5,
-			.types_supported = IRQ_TYPE_EDGE_BOTH,
-		},
+		.type_rising_mask = MAX77620_CNFG_GPIO_INT_RISING,
+		.type_falling_mask = MAX77620_CNFG_GPIO_INT_FALLING,
+		.reg_offset = 0,
+		.type_reg_offset = 5,
 	},
 	[6] = {
-		.reg_offset = 0,
 		.mask = MAX77620_IRQ_LVL2_GPIO_EDGE6,
-		.type = {
-			.type_rising_val = MAX77620_CNFG_GPIO_INT_RISING,
-			.type_falling_val = MAX77620_CNFG_GPIO_INT_FALLING,
-			.type_reg_mask = MAX77620_CNFG_GPIO_INT_MASK,
-			.type_reg_offset = 6,
-			.types_supported = IRQ_TYPE_EDGE_BOTH,
-		},
+		.type_rising_mask = MAX77620_CNFG_GPIO_INT_RISING,
+		.type_falling_mask = MAX77620_CNFG_GPIO_INT_FALLING,
+		.reg_offset = 0,
+		.type_reg_offset = 6,
 	},
 	[7] = {
-		.reg_offset = 0,
 		.mask = MAX77620_IRQ_LVL2_GPIO_EDGE7,
-		.type = {
-			.type_rising_val = MAX77620_CNFG_GPIO_INT_RISING,
-			.type_falling_val = MAX77620_CNFG_GPIO_INT_FALLING,
-			.type_reg_mask = MAX77620_CNFG_GPIO_INT_MASK,
-			.type_reg_offset = 7,
-			.types_supported = IRQ_TYPE_EDGE_BOTH,
-		},
+		.type_rising_mask = MAX77620_CNFG_GPIO_INT_RISING,
+		.type_falling_mask = MAX77620_CNFG_GPIO_INT_FALLING,
+		.reg_offset = 0,
+		.type_reg_offset = 7,
 	},
 };
 
-static const struct regmap_irq_chip max77620_gpio_irq_chip = {
+static struct regmap_irq_chip max77620_gpio_irq_chip = {
 	.name = "max77620-gpio",
 	.irqs = max77620_gpio_irqs,
 	.num_irqs = ARRAY_SIZE(max77620_gpio_irqs),

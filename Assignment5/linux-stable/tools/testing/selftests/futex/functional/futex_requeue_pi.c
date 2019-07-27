@@ -1,7 +1,11 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /******************************************************************************
  *
  *   Copyright © International Business Machines  Corp., 2006-2008
+ *
+ *   This program is free software;  you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
  *
  * DESCRIPTION
  *      This test excercises the futex syscall op codes needed for requeuing
@@ -390,12 +394,9 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	ksft_print_header();
-	ksft_set_plan(1);
-	ksft_print_msg("%s: Test requeue functionality\n", basename(argv[0]));
-	ksft_print_msg(
-		"\tArguments: broadcast=%d locked=%d owner=%d timeout=%ldns\n",
-		broadcast, locked, owner, timeout_ns);
+	printf("%s: Test requeue functionality\n", basename(argv[0]));
+	printf("\tArguments: broadcast=%d locked=%d owner=%d timeout=%ldns\n",
+	       broadcast, locked, owner, timeout_ns);
 
 	/*
 	 * FIXME: unit_test is obsolete now that we parse options and the

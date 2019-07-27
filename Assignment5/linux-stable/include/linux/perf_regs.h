@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _LINUX_PERF_REGS_H
 #define _LINUX_PERF_REGS_H
 
@@ -11,11 +10,6 @@ struct perf_regs {
 
 #ifdef CONFIG_HAVE_PERF_REGS
 #include <asm/perf_regs.h>
-
-#ifndef PERF_REG_EXTENDED_MASK
-#define PERF_REG_EXTENDED_MASK	0
-#endif
-
 u64 perf_reg_value(struct pt_regs *regs, int idx);
 int perf_reg_validate(u64 mask);
 u64 perf_reg_abi(struct task_struct *task);
@@ -23,9 +17,6 @@ void perf_get_regs_user(struct perf_regs *regs_user,
 			struct pt_regs *regs,
 			struct pt_regs *regs_user_copy);
 #else
-
-#define PERF_REG_EXTENDED_MASK	0
-
 static inline u64 perf_reg_value(struct pt_regs *regs, int idx)
 {
 	return 0;

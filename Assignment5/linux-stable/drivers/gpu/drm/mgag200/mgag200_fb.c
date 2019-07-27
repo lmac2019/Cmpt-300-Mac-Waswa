@@ -1,7 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright 2010 Matt Turner.
  * Copyright 2012 Red Hat
+ *
+ * This file is subject to the terms and conditions of the GNU General
+ * Public License version 2. See the file COPYING in the main
+ * directory of this archive for more details.
  *
  * Authors: Matthew Garrett
  *          Matt Turner
@@ -9,7 +12,6 @@
  */
 #include <linux/module.h>
 #include <drm/drmP.h>
-#include <drm/drm_util.h>
 #include <drm/drm_fb_helper.h>
 #include <drm/drm_crtc_helper.h>
 
@@ -192,6 +194,8 @@ static int mgag200fb_create(struct drm_fb_helper *helper,
 		goto err_alloc_fbi;
 	}
 
+	info->par = mfbdev;
+
 	ret = mgag200_framebuffer_init(dev, &mfbdev->mfb, &mode_cmd, gobj);
 	if (ret)
 		goto err_alloc_fbi;
@@ -204,13 +208,18 @@ static int mgag200fb_create(struct drm_fb_helper *helper,
 	/* setup helper */
 	mfbdev->helper.fb = fb;
 
+	strcpy(info->fix.id, "mgadrmfb");
+
+	info->flags = FBINFO_DEFAULT | FBINFO_CAN_FORCE_OUTPUT;
 	info->fbops = &mgag200fb_ops;
 
 	/* setup aperture base/size for vesafb takeover */
 	info->apertures->ranges[0].base = mdev->dev->mode_config.fb_base;
 	info->apertures->ranges[0].size = mdev->mc.vram_size;
 
-	drm_fb_helper_fill_info(info, &mfbdev->helper, sizes);
+	drm_fb_helper_fill_fix(info, fb->pitches[0], fb->format->depth);
+	drm_fb_helper_fill_var(info, &mfbdev->helper, sizes->fb_width,
+			       sizes->fb_height);
 
 	info->screen_base = sysram;
 	info->screen_size = size;
@@ -224,7 +233,7 @@ static int mgag200fb_create(struct drm_fb_helper *helper,
 err_alloc_fbi:
 	vfree(sysram);
 err_sysram:
-	drm_gem_object_put_unlocked(gobj);
+	drm_gem_object_unreference_unlocked(gobj);
 
 	return ret;
 }
@@ -237,7 +246,7 @@ static int mga_fbdev_destroy(struct drm_device *dev,
 	drm_fb_helper_unregister_fbi(&mfbdev->helper);
 
 	if (mfb->obj) {
-		drm_gem_object_put_unlocked(mfb->obj);
+		drm_gem_object_unreference_unlocked(mfb->obj);
 		mfb->obj = NULL;
 	}
 	drm_fb_helper_fini(&mfbdev->helper);
@@ -249,6 +258,8 @@ static int mga_fbdev_destroy(struct drm_device *dev,
 }
 
 static const struct drm_fb_helper_funcs mga_fb_helper_funcs = {
+	.gamma_set = mga_crtc_fb_gamma_set,
+	.gamma_get = mga_crtc_fb_gamma_get,
 	.fb_probe = mgag200fb_create,
 };
 

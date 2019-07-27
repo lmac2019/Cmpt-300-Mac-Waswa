@@ -1,8 +1,17 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * drivers/dma-buf/sync_file.c
  *
  * Copyright (C) 2012 Google, Inc.
+ *
+ * This software is licensed under the terms of the GNU General Public
+ * License version 2, as published by the Free Software Foundation, and
+ * may be copied, distributed, and modified under those terms.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
  */
 
 #include <linux/export.h>
@@ -135,7 +144,7 @@ char *sync_file_get_name(struct sync_file *sync_file, char *buf, int len)
 	} else {
 		struct dma_fence *fence = sync_file->fence;
 
-		snprintf(buf, len, "%s-%s%llu-%lld",
+		snprintf(buf, len, "%s-%s%llu-%d",
 			 fence->ops->get_driver_name(fence),
 			 fence->ops->get_timeline_name(fence),
 			 fence->context,
@@ -249,8 +258,7 @@ static struct sync_file *sync_file_merge(const char *name, struct sync_file *a,
 
 			i_b++;
 		} else {
-			if (__dma_fence_is_later(pt_a->seqno, pt_b->seqno,
-						 pt_a->ops))
+			if (pt_a->seqno - pt_b->seqno <= INT_MAX)
 				add_fence(fences, &i, pt_a);
 			else
 				add_fence(fences, &i, pt_b);
@@ -304,7 +312,7 @@ static int sync_file_release(struct inode *inode, struct file *file)
 	return 0;
 }
 
-static __poll_t sync_file_poll(struct file *file, poll_table *wait)
+static unsigned int sync_file_poll(struct file *file, poll_table *wait)
 {
 	struct sync_file *sync_file = file->private_data;
 
@@ -317,7 +325,7 @@ static __poll_t sync_file_poll(struct file *file, poll_table *wait)
 			wake_up_all(&sync_file->wq);
 	}
 
-	return dma_fence_is_signaled(sync_file->fence) ? EPOLLIN : 0;
+	return dma_fence_is_signaled(sync_file->fence) ? POLLIN : 0;
 }
 
 static long sync_file_ioctl_merge(struct sync_file *sync_file,
@@ -375,7 +383,7 @@ err_put_fd:
 	return err;
 }
 
-static int sync_fill_fence_info(struct dma_fence *fence,
+static void sync_fill_fence_info(struct dma_fence *fence,
 				 struct sync_fence_info *info)
 {
 	strlcpy(info->obj_name, fence->ops->get_timeline_name(fence),
@@ -391,8 +399,6 @@ static int sync_fill_fence_info(struct dma_fence *fence,
 		test_bit(DMA_FENCE_FLAG_TIMESTAMP_BIT, &fence->flags) ?
 		ktime_to_ns(fence->timestamp) :
 		ktime_set(0, 0);
-
-	return info->status;
 }
 
 static long sync_file_ioctl_fence_info(struct sync_file *sync_file,
@@ -418,12 +424,8 @@ static long sync_file_ioctl_fence_info(struct sync_file *sync_file,
 	 * sync_fence_info and return the actual number of fences on
 	 * info->num_fences.
 	 */
-	if (!info.num_fences) {
-		info.status = dma_fence_is_signaled(sync_file->fence);
+	if (!info.num_fences)
 		goto no_fences;
-	} else {
-		info.status = 1;
-	}
 
 	if (info.num_fences < num_fences)
 		return -EINVAL;
@@ -433,10 +435,8 @@ static long sync_file_ioctl_fence_info(struct sync_file *sync_file,
 	if (!fence_info)
 		return -ENOMEM;
 
-	for (i = 0; i < num_fences; i++) {
-		int status = sync_fill_fence_info(fences[i], &fence_info[i]);
-		info.status = info.status <= 0 ? info.status : status;
-	}
+	for (i = 0; i < num_fences; i++)
+		sync_fill_fence_info(fences[i], &fence_info[i]);
 
 	if (copy_to_user(u64_to_user_ptr(info.sync_fence_info), fence_info,
 			 size)) {
@@ -446,6 +446,7 @@ static long sync_file_ioctl_fence_info(struct sync_file *sync_file,
 
 no_fences:
 	sync_file_get_name(sync_file, info.name, sizeof(info.name));
+	info.status = dma_fence_is_signaled(sync_file->fence);
 	info.num_fences = num_fences;
 
 	if (copy_to_user((void __user *)arg, &info, sizeof(info)))

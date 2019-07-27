@@ -1,8 +1,12 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * V4L2 Deinterlacer Subdev for Freescale i.MX5/6 SOC
  *
  * Copyright (c) 2017 Mentor Graphics Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  */
 #include <linux/delay.h>
 #include <linux/interrupt.h>
@@ -122,15 +126,15 @@ struct vdic_priv {
 
 static void vdic_put_ipu_resources(struct vdic_priv *priv)
 {
-	if (priv->vdi_in_ch_p)
+	if (!IS_ERR_OR_NULL(priv->vdi_in_ch_p))
 		ipu_idmac_put(priv->vdi_in_ch_p);
 	priv->vdi_in_ch_p = NULL;
 
-	if (priv->vdi_in_ch)
+	if (!IS_ERR_OR_NULL(priv->vdi_in_ch))
 		ipu_idmac_put(priv->vdi_in_ch);
 	priv->vdi_in_ch = NULL;
 
-	if (priv->vdi_in_ch_n)
+	if (!IS_ERR_OR_NULL(priv->vdi_in_ch_n))
 		ipu_idmac_put(priv->vdi_in_ch_n);
 	priv->vdi_in_ch_n = NULL;
 
@@ -142,43 +146,40 @@ static void vdic_put_ipu_resources(struct vdic_priv *priv)
 static int vdic_get_ipu_resources(struct vdic_priv *priv)
 {
 	int ret, err_chan;
-	struct ipuv3_channel *ch;
-	struct ipu_vdi *vdi;
 
 	priv->ipu = priv->md->ipu[priv->ipu_id];
 
-	vdi = ipu_vdi_get(priv->ipu);
-	if (IS_ERR(vdi)) {
+	priv->vdi = ipu_vdi_get(priv->ipu);
+	if (IS_ERR(priv->vdi)) {
 		v4l2_err(&priv->sd, "failed to get VDIC\n");
-		ret = PTR_ERR(vdi);
+		ret = PTR_ERR(priv->vdi);
 		goto out;
 	}
-	priv->vdi = vdi;
 
 	if (!priv->csi_direct) {
-		ch = ipu_idmac_get(priv->ipu, IPUV3_CHANNEL_MEM_VDI_PREV);
-		if (IS_ERR(ch)) {
+		priv->vdi_in_ch_p = ipu_idmac_get(priv->ipu,
+						  IPUV3_CHANNEL_MEM_VDI_PREV);
+		if (IS_ERR(priv->vdi_in_ch_p)) {
 			err_chan = IPUV3_CHANNEL_MEM_VDI_PREV;
-			ret = PTR_ERR(ch);
+			ret = PTR_ERR(priv->vdi_in_ch_p);
 			goto out_err_chan;
 		}
-		priv->vdi_in_ch_p = ch;
 
-		ch = ipu_idmac_get(priv->ipu, IPUV3_CHANNEL_MEM_VDI_CUR);
-		if (IS_ERR(ch)) {
+		priv->vdi_in_ch = ipu_idmac_get(priv->ipu,
+						IPUV3_CHANNEL_MEM_VDI_CUR);
+		if (IS_ERR(priv->vdi_in_ch)) {
 			err_chan = IPUV3_CHANNEL_MEM_VDI_CUR;
-			ret = PTR_ERR(ch);
+			ret = PTR_ERR(priv->vdi_in_ch);
 			goto out_err_chan;
 		}
-		priv->vdi_in_ch = ch;
 
-		ch = ipu_idmac_get(priv->ipu, IPUV3_CHANNEL_MEM_VDI_NEXT);
-		if (IS_ERR(ch)) {
+		priv->vdi_in_ch_n = ipu_idmac_get(priv->ipu,
+						  IPUV3_CHANNEL_MEM_VDI_NEXT);
+		if (IS_ERR(priv->vdi_in_ch_n)) {
 			err_chan = IPUV3_CHANNEL_MEM_VDI_NEXT;
-			ret = PTR_ERR(ch);
+			ret = PTR_ERR(priv->vdi_in_ch_n);
 			goto out_err_chan;
 		}
-		priv->vdi_in_ch_n = ch;
 	}
 
 	return 0;
@@ -215,24 +216,26 @@ static void __maybe_unused prepare_vdi_in_buffers(struct vdic_priv *priv,
 
 	switch (priv->fieldtype) {
 	case V4L2_FIELD_SEQ_TB:
+		prev_phys = vb2_dma_contig_plane_dma_addr(prev_vb, 0);
+		curr_phys = vb2_dma_contig_plane_dma_addr(curr_vb, 0) + fs;
+		next_phys = vb2_dma_contig_plane_dma_addr(curr_vb, 0);
+		break;
 	case V4L2_FIELD_SEQ_BT:
 		prev_phys = vb2_dma_contig_plane_dma_addr(prev_vb, 0) + fs;
 		curr_phys = vb2_dma_contig_plane_dma_addr(curr_vb, 0);
 		next_phys = vb2_dma_contig_plane_dma_addr(curr_vb, 0) + fs;
 		break;
-	case V4L2_FIELD_INTERLACED_TB:
 	case V4L2_FIELD_INTERLACED_BT:
-	case V4L2_FIELD_INTERLACED:
 		prev_phys = vb2_dma_contig_plane_dma_addr(prev_vb, 0) + is;
 		curr_phys = vb2_dma_contig_plane_dma_addr(curr_vb, 0);
 		next_phys = vb2_dma_contig_plane_dma_addr(curr_vb, 0) + is;
 		break;
 	default:
-		/*
-		 * can't get here, priv->fieldtype can only be one of
-		 * the above. This is to quiet smatch errors.
-		 */
-		return;
+		/* assume V4L2_FIELD_INTERLACED_TB */
+		prev_phys = vb2_dma_contig_plane_dma_addr(prev_vb, 0);
+		curr_phys = vb2_dma_contig_plane_dma_addr(curr_vb, 0) + is;
+		next_phys = vb2_dma_contig_plane_dma_addr(curr_vb, 0);
+		break;
 	}
 
 	ipu_cpmem_set_buffer(priv->vdi_in_ch_p, 0, prev_phys);
@@ -257,10 +260,10 @@ static int setup_vdi_channel(struct vdic_priv *priv,
 
 	memset(&image, 0, sizeof(image));
 	image.pix = vdev->fmt.fmt.pix;
-	image.rect = vdev->compose;
 	/* one field to VDIC channels */
 	image.pix.height /= 2;
-	image.rect.height /= 2;
+	image.rect.width = image.pix.width;
+	image.rect.height = image.pix.height;
 	image.phys0 = phys0;
 	image.phys1 = phys1;
 
@@ -746,7 +749,7 @@ static int vdic_link_setup(struct media_entity *entity,
 		remote_sd = media_entity_to_v4l2_subdev(remote->entity);
 
 		/* direct pad must connect to a CSI */
-		if (!(remote_sd->grp_id & IMX_MEDIA_GRP_ID_IPU_CSI) ||
+		if (!(remote_sd->grp_id & IMX_MEDIA_GRP_ID_CSI) ||
 		    remote->index != CSI_SRC_PAD_DIRECT) {
 			ret = -EINVAL;
 			goto out;
@@ -820,10 +823,7 @@ static int vdic_s_frame_interval(struct v4l2_subdev *sd,
 	switch (fi->pad) {
 	case VDIC_SINK_PAD_DIRECT:
 	case VDIC_SINK_PAD_IDMAC:
-		/* No limits on valid input frame intervals */
-		if (fi->interval.numerator == 0 ||
-		    fi->interval.denominator == 0)
-			fi->interval = priv->frame_interval[fi->pad];
+		/* No limits on input frame interval */
 		/* Reset output interval */
 		*output_fi = fi->interval;
 		if (priv->csi_direct)
@@ -906,7 +906,6 @@ static void vdic_unregistered(struct v4l2_subdev *sd)
 }
 
 static const struct v4l2_subdev_pad_ops vdic_pad_ops = {
-	.init_cfg = imx_media_init_cfg,
 	.enum_mbus_code = vdic_enum_mbus_code,
 	.get_fmt = vdic_get_fmt,
 	.set_fmt = vdic_set_fmt,
@@ -936,7 +935,7 @@ static const struct v4l2_subdev_internal_ops vdic_internal_ops = {
 
 static int imx_vdic_probe(struct platform_device *pdev)
 {
-	struct imx_media_ipu_internal_sd_pdata *pdata;
+	struct imx_media_internal_sd_platformdata *pdata;
 	struct vdic_priv *priv;
 	int ret;
 
@@ -960,7 +959,7 @@ static int imx_vdic_probe(struct platform_device *pdev)
 	priv->sd.flags = V4L2_SUBDEV_FL_HAS_DEVNODE;
 	/* get our group id */
 	priv->sd.grp_id = pdata->grp_id;
-	strscpy(priv->sd.name, pdata->sd_name, sizeof(priv->sd.name));
+	strncpy(priv->sd.name, pdata->sd_name, sizeof(priv->sd.name));
 
 	mutex_init(&priv->lock);
 

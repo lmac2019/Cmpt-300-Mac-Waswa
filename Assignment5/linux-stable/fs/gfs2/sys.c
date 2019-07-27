@@ -1,7 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) Sistina Software, Inc.  1997-2003 All rights reserved.
  * Copyright (C) 2004-2006 Red Hat, Inc.  All rights reserved.
+ *
+ * This copyrighted material is made available to anyone wishing to use,
+ * modify, copy, or redistribute it subject to the terms and conditions
+ * of the GNU General Public License version 2.
  */
 
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
@@ -109,7 +112,7 @@ static ssize_t freeze_store(struct gfs2_sbd *sdp, const char *buf, size_t len)
 	}
 
 	if (error) {
-		fs_warn(sdp, "freeze %d error %d\n", n, error);
+		fs_warn(sdp, "freeze %d error %d", n, error);
 		return error;
 	}
 
@@ -426,18 +429,11 @@ int gfs2_recover_set(struct gfs2_sbd *sdp, unsigned jid)
 
 	spin_lock(&sdp->sd_jindex_spin);
 	rv = -EBUSY;
-	/**
-	 * If we're a spectator, we use journal0, but it's not really ours.
-	 * So we need to wait for its recovery too. If we skip it we'd never
-	 * queue work to the recovery workqueue, and so its completion would
-	 * never clear the DFL_BLOCK_LOCKS flag, so all our locks would
-	 * permanently stop working.
-	 */
-	if (sdp->sd_jdesc->jd_jid == jid && !sdp->sd_args.ar_spectator)
+	if (sdp->sd_jdesc->jd_jid == jid)
 		goto out;
 	rv = -ENOENT;
 	list_for_each_entry(jd, &sdp->sd_jindex_list, jd_list) {
-		if (jd->jd_jid != jid && !sdp->sd_args.ar_spectator)
+		if (jd->jd_jid != jid)
 			continue;
 		rv = gfs2_recover_journal(jd, false);
 		break;
@@ -647,8 +643,9 @@ int gfs2_sys_fs_add(struct gfs2_sbd *sdp)
 	char ro[20];
 	char spectator[20];
 	char *envp[] = { ro, spectator, NULL };
+	int sysfs_frees_sdp = 0;
 
-	sprintf(ro, "RDONLY=%d", sb_rdonly(sb));
+	sprintf(ro, "RDONLY=%d", (sb->s_flags & MS_RDONLY) ? 1 : 0);
 	sprintf(spectator, "SPECTATOR=%d", sdp->sd_args.ar_spectator ? 1 : 0);
 
 	sdp->sd_kobj.kset = gfs2_kset;
@@ -657,6 +654,8 @@ int gfs2_sys_fs_add(struct gfs2_sbd *sdp)
 	if (error)
 		goto fail_reg;
 
+	sysfs_frees_sdp = 1; /* Freeing sdp is now done by sysfs calling
+				function gfs2_sbd_release. */
 	error = sysfs_create_group(&sdp->sd_kobj, &tune_group);
 	if (error)
 		goto fail_reg;
@@ -680,8 +679,11 @@ fail_tune:
 	sysfs_remove_group(&sdp->sd_kobj, &tune_group);
 fail_reg:
 	free_percpu(sdp->sd_lkstats);
-	fs_err(sdp, "error %d adding sysfs files\n", error);
-	kobject_put(&sdp->sd_kobj);
+	fs_err(sdp, "error %d adding sysfs files", error);
+	if (sysfs_frees_sdp)
+		kobject_put(&sdp->sd_kobj);
+	else
+		kfree(sdp);
 	sb->s_fs_info = NULL;
 	return error;
 }

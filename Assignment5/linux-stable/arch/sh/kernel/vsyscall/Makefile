@@ -1,4 +1,3 @@
-# SPDX-License-Identifier: GPL-2.0
 obj-y += vsyscall.o vsyscall-syscall.o vsyscall-syms.o
 
 $(obj)/vsyscall-syscall.o: \
@@ -15,7 +14,8 @@ quiet_cmd_syscall = SYSCALL $@
 
 export CPPFLAGS_vsyscall.lds += -P -C -Ush
 
-vsyscall-flags = -shared -s -Wl,-soname=linux-gate.so.1 -Wl,--hash-style=sysv
+vsyscall-flags = -shared -s -Wl,-soname=linux-gate.so.1 \
+		$(call cc-ldoption, -Wl$(comma)--hash-style=sysv)
 
 SYSCFLAGS_vsyscall-trapa.so	= $(vsyscall-flags)
 

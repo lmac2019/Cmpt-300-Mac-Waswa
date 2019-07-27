@@ -1,7 +1,15 @@
-// SPDX-License-Identifier: GPL-2.0
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2013 Realtek Corporation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
  ******************************************************************************/
 #define _HAL_INIT_C_
@@ -55,7 +63,7 @@ static int _BlockWrite(struct adapter *padapter, void *buffer, u32 buffSize)
 	u32 blockSize_p3 = 1; /*  Phase #3 : Use 1-byte, the remnant of FW image. */
 	u32 blockCount_p1 = 0, blockCount_p2 = 0, blockCount_p3 = 0;
 	u32 remainSize_p1 = 0, remainSize_p2 = 0;
-	u8 *bufferPtr = buffer;
+	u8 *bufferPtr = (u8 *)buffer;
 	u32 i = 0, offset = 0;
 
 /* 	printk("====>%s %d\n", __func__, __LINE__); */
@@ -155,7 +163,7 @@ static int _WriteFW(struct adapter *padapter, void *buffer, u32 size)
 	int ret = _SUCCESS;
 	u32 pageNums, remainSize;
 	u32 page, offset;
-	u8 *bufferPtr = buffer;
+	u8 *bufferPtr = (u8 *)buffer;
 
 	pageNums = size / MAX_DLFW_PAGE_SIZE;
 	/* RT_ASSERT((pageNums <= 4), ("Page numbers should not greater then 4\n")); */
@@ -425,29 +433,30 @@ s32 rtl8723b_FirmwareDownload(struct adapter *padapter, bool  bUsedWoWLANFw)
 		goto exit;
 	}
 
-	pFirmware->fw_buffer_sz = kmemdup(fw->data, fw->size, GFP_KERNEL);
-	if (!pFirmware->fw_buffer_sz) {
+	pFirmware->szFwBuffer = kzalloc(fw->size, GFP_KERNEL);
+	if (!pFirmware->szFwBuffer) {
 		rtStatus = _FAIL;
 		goto exit;
 	}
 
-	pFirmware->fw_length = fw->size;
+	memcpy(pFirmware->szFwBuffer, fw->data, fw->size);
+	pFirmware->ulFwLength = fw->size;
 	release_firmware(fw);
-	if (pFirmware->fw_length > FW_8723B_SIZE) {
+	if (pFirmware->ulFwLength > FW_8723B_SIZE) {
 		rtStatus = _FAIL;
-		DBG_871X_LEVEL(_drv_emerg_, "Firmware size:%u exceed %u\n", pFirmware->fw_length, FW_8723B_SIZE);
+		DBG_871X_LEVEL(_drv_emerg_, "Firmware size:%u exceed %u\n", pFirmware->ulFwLength, FW_8723B_SIZE);
 		goto release_fw1;
 	}
 
-	pFirmwareBuf = pFirmware->fw_buffer_sz;
-	FirmwareLen = pFirmware->fw_length;
+	pFirmwareBuf = pFirmware->szFwBuffer;
+	FirmwareLen = pFirmware->ulFwLength;
 
 	/*  To Check Fw header. Added by tynli. 2009.12.04. */
 	pFwHdr = (struct rt_firmware_hdr *)pFirmwareBuf;
 
-	pHalData->FirmwareVersion =  le16_to_cpu(pFwHdr->version);
-	pHalData->FirmwareSubVersion = le16_to_cpu(pFwHdr->subversion);
-	pHalData->FirmwareSignature = le16_to_cpu(pFwHdr->signature);
+	pHalData->FirmwareVersion =  le16_to_cpu(pFwHdr->Version);
+	pHalData->FirmwareSubVersion = le16_to_cpu(pFwHdr->Subversion);
+	pHalData->FirmwareSignature = le16_to_cpu(pFwHdr->Signature);
 
 	DBG_871X(
 		"%s: fw_ver =%x fw_subver =%04x sig = 0x%x, Month =%02x, Date =%02x, Hour =%02x, Minute =%02x\n",
@@ -455,10 +464,10 @@ s32 rtl8723b_FirmwareDownload(struct adapter *padapter, bool  bUsedWoWLANFw)
 		pHalData->FirmwareVersion,
 		pHalData->FirmwareSubVersion,
 		pHalData->FirmwareSignature,
-		pFwHdr->month,
-		pFwHdr->date,
-		pFwHdr->hour,
-		pFwHdr->minute
+		pFwHdr->Month,
+		pFwHdr->Date,
+		pFwHdr->Hour,
+		pFwHdr->Minute
 	);
 
 	if (IS_FW_HEADER_EXIST_8723B(pFwHdr)) {
@@ -510,7 +519,7 @@ fwdl_stat:
 	);
 
 exit:
-	kfree(pFirmware->fw_buffer_sz);
+	kfree(pFirmware->szFwBuffer);
 	kfree(pFirmware);
 release_fw1:
 	kfree(pBTFirmware);
@@ -634,7 +643,7 @@ static void Hal_GetEfuseDefinition(
 	case TYPE_EFUSE_MAX_SECTION:
 		{
 			u8 *pMax_section;
-			pMax_section = pOut;
+			pMax_section = (u8 *)pOut;
 
 			if (efuseType == EFUSE_WIFI)
 				*pMax_section = EFUSE_MAX_SECTION_8723B;
@@ -646,7 +655,7 @@ static void Hal_GetEfuseDefinition(
 	case TYPE_EFUSE_REAL_CONTENT_LEN:
 		{
 			u16 *pu2Tmp;
-			pu2Tmp = pOut;
+			pu2Tmp = (u16 *)pOut;
 
 			if (efuseType == EFUSE_WIFI)
 				*pu2Tmp = EFUSE_REAL_CONTENT_LEN_8723B;
@@ -658,7 +667,7 @@ static void Hal_GetEfuseDefinition(
 	case TYPE_AVAILABLE_EFUSE_BYTES_BANK:
 		{
 			u16 *pu2Tmp;
-			pu2Tmp = pOut;
+			pu2Tmp = (u16 *)pOut;
 
 			if (efuseType == EFUSE_WIFI)
 				*pu2Tmp = (EFUSE_REAL_CONTENT_LEN_8723B-EFUSE_OOB_PROTECT_BYTES);
@@ -670,7 +679,7 @@ static void Hal_GetEfuseDefinition(
 	case TYPE_AVAILABLE_EFUSE_BYTES_TOTAL:
 		{
 			u16 *pu2Tmp;
-			pu2Tmp = pOut;
+			pu2Tmp = (u16 *)pOut;
 
 			if (efuseType == EFUSE_WIFI)
 				*pu2Tmp = (EFUSE_REAL_CONTENT_LEN_8723B-EFUSE_OOB_PROTECT_BYTES);
@@ -682,7 +691,7 @@ static void Hal_GetEfuseDefinition(
 	case TYPE_EFUSE_MAP_LEN:
 		{
 			u16 *pu2Tmp;
-			pu2Tmp = pOut;
+			pu2Tmp = (u16 *)pOut;
 
 			if (efuseType == EFUSE_WIFI)
 				*pu2Tmp = EFUSE_MAX_MAP_LEN;
@@ -694,7 +703,7 @@ static void Hal_GetEfuseDefinition(
 	case TYPE_EFUSE_PROTECT_BYTES_BANK:
 		{
 			u8 *pu1Tmp;
-			pu1Tmp = pOut;
+			pu1Tmp = (u8 *)pOut;
 
 			if (efuseType == EFUSE_WIFI)
 				*pu1Tmp = EFUSE_OOB_PROTECT_BYTES;
@@ -706,7 +715,7 @@ static void Hal_GetEfuseDefinition(
 	case TYPE_EFUSE_CONTENT_LEN_BANK:
 		{
 			u16 *pu2Tmp;
-			pu2Tmp = pOut;
+			pu2Tmp = (u16 *)pOut;
 
 			if (efuseType == EFUSE_WIFI)
 				*pu2Tmp = EFUSE_REAL_CONTENT_LEN_8723B;
@@ -718,7 +727,7 @@ static void Hal_GetEfuseDefinition(
 	default:
 		{
 			u8 *pu1Tmp;
-			pu1Tmp = pOut;
+			pu1Tmp = (u8 *)pOut;
 			*pu1Tmp = 0;
 		}
 		break;
@@ -882,8 +891,8 @@ static void hal_ReadEFuse_WiFi(
 		return;
 	}
 
-	efuseTbl = rtw_malloc(EFUSE_MAX_MAP_LEN);
-	if (!efuseTbl) {
+	efuseTbl = (u8 *)rtw_malloc(EFUSE_MAX_MAP_LEN);
+	if (efuseTbl == NULL) {
 		DBG_8192C("%s: alloc efuseTbl fail!\n", __func__);
 		return;
 	}
@@ -1463,7 +1472,7 @@ static s32 Hal_EfusePgPacketRead(
 	s32	ret;
 
 
-	if (!data)
+	if (data == NULL)
 		return false;
 
 	EFUSE_GetEfuseDefinition(padapter, EFUSE_WIFI, TYPE_EFUSE_MAX_SECTION, &max_section, bPseudoTest);
@@ -3348,7 +3357,7 @@ static void hw_var_set_opmode(struct adapter *padapter, u8 variable, u8 *val)
 			/*  disable atim wnd */
 			rtw_write8(padapter, REG_BCN_CTRL, DIS_TSF_UDT|EN_BCN_FUNCTION|DIS_ATIM);
 			/* rtw_write8(padapter, REG_BCN_CTRL, 0x18); */
-		} else if (mode == _HW_STATE_ADHOC_) {
+		} else if ((mode == _HW_STATE_ADHOC_) /*|| (mode == _HW_STATE_AP_)*/) {
 			ResumeTxBeacon(padapter);
 			rtw_write8(padapter, REG_BCN_CTRL, DIS_TSF_UDT|EN_BCN_FUNCTION|DIS_BCNQ_SUB);
 		} else if (mode == _HW_STATE_AP_) {
@@ -3664,7 +3673,7 @@ s32 c2h_handler_8723b(struct adapter *padapter, u8 *buf)
 	s32 ret = _SUCCESS;
 	u8 index = 0;
 
-	if (!pC2hEvent) {
+	if (pC2hEvent == NULL) {
 		DBG_8192C("%s(): pC2hEventis NULL\n", __func__);
 		ret = _FAIL;
 		goto exit;
@@ -3714,7 +3723,7 @@ static void process_c2h_event(struct adapter *padapter, PC2H_EVT_HDR pC2hEvent, 
 {
 	u8 index = 0;
 
-	if (!c2hBuf) {
+	if (c2hBuf == NULL) {
 		DBG_8192C("%s c2hbuff is NULL\n", __func__);
 		return;
 	}
@@ -4502,8 +4511,8 @@ void rtl8723b_stop_thread(struct adapter *padapter)
 
 	/*  stop xmit_buf_thread */
 	if (xmitpriv->SdioXmitThread) {
-		complete(&xmitpriv->SdioXmitStart);
-		wait_for_completion(&xmitpriv->SdioXmitTerminate);
+		up(&xmitpriv->SdioXmitSema);
+		down(&xmitpriv->SdioXmitTerminateSema);
 		xmitpriv->SdioXmitThread = NULL;
 	}
 #endif

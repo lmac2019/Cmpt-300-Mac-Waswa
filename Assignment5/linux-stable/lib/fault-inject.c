@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/random.h>
@@ -66,16 +65,22 @@ static bool fail_task(struct fault_attr *attr, struct task_struct *task)
 
 static bool fail_stacktrace(struct fault_attr *attr)
 {
+	struct stack_trace trace;
 	int depth = attr->stacktrace_depth;
 	unsigned long entries[MAX_STACK_TRACE_DEPTH];
-	int n, nr_entries;
+	int n;
 	bool found = (attr->require_start == 0 && attr->require_end == ULONG_MAX);
 
 	if (depth == 0)
 		return found;
 
-	nr_entries = stack_trace_save(entries, depth, 1);
-	for (n = 0; n < nr_entries; n++) {
+	trace.nr_entries = 0;
+	trace.entries = entries;
+	trace.max_entries = depth;
+	trace.skip = 1;
+
+	save_stack_trace(&trace);
+	for (n = 0; n < trace.nr_entries; n++) {
 		if (attr->reject_start <= entries[n] &&
 			       entries[n] < attr->reject_end)
 			return false;

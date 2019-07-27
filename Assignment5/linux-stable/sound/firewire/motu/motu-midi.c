@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * motu-midi.h - a part of driver for MOTU FireWire series
  *
  * Copyright (c) 2015-2017 Takashi Sakamoto <o-takashi@sakamocchi.jp>
+ *
+ * Licensed under the terms of the GNU General Public License, version 2.
  */
 #include "motu.h"
 
@@ -127,12 +128,12 @@ static void set_midi_substream_names(struct snd_motu *motu,
 
 int snd_motu_create_midi_devices(struct snd_motu *motu)
 {
-	static const struct snd_rawmidi_ops capture_ops = {
+	static struct snd_rawmidi_ops capture_ops = {
 		.open		= midi_capture_open,
 		.close		= midi_capture_close,
 		.trigger	= midi_capture_trigger,
 	};
-	static const struct snd_rawmidi_ops playback_ops = {
+	static struct snd_rawmidi_ops playback_ops = {
 		.open		= midi_playback_open,
 		.close		= midi_playback_close,
 		.trigger	= midi_playback_trigger,

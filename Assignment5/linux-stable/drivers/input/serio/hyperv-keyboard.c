@@ -1,6 +1,14 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  *  Copyright (c) 2013, Microsoft Corporation.
+ *
+ *  This program is free software; you can redistribute it and/or modify it
+ *  under the terms and conditions of the GNU General Public License,
+ *  version 2, as published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope it will be useful, but WITHOUT
+ *  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ *  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ *  more details.
  */
 
 #include <linux/init.h>
@@ -169,7 +177,7 @@ static void hv_kbd_on_receive(struct hv_device *hv_dev,
 		 * state because the Enter-UP can trigger a wakeup at once.
 		 */
 		if (!(info & IS_BREAK))
-			pm_wakeup_hard_event(&hv_dev->device);
+			pm_wakeup_event(&hv_dev->device, 0);
 
 		break;
 
@@ -416,9 +424,6 @@ static struct  hv_driver hv_kbd_drv = {
 	.id_table = id_table,
 	.probe = hv_kbd_probe,
 	.remove = hv_kbd_remove,
-	.driver = {
-		.probe_type = PROBE_PREFER_ASYNCHRONOUS,
-	},
 };
 
 static int __init hv_kbd_init(void)
@@ -432,7 +437,5 @@ static void __exit hv_kbd_exit(void)
 }
 
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("Microsoft Hyper-V Synthetic Keyboard Driver");
-
 module_init(hv_kbd_init);
 module_exit(hv_kbd_exit);

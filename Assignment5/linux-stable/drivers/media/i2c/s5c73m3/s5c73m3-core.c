@@ -1,10 +1,18 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Samsung LSI S5C73M3 8M pixel camera driver
  *
  * Copyright (C) 2012, Samsung Electronics, Co., Ltd.
  * Sylwester Nawrocki <s.nawrocki@samsung.com>
  * Andrzej Hajda <a.hajda@samsung.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  */
 
 #include <linux/clk.h>
@@ -240,17 +248,17 @@ static int s5c73m3_check_status(struct s5c73m3 *state, unsigned int value)
 {
 	unsigned long start = jiffies;
 	unsigned long end = start + msecs_to_jiffies(2000);
-	int ret;
+	int ret = 0;
 	u16 status;
 	int count = 0;
 
-	do {
+	while (time_is_after_jiffies(end)) {
 		ret = s5c73m3_read(state, REG_STATUS, &status);
 		if (ret < 0 || status == value)
 			break;
 		usleep_range(500, 1000);
 		++count;
-	} while (time_is_after_jiffies(end));
+	}
 
 	if (count > 0)
 		v4l2_dbg(1, s5c73m3_dbg, &state->sensor_sd,
@@ -1423,7 +1431,7 @@ err:
 	for (++i; i < S5C73M3_MAX_SUPPLIES; i++) {
 		int r = regulator_enable(state->supplies[i].consumer);
 		if (r < 0)
-			v4l2_err(&state->oif_sd, "Failed to re-enable %s: %d\n",
+			v4l2_err(&state->oif_sd, "Failed to reenable %s: %d\n",
 				 state->supplies[i].supply, r);
 	}
 
@@ -1595,7 +1603,7 @@ static int s5c73m3_get_platform_data(struct s5c73m3 *state)
 	const struct s5c73m3_platform_data *pdata = dev->platform_data;
 	struct device_node *node = dev->of_node;
 	struct device_node *node_ep;
-	struct v4l2_fwnode_endpoint ep = { .bus_type = 0 };
+	struct v4l2_fwnode_endpoint ep;
 	int ret;
 
 	if (!node) {
@@ -1627,7 +1635,8 @@ static int s5c73m3_get_platform_data(struct s5c73m3 *state)
 
 	node_ep = of_graph_get_next_endpoint(node, NULL);
 	if (!node_ep) {
-		dev_warn(dev, "no endpoint defined for node: %pOF\n", node);
+		dev_warn(dev, "no endpoint defined for node: %s\n",
+						node->full_name);
 		return 0;
 	}
 
@@ -1636,7 +1645,7 @@ static int s5c73m3_get_platform_data(struct s5c73m3 *state)
 	if (ret)
 		return ret;
 
-	if (ep.bus_type != V4L2_MBUS_CSI2_DPHY) {
+	if (ep.bus_type != V4L2_MBUS_CSI2) {
 		dev_err(dev, "unsupported bus type\n");
 		return -EINVAL;
 	}
@@ -1675,7 +1684,7 @@ static int s5c73m3_probe(struct i2c_client *client,
 	v4l2_subdev_init(sd, &s5c73m3_subdev_ops);
 	sd->owner = client->dev.driver->owner;
 	v4l2_set_subdevdata(sd, state);
-	strscpy(sd->name, "S5C73M3", sizeof(sd->name));
+	strlcpy(sd->name, "S5C73M3", sizeof(sd->name));
 
 	sd->internal_ops = &s5c73m3_internal_ops;
 	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
@@ -1690,8 +1699,7 @@ static int s5c73m3_probe(struct i2c_client *client,
 		return ret;
 
 	v4l2_i2c_subdev_init(oif_sd, client, &oif_subdev_ops);
-	/* Static name; NEVER use in new drivers! */
-	strscpy(oif_sd->name, "S5C73M3-OIF", sizeof(oif_sd->name));
+	strcpy(oif_sd->name, "S5C73M3-OIF");
 
 	oif_sd->internal_ops = &oif_internal_ops;
 	oif_sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;

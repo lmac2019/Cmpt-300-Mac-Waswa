@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _METER_H
 #define _METER_H
 
@@ -347,6 +346,9 @@
 
 #define IIO_DEV_ATTR_VPERIOD(_mode, _show, _store, _addr)		\
 	IIO_DEVICE_ATTR(vperiod, _mode, _show, _store, _addr)
+
+#define IIO_DEV_ATTR_CH_OFF(_num, _mode, _show, _store, _addr)		\
+	IIO_DEVICE_ATTR(choff_##_num, _mode, _show, _store, _addr)
 
 /* active energy register, AENERGY, is more than half full */
 #define IIO_EVENT_ATTR_AENERGY_HALF_FULL(_evlist, _show, _store, _mask) \

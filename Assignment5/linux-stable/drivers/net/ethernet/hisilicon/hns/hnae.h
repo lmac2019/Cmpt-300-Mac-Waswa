@@ -1,6 +1,10 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later */
 /*
  * Copyright (c) 2014-2015 Hisilicon Limited.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  */
 
 #ifndef __HNAE_H
@@ -83,11 +87,7 @@ do { \
 
 #define HNAE_AE_REGISTER 0x1
 
-#define RCB_RING_NAME_LEN (IFNAMSIZ + 4)
-
-#define HNAE_LOWEST_LATENCY_COAL_PARAM	30
-#define HNAE_LOW_LATENCY_COAL_PARAM	80
-#define HNAE_BULK_LATENCY_COAL_PARAM	150
+#define RCB_RING_NAME_LEN 16
 
 enum hnae_led_state {
 	HNAE_LED_INACTIVE,
@@ -216,10 +216,10 @@ struct hnae_desc_cb {
 
 	/* priv data for the desc, e.g. skb when use with ip stack*/
 	void *priv;
-	u32 page_offset;
-	u32 length;     /* length of the buffer */
-
+	u16 page_offset;
 	u16 reuse_flag;
+
+	u16 length;     /* length of the buffer */
 
        /* desc type, used by the ring user to mark the type of the priv data */
 	u16 type;
@@ -292,12 +292,6 @@ struct hnae_ring {
 
 	int flags;          /* ring attribute */
 	int irq_init_flag;
-
-	/* total rx bytes after last rx rate calucated */
-	u64 coal_last_rx_bytes;
-	unsigned long coal_last_jiffies;
-	u32 coal_param;
-	u32 coal_rx_rate;	/* rx rate in MB */
 };
 
 #define ring_ptr_move_fw(ring, p) \
@@ -353,7 +347,7 @@ struct hnae_buf_ops {
 };
 
 struct hnae_queue {
-	u8 __iomem *io_base;
+	void __iomem *io_base;
 	phys_addr_t phy_base;
 	struct hnae_ae_dev *dev;	/* the device who use this queue */
 	struct hnae_ring rx_ring ____cacheline_internodealigned_in_smp;
@@ -482,8 +476,6 @@ struct hnae_ae_ops {
 			u8 *auto_neg, u16 *speed, u8 *duplex);
 	void (*toggle_ring_irq)(struct hnae_ring *ring, u32 val);
 	void (*adjust_link)(struct hnae_handle *handle, int speed, int duplex);
-	bool (*need_adjust_link)(struct hnae_handle *handle,
-				 int speed, int duplex);
 	int (*set_loopback)(struct hnae_handle *handle,
 			    enum hnae_loop loop_mode, int en);
 	void (*get_ring_bdnum_limit)(struct hnae_queue *queue,
@@ -556,13 +548,8 @@ struct hnae_handle {
 	u32 if_support;
 	int q_num;
 	int vf_id;
-	unsigned long coal_last_jiffies;
-	u32 coal_param;		/* self adapt coalesce param */
-	/* the ring index of last ring that set coal param */
-	u32 coal_ring_idx;
 	u32 eport_id;
 	u32 dport_id;	/* v2 tx bd should fill the dport_id */
-	bool coal_adapt_en;
 	enum hnae_port_type port_type;
 	enum hnae_media_type media_type;
 	struct list_head node;    /* list to hnae_ae_dev->handle_list */

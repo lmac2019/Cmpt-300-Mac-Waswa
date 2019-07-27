@@ -1,10 +1,13 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2013 STMicroelectronics
  *
  * I2C master mode controller driver, used in STMicroelectronics devices.
  *
  * Author: Maxime Coquelin <maxime.coquelin@st.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2, as
+ * published by the Free Software Foundation.
  */
 
 #include <linux/clk.h>
@@ -742,7 +745,8 @@ static int st_i2c_xfer(struct i2c_adapter *i2c_adap,
 #ifdef CONFIG_PM_SLEEP
 static int st_i2c_suspend(struct device *dev)
 {
-	struct st_i2c_dev *i2c_dev = dev_get_drvdata(dev);
+	struct platform_device *pdev = to_platform_device(dev);
+	struct st_i2c_dev *i2c_dev = platform_get_drvdata(pdev);
 
 	if (i2c_dev->busy)
 		return -EBUSY;

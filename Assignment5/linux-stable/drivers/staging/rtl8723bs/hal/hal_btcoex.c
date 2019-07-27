@@ -1,7 +1,15 @@
-// SPDX-License-Identifier: GPL-2.0
 /******************************************************************************
  *
  * Copyright(c) 2013 Realtek Corporation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
  ******************************************************************************/
 #define __HAL_BTCOEX_C__
@@ -75,7 +83,7 @@ static BTCDBGINFO GLBtcDbgInfo;
 
 static void DBG_BT_INFO_INIT(PBTCDBGINFO pinfo, u8 *pbuf, u32 size)
 {
-	if (!pinfo)
+	if (NULL == pinfo)
 		return;
 
 	memset(pinfo, 0, sizeof(BTCDBGINFO));
@@ -95,7 +103,7 @@ void DBG_BT_INFO(u8 *dbgmsg)
 
 	pinfo = &GLBtcDbgInfo;
 
-	if (!pinfo->info)
+	if (NULL == pinfo->info)
 		return;
 
 	msglen = strlen(dbgmsg);
@@ -112,7 +120,8 @@ void DBG_BT_INFO(u8 *dbgmsg)
 /*  */
 static u8 halbtcoutsrc_IsBtCoexistAvailable(PBTC_COEXIST pBtCoexist)
 {
-	if (!pBtCoexist->bBinded || !pBtCoexist->Adapter){
+	if (!pBtCoexist->bBinded ||
+		NULL == pBtCoexist->Adapter){
 		return false;
 	}
 	return true;
@@ -258,7 +267,7 @@ static void halbtcoutsrc_AggregationCheck(PBTC_COEXIST pBtCoexist)
 
 	if (pBtCoexist->btInfo.bRejectAggPkt)
 		rtw_btcoex_RejectApAggregatedPacket(padapter, true);
-	else {
+	else{
 
 		if (pBtCoexist->btInfo.bPreBtCtrlAggBufSize !=
 			pBtCoexist->btInfo.bBtCtrlAggBufSize){
@@ -410,10 +419,10 @@ static u8 halbtcoutsrc_Get(void *pBtcContext, u8 getType, void *pOutBuf)
 	padapter = pBtCoexist->Adapter;
 	pHalData = GET_HAL_DATA(padapter);
 	mlmeext = &padapter->mlmeextpriv;
-	pu8 = pOutBuf;
-	pS4Tmp = pOutBuf;
-	pU4Tmp = pOutBuf;
-	pU1Tmp = pOutBuf;
+	pu8 = (u8 *)pOutBuf;
+	pS4Tmp = (s32 *)pOutBuf;
+	pU4Tmp = (u32 *)pOutBuf;
+	pU1Tmp = (u8 *)pOutBuf;
 	ret = true;
 
 	switch (getType) {
@@ -454,7 +463,7 @@ static u8 halbtcoutsrc_Get(void *pBtcContext, u8 getType, void *pOutBuf)
 		break;
 
 	case BTC_GET_BL_WIFI_UNDER_5G:
-		*pu8 = pHalData->CurrentBandType == 1;
+		*pu8 = (pHalData->CurrentBandType == 1) ? true : false;
 		break;
 
 	case BTC_GET_BL_WIFI_AP_MODE_ENABLE:
@@ -576,9 +585,9 @@ static u8 halbtcoutsrc_Set(void *pBtcContext, u8 setType, void *pInBuf)
 	pBtCoexist = (PBTC_COEXIST)pBtcContext;
 	padapter = pBtCoexist->Adapter;
 	pHalData = GET_HAL_DATA(padapter);
-	pu8 = pInBuf;
-	pU1Tmp = pInBuf;
-	pU4Tmp = pInBuf;
+	pu8 = (u8 *)pInBuf;
+	pU1Tmp = (u8 *)pInBuf;
+	pU4Tmp = (u32 *)pInBuf;
 	ret = true;
 
 	if (!halbtcoutsrc_IsBtCoexistAvailable(pBtCoexist))
@@ -1208,7 +1217,7 @@ void EXhalbtcoutsrc_SpecialPacketNotify(PBTC_COEXIST pBtCoexist, u8 pktType)
 		packetType = BTC_PACKET_EAPOL;
 	else if (PACKET_ARP == pktType)
 		packetType = BTC_PACKET_ARP;
-	else {
+	else{
 		packetType = BTC_PACKET_UNKNOWN;
 		return;
 	}
@@ -1402,8 +1411,15 @@ void hal_btcoex_SetSingleAntPath(struct adapter *padapter, u8 singleAntPath)
 
 u8 hal_btcoex_Initialize(struct adapter *padapter)
 {
+	u8 ret1;
+	u8 ret2;
+
+
 	memset(&GLBtCoexist, 0, sizeof(GLBtCoexist));
-	return EXhalbtcoutsrc_InitlizeVariables((void *)padapter);
+	ret1 = EXhalbtcoutsrc_InitlizeVariables((void *)padapter);
+	ret2 = (ret1 == true) ? true : false;
+
+	return ret2;
 }
 
 void hal_btcoex_PowerOnSetting(struct adapter *padapter)
@@ -1570,7 +1586,7 @@ void hal_btcoex_SetDBG(struct adapter *padapter, u32 *pDbgModule)
 	u32 i;
 
 
-	if (!pDbgModule)
+	if (NULL == pDbgModule)
 		return;
 
 	for (i = 0; i < BTC_MSG_MAX; i++)
@@ -1584,7 +1600,7 @@ u32 hal_btcoex_GetDBG(struct adapter *padapter, u8 *pStrBuf, u32 bufSize)
 	u32 leftSize;
 
 
-	if (!pStrBuf || bufSize == 0)
+	if ((NULL == pStrBuf) || (0 == bufSize))
 		return 0;
 
 	pstr = pStrBuf;

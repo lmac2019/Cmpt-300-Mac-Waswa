@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  *  Copyright (C) 1994-1998	   Linus Torvalds & authors (see below)
  *  Copyright (C) 1998-2002	   Linux ATA Development
@@ -187,7 +186,7 @@ static ide_startstop_t ide_do_rw_disk(ide_drive_t *drive, struct request *rq,
 	BUG_ON(drive->dev_flags & IDE_DFLAG_BLOCKED);
 	BUG_ON(blk_rq_is_passthrough(rq));
 
-	ledtrig_disk_activity(rq_data_dir(rq) == WRITE);
+	ledtrig_disk_activity();
 
 	pr_debug("%s: %sing: block=%llu, sectors=%u\n",
 		 drive->name, rq_data_dir(rq) == READ ? "read" : "writ",
@@ -427,15 +426,16 @@ static void ide_disk_unlock_native_capacity(ide_drive_t *drive)
 		drive->dev_flags |= IDE_DFLAG_NOHPA; /* disable HPA on resume */
 }
 
-static bool idedisk_prep_rq(ide_drive_t *drive, struct request *rq)
+static int idedisk_prep_fn(struct request_queue *q, struct request *rq)
 {
+	ide_drive_t *drive = q->queuedata;
 	struct ide_cmd *cmd;
 
 	if (req_op(rq) != REQ_OP_FLUSH)
-		return true;
+		return BLKPREP_OK;
 
-	if (ide_req(rq)->special) {
-		cmd = ide_req(rq)->special;
+	if (rq->special) {
+		cmd = rq->special;
 		memset(cmd, 0, sizeof(*cmd));
 	} else {
 		cmd = kzalloc(sizeof(*cmd), GFP_ATOMIC);
@@ -455,10 +455,10 @@ static bool idedisk_prep_rq(ide_drive_t *drive, struct request *rq)
 	rq->cmd_flags &= ~REQ_OP_MASK;
 	rq->cmd_flags |= REQ_OP_DRV_OUT;
 	ide_req(rq)->type = ATA_PRIV_TASKFILE;
-	ide_req(rq)->special = cmd;
+	rq->special = cmd;
 	cmd->rq = rq;
 
-	return true;
+	return BLKPREP_OK;
 }
 
 ide_devset_get(multcount, mult_count);
@@ -477,7 +477,7 @@ static int set_multcount(ide_drive_t *drive, int arg)
 	if (drive->special_flags & IDE_SFLAG_SET_MULTMODE)
 		return -EBUSY;
 
-	rq = blk_get_request(drive->queue, REQ_OP_DRV_IN, 0);
+	rq = blk_get_request(drive->queue, REQ_OP_DRV_IN, __GFP_RECLAIM);
 	ide_req(rq)->type = ATA_PRIV_TASKFILE;
 
 	drive->mult_req = arg;
@@ -547,7 +547,7 @@ static void update_flush(ide_drive_t *drive)
 
 		if (barrier) {
 			wc = true;
-			drive->prep_rq = idedisk_prep_rq;
+			blk_queue_prep_rq(drive->queue, idedisk_prep_fn);
 		}
 	}
 
@@ -686,8 +686,8 @@ static void ide_disk_setup(ide_drive_t *drive)
 	       queue_max_sectors(q) / 2);
 
 	if (ata_id_is_ssd(id)) {
-		blk_queue_flag_set(QUEUE_FLAG_NONROT, q);
-		blk_queue_flag_clear(QUEUE_FLAG_ADD_RANDOM, q);
+		queue_flag_set_unlocked(QUEUE_FLAG_NONROT, q);
+		queue_flag_clear_unlocked(QUEUE_FLAG_ADD_RANDOM, q);
 	}
 
 	/* calculate drive capacity, and select LBA if possible */

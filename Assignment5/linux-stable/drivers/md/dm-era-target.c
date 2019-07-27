@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 #include "dm.h"
 #include "persistent-data/dm-transaction-manager.h"
 #include "persistent-data/dm-bitset.h"
@@ -1193,7 +1192,7 @@ static dm_block_t get_block(struct era *era, struct bio *bio)
 
 static void remap_to_origin(struct era *era, struct bio *bio)
 {
-	bio_set_dev(bio, era->origin_dev->bdev);
+	bio->bi_bdev = era->origin_dev->bdev;
 }
 
 /*----------------------------------------------------------------
@@ -1514,6 +1513,7 @@ static int era_ctr(struct dm_target *ti, unsigned argc, char **argv)
 	ti->flush_supported = true;
 
 	ti->num_discard_bios = 1;
+	ti->discards_supported = true;
 	era->callbacks.congested_fn = era_is_congested;
 	dm_table_add_target_callbacks(ti->table, &era->callbacks);
 
@@ -1636,8 +1636,7 @@ err:
 	DMEMIT("Error");
 }
 
-static int era_message(struct dm_target *ti, unsigned argc, char **argv,
-		       char *result, unsigned maxlen)
+static int era_message(struct dm_target *ti, unsigned argc, char **argv)
 {
 	struct era *era = ti->private;
 

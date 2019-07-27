@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * linux/fs/lockd/svcproc.c
  *
@@ -295,7 +294,7 @@ static void nlmsvc_callback_exit(struct rpc_task *task, void *data)
 
 void nlmsvc_release_call(struct nlm_rqst *call)
 {
-	if (!refcount_dec_and_test(&call->a_count))
+	if (!atomic_dec_and_test(&call->a_count))
 		return;
 	nlmsvc_release_host(call->a_host);
 	kfree(call);

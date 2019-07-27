@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * The Marvell camera core.  This device appears in a number of settings,
  * so it needs platform-specific support outside of the core.
@@ -794,7 +793,7 @@ static void mcam_ctlr_image(struct mcam_camera *cam)
 	/*
 	 * This field controls the generation of EOF(DVP only)
 	 */
-	if (cam->bus_type != V4L2_MBUS_CSI2_DPHY)
+	if (cam->bus_type != V4L2_MBUS_CSI2)
 		mcam_reg_set_bit(cam, REG_CTRL0,
 				C0_EOF_VSYNC | C0_VEDGE_CTRL);
 }
@@ -1023,7 +1022,7 @@ static int mcam_read_setup(struct mcam_camera *cam)
 		cam->calc_dphy(cam);
 	cam_dbg(cam, "camera: DPHY sets: dphy3=0x%x, dphy5=0x%x, dphy6=0x%x\n",
 			cam->dphy[0], cam->dphy[1], cam->dphy[2]);
-	if (cam->bus_type == V4L2_MBUS_CSI2_DPHY)
+	if (cam->bus_type == V4L2_MBUS_CSI2)
 		mcam_enable_mipi(cam);
 	else
 		mcam_disable_mipi(cam);
@@ -1303,9 +1302,9 @@ static int mcam_vidioc_querycap(struct file *file, void *priv,
 {
 	struct mcam_camera *cam = video_drvdata(file);
 
-	strscpy(cap->driver, "marvell_ccic", sizeof(cap->driver));
-	strscpy(cap->card, "marvell_ccic", sizeof(cap->card));
-	strscpy(cap->bus_info, cam->bus_info, sizeof(cap->bus_info));
+	strcpy(cap->driver, "marvell_ccic");
+	strcpy(cap->card, "marvell_ccic");
+	strlcpy(cap->bus_info, cam->bus_info, sizeof(cap->bus_info));
 	cap->device_caps = V4L2_CAP_VIDEO_CAPTURE |
 		V4L2_CAP_READWRITE | V4L2_CAP_STREAMING;
 	cap->capabilities = cap->device_caps | V4L2_CAP_DEVICE_CAPS;
@@ -1318,8 +1317,8 @@ static int mcam_vidioc_enum_fmt_vid_cap(struct file *filp,
 {
 	if (fmt->index >= N_MCAM_FMTS)
 		return -EINVAL;
-	strscpy(fmt->description, mcam_formats[fmt->index].desc,
-		sizeof(fmt->description));
+	strlcpy(fmt->description, mcam_formats[fmt->index].desc,
+			sizeof(fmt->description));
 	fmt->pixelformat = mcam_formats[fmt->index].pixelformat;
 	return 0;
 }
@@ -1421,7 +1420,7 @@ static int mcam_vidioc_enum_input(struct file *filp, void *priv,
 		return -EINVAL;
 
 	input->type = V4L2_INPUT_TYPE_CAMERA;
-	strscpy(input->name, "Camera", sizeof(input->name));
+	strcpy(input->name, "Camera");
 	return 0;
 }
 
@@ -1443,24 +1442,24 @@ static int mcam_vidioc_s_input(struct file *filp, void *priv, unsigned int i)
  * the level which controls the number of read buffers.
  */
 static int mcam_vidioc_g_parm(struct file *filp, void *priv,
-		struct v4l2_streamparm *a)
+		struct v4l2_streamparm *parms)
 {
 	struct mcam_camera *cam = video_drvdata(filp);
 	int ret;
 
-	ret = v4l2_g_parm_cap(video_devdata(filp), cam->sensor, a);
-	a->parm.capture.readbuffers = n_dma_bufs;
+	ret = sensor_call(cam, video, g_parm, parms);
+	parms->parm.capture.readbuffers = n_dma_bufs;
 	return ret;
 }
 
 static int mcam_vidioc_s_parm(struct file *filp, void *priv,
-		struct v4l2_streamparm *a)
+		struct v4l2_streamparm *parms)
 {
 	struct mcam_camera *cam = video_drvdata(filp);
 	int ret;
 
-	ret = v4l2_s_parm_cap(video_devdata(filp), cam->sensor, a);
-	a->parm.capture.readbuffers = n_dma_bufs;
+	ret = sensor_call(cam, video, s_parm, parms);
+	parms->parm.capture.readbuffers = n_dma_bufs;
 	return ret;
 }
 
@@ -1640,7 +1639,7 @@ static const struct v4l2_file_operations mcam_v4l_fops = {
  * This template device holds all of those v4l2 methods; we
  * clone it for specific real devices.
  */
-static const struct video_device mcam_v4l_template = {
+static struct video_device mcam_v4l_template = {
 	.name = "mcam",
 	.fops = &mcam_v4l_fops,
 	.ioctl_ops = &mcam_v4l_ioctl_ops,
@@ -1720,7 +1719,6 @@ int mccic_irq(struct mcam_camera *cam, unsigned int irqs)
 	}
 	return handled;
 }
-EXPORT_SYMBOL_GPL(mccic_irq);
 
 /* ---------------------------------------------------------------------- */
 /*
@@ -1831,7 +1829,7 @@ out_unregister:
 	v4l2_device_unregister(&cam->v4l2_dev);
 	return ret;
 }
-EXPORT_SYMBOL_GPL(mccic_register);
+
 
 void mccic_shutdown(struct mcam_camera *cam)
 {
@@ -1851,7 +1849,6 @@ void mccic_shutdown(struct mcam_camera *cam)
 	v4l2_ctrl_handler_free(&cam->ctrl_handler);
 	v4l2_device_unregister(&cam->v4l2_dev);
 }
-EXPORT_SYMBOL_GPL(mccic_shutdown);
 
 /*
  * Power management
@@ -1870,7 +1867,6 @@ void mccic_suspend(struct mcam_camera *cam)
 	}
 	mutex_unlock(&cam->s_mutex);
 }
-EXPORT_SYMBOL_GPL(mccic_suspend);
 
 int mccic_resume(struct mcam_camera *cam)
 {
@@ -1901,8 +1897,4 @@ int mccic_resume(struct mcam_camera *cam)
 	}
 	return ret;
 }
-EXPORT_SYMBOL_GPL(mccic_resume);
 #endif /* CONFIG_PM */
-
-MODULE_LICENSE("GPL v2");
-MODULE_AUTHOR("Jonathan Corbet <corbet@lwn.net>");

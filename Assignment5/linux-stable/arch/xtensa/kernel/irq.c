@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * linux/arch/xtensa/kernel/irq.c
  *
@@ -158,6 +157,7 @@ void __init init_IRQ(void)
 #ifdef CONFIG_SMP
 	ipi_init();
 #endif
+	variant_init_irq();
 }
 
 #ifdef CONFIG_HOTPLUG_CPU

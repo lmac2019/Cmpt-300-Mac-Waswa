@@ -1,7 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2015 - 2016 ZTE Corporation.
  * Copyright (C) 2016 Linaro Ltd.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  */
 #include <linux/clk-provider.h>
 #include <linux/device.h>
@@ -448,7 +451,7 @@ static struct zx_clk_fixed_factor top_ffactor_clk[] = {
 	FFACTOR(0, "emmc_mux_div2",	"emmc_mux", 1, 2, CLK_SET_RATE_PARENT),
 };
 
-static const struct clk_div_table noc_div_table[] = {
+static struct clk_div_table noc_div_table[] = {
 	{ .val = 1, .div = 2, },
 	{ .val = 3, .div = 4, },
 };
@@ -641,7 +644,7 @@ static int __init top_clocks_init(struct device_node *np)
 	return 0;
 }
 
-static const struct clk_div_table common_even_div_table[] = {
+static struct clk_div_table common_even_div_table[] = {
 	{ .val = 0, .div = 1, },
 	{ .val = 1, .div = 2, },
 	{ .val = 3, .div = 4, },
@@ -653,7 +656,7 @@ static const struct clk_div_table common_even_div_table[] = {
 	{ .val = 15, .div = 16, },
 };
 
-static const struct clk_div_table common_div_table[] = {
+static struct clk_div_table common_div_table[] = {
 	{ .val = 0, .div = 1, },
 	{ .val = 1, .div = 2, },
 	{ .val = 2, .div = 3, },

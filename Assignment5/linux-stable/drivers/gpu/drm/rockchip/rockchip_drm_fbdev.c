@@ -1,13 +1,21 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) Fuzhou Rockchip Electronics Co.Ltd
  * Author:Mark Yao <mark.yao@rock-chips.com>
+ *
+ * This software is licensed under the terms of the GNU General Public
+ * License version 2, as published by the Free Software Foundation, and
+ * may be copied, distributed, and modified under those terms.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  */
 
 #include <drm/drm.h>
 #include <drm/drmP.h>
 #include <drm/drm_fb_helper.h>
-#include <drm/drm_probe_helper.h>
+#include <drm/drm_crtc_helper.h>
 
 #include "rockchip_drm_drv.h"
 #include "rockchip_drm_gem.h"
@@ -68,7 +76,7 @@ static int rockchip_drm_fbdev_create(struct drm_fb_helper *helper,
 
 	fbi = drm_fb_helper_alloc_fbi(helper);
 	if (IS_ERR(fbi)) {
-		DRM_DEV_ERROR(dev->dev, "Failed to create framebuffer info.\n");
+		dev_err(dev->dev, "Failed to create framebuffer info.\n");
 		ret = PTR_ERR(fbi);
 		goto out;
 	}
@@ -76,16 +84,18 @@ static int rockchip_drm_fbdev_create(struct drm_fb_helper *helper,
 	helper->fb = rockchip_drm_framebuffer_init(dev, &mode_cmd,
 						   private->fbdev_bo);
 	if (IS_ERR(helper->fb)) {
-		DRM_DEV_ERROR(dev->dev,
-			      "Failed to allocate DRM framebuffer.\n");
+		dev_err(dev->dev, "Failed to allocate DRM framebuffer.\n");
 		ret = PTR_ERR(helper->fb);
 		goto out;
 	}
 
+	fbi->par = helper;
+	fbi->flags = FBINFO_FLAG_DEFAULT;
 	fbi->fbops = &rockchip_drm_fbdev_ops;
 
 	fb = helper->fb;
-	drm_fb_helper_fill_info(fbi, helper, sizes);
+	drm_fb_helper_fill_fix(fbi, fb->pitches[0], fb->format->depth);
+	drm_fb_helper_fill_var(fbi, helper, sizes->fb_width, sizes->fb_height);
 
 	offset = fbi->var.xoffset * bytes_per_pixel;
 	offset += fbi->var.yoffset * fb->pitches[0];
@@ -99,6 +109,8 @@ static int rockchip_drm_fbdev_create(struct drm_fb_helper *helper,
 		      fb->width, fb->height, fb->format->depth,
 		      rk_obj->kvaddr,
 		      offset, size);
+
+	fbi->skip_vt_switch = true;
 
 	return 0;
 
@@ -126,24 +138,21 @@ int rockchip_drm_fbdev_init(struct drm_device *dev)
 
 	ret = drm_fb_helper_init(dev, helper, ROCKCHIP_MAX_CONNECTOR);
 	if (ret < 0) {
-		DRM_DEV_ERROR(dev->dev,
-			      "Failed to initialize drm fb helper - %d.\n",
-			      ret);
+		dev_err(dev->dev, "Failed to initialize drm fb helper - %d.\n",
+			ret);
 		return ret;
 	}
 
 	ret = drm_fb_helper_single_add_all_connectors(helper);
 	if (ret < 0) {
-		DRM_DEV_ERROR(dev->dev,
-			      "Failed to add connectors - %d.\n", ret);
+		dev_err(dev->dev, "Failed to add connectors - %d.\n", ret);
 		goto err_drm_fb_helper_fini;
 	}
 
 	ret = drm_fb_helper_initial_config(helper, PREFERRED_BPP);
 	if (ret < 0) {
-		DRM_DEV_ERROR(dev->dev,
-			      "Failed to set initial hw config - %d.\n",
-			      ret);
+		dev_err(dev->dev, "Failed to set initial hw config - %d.\n",
+			ret);
 		goto err_drm_fb_helper_fini;
 	}
 
@@ -164,7 +173,7 @@ void rockchip_drm_fbdev_fini(struct drm_device *dev)
 	drm_fb_helper_unregister_fbi(helper);
 
 	if (helper->fb)
-		drm_framebuffer_put(helper->fb);
+		drm_framebuffer_unreference(helper->fb);
 
 	drm_fb_helper_fini(helper);
 }

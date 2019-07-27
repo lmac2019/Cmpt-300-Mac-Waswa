@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  *  linux/fs/9p/vfs_super.c
  *
@@ -7,6 +6,22 @@
  *
  *  Copyright (C) 2004 by Eric Van Hensbergen <ericvh@gmail.com>
  *  Copyright (C) 2002 by Ron Minnich <rminnich@lanl.gov>
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License version 2
+ *  as published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to:
+ *  Free Software Foundation
+ *  51 Franklin Street, Fifth Floor
+ *  Boston, MA  02111-1301  USA
+ *
  */
 
 #include <linux/kernel.h>
@@ -77,15 +92,15 @@ v9fs_fill_super(struct super_block *sb, struct v9fs_session_info *v9ses,
 		return ret;
 
 	if (v9ses->cache)
-		sb->s_bdi->ra_pages = VM_READAHEAD_PAGES;
+		sb->s_bdi->ra_pages = (VM_MAX_READAHEAD * 1024)/PAGE_SIZE;
 
-	sb->s_flags |= SB_ACTIVE | SB_DIRSYNC;
+	sb->s_flags |= MS_ACTIVE | MS_DIRSYNC | MS_NOATIME;
 	if (!v9ses->cache)
-		sb->s_flags |= SB_SYNCHRONOUS;
+		sb->s_flags |= MS_SYNCHRONOUS;
 
 #ifdef CONFIG_9P_FS_POSIX_ACL
 	if ((v9ses->flags & V9FS_ACL_MASK) == V9FS_POSIX_ACL)
-		sb->s_flags |= SB_POSIXACL;
+		sb->s_flags |= MS_POSIXACL;
 #endif
 
 	return 0;
@@ -157,7 +172,7 @@ static struct dentry *v9fs_mount(struct file_system_type *fs_type, int flags,
 			goto release_sb;
 		}
 		d_inode(root)->i_ino = v9fs_qid2ino(&st->qid);
-		v9fs_stat2inode_dotl(st, d_inode(root), 0);
+		v9fs_stat2inode_dotl(st, d_inode(root));
 		kfree(st);
 	} else {
 		struct p9_wstat *st = NULL;
@@ -168,7 +183,7 @@ static struct dentry *v9fs_mount(struct file_system_type *fs_type, int flags,
 		}
 
 		d_inode(root)->i_ino = v9fs_qid2ino(&st->qid);
-		v9fs_stat2inode(st, d_inode(root), sb, 0);
+		v9fs_stat2inode(st, d_inode(root), sb);
 
 		p9stat_free(st);
 		kfree(st);
@@ -329,7 +344,7 @@ static int v9fs_write_inode_dotl(struct inode *inode,
 
 static const struct super_operations v9fs_super_ops = {
 	.alloc_inode = v9fs_alloc_inode,
-	.free_inode = v9fs_free_inode,
+	.destroy_inode = v9fs_destroy_inode,
 	.statfs = simple_statfs,
 	.evict_inode = v9fs_evict_inode,
 	.show_options = v9fs_show_options,
@@ -339,7 +354,7 @@ static const struct super_operations v9fs_super_ops = {
 
 static const struct super_operations v9fs_super_ops_dotl = {
 	.alloc_inode = v9fs_alloc_inode,
-	.free_inode = v9fs_free_inode,
+	.destroy_inode = v9fs_destroy_inode,
 	.statfs = v9fs_statfs,
 	.drop_inode = v9fs_drop_inode,
 	.evict_inode = v9fs_evict_inode,

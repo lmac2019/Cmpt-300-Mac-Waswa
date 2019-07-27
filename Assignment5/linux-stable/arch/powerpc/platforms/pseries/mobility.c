@@ -1,9 +1,12 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Support for Partition Mobility/Migration
  *
  * Copyright (C) 2010 Nathan Fontenot
  * Copyright (C) 2010 IBM Corporation
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License version
+ * 2 as published by the Free Software Foundation.
  */
 
 #include <linux/kernel.h>
@@ -14,7 +17,6 @@
 #include <linux/device.h>
 #include <linux/delay.h>
 #include <linux/slab.h>
-#include <linux/stringify.h>
 
 #include <asm/machdep.h>
 #include <asm/rtas.h>
@@ -224,12 +226,10 @@ static int add_dt_node(__be32 parent_phandle, __be32 drc_index)
 		return -ENOENT;
 
 	dn = dlpar_configure_connector(drc_index, parent_dn);
-	if (!dn) {
-		of_node_put(parent_dn);
+	if (!dn)
 		return -ENOENT;
-	}
 
-	rc = dlpar_attach_node(dn, parent_dn);
+	rc = dlpar_attach_node(dn);
 	if (rc)
 		dlpar_free_cc_nodes(dn);
 
@@ -239,7 +239,7 @@ static int add_dt_node(__be32 parent_phandle, __be32 drc_index)
 
 static void prrn_update_node(__be32 phandle)
 {
-	struct pseries_hp_errorlog hp_elog;
+	struct pseries_hp_errorlog *hp_elog;
 	struct device_node *dn;
 
 	/*
@@ -252,12 +252,18 @@ static void prrn_update_node(__be32 phandle)
 		return;
 	}
 
-	hp_elog.resource = PSERIES_HP_ELOG_RESOURCE_MEM;
-	hp_elog.action = PSERIES_HP_ELOG_ACTION_READD;
-	hp_elog.id_type = PSERIES_HP_ELOG_ID_DRC_INDEX;
-	hp_elog._drc_u.drc_index = phandle;
+	hp_elog = kzalloc(sizeof(*hp_elog), GFP_KERNEL);
+	if(!hp_elog)
+		return;
 
-	handle_dlpar_errorlog(&hp_elog);
+	hp_elog->resource = PSERIES_HP_ELOG_RESOURCE_MEM;
+	hp_elog->action = PSERIES_HP_ELOG_ACTION_READD;
+	hp_elog->id_type = PSERIES_HP_ELOG_ID_DRC_INDEX;
+	hp_elog->_drc_u.drc_index = phandle;
+
+	queue_hotplug_event(hp_elog, NULL, NULL);
+
+	kfree(hp_elog);
 }
 
 int pseries_devicetree_update(s32 scope)
@@ -340,9 +346,6 @@ void post_mobility_fixup(void)
 		printk(KERN_ERR "Post-mobility device tree update "
 			"failed: %d\n", rc);
 
-	/* Possibly switch to a new RFI flush type */
-	pseries_setup_rfi_flush();
-
 	return;
 }
 
@@ -357,8 +360,6 @@ static ssize_t migration_store(struct class *class,
 	if (rc)
 		return rc;
 
-	stop_topology_update();
-
 	do {
 		rc = rtas_ibm_suspend_me(streamid);
 		if (rc == -EAGAIN)
@@ -369,9 +370,6 @@ static ssize_t migration_store(struct class *class,
 		return rc;
 
 	post_mobility_fixup();
-
-	start_topology_update();
-
 	return count;
 }
 
@@ -384,7 +382,7 @@ static ssize_t migration_store(struct class *class,
 #define MIGRATION_API_VERSION	1
 
 static CLASS_ATTR_WO(migration);
-static CLASS_ATTR_STRING(api_version, 0444, __stringify(MIGRATION_API_VERSION));
+static CLASS_ATTR_STRING(api_version, S_IRUGO, __stringify(MIGRATION_API_VERSION));
 
 static int __init mobility_sysfs_init(void)
 {

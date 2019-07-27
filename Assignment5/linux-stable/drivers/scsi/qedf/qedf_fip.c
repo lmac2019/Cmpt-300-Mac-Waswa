@@ -1,7 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  *  QLogic FCoE Offload Driver
- *  Copyright (c) 2016-2018 Cavium Inc.
+ *  Copyright (c) 2016-2017 Cavium Inc.
+ *
+ *  This software is available under the terms of the GNU General Public License
+ *  (GPL) Version 2, available from the file COPYING in the main directory of
+ *  this source tree.
  */
 #include <linux/if_ether.h>
 #include <linux/if_vlan.h>
@@ -16,16 +19,16 @@ void qedf_fcoe_send_vlan_req(struct qedf_ctx *qedf)
 {
 	struct sk_buff *skb;
 	char *eth_fr;
+	int fr_len;
 	struct fip_vlan *vlan;
 #define MY_FIP_ALL_FCF_MACS        ((__u8[6]) { 1, 0x10, 0x18, 1, 0, 2 })
 	static u8 my_fcoe_all_fcfs[ETH_ALEN] = MY_FIP_ALL_FCF_MACS;
-	unsigned long flags = 0;
-	int rc = -1;
 
 	skb = dev_alloc_skb(sizeof(struct fip_vlan));
 	if (!skb)
 		return;
 
+	fr_len = sizeof(*vlan);
 	eth_fr = (char *)skb->data;
 	vlan = (struct fip_vlan *)eth_fr;
 
@@ -62,15 +65,7 @@ void qedf_fcoe_send_vlan_req(struct qedf_ctx *qedf)
 		kfree_skb(skb);
 		return;
 	}
-
-	set_bit(QED_LL2_XMIT_FLAGS_FIP_DISCOVERY, &flags);
-	rc = qed_ops->ll2->start_xmit(qedf->cdev, skb, flags);
-	if (rc) {
-		QEDF_ERR(&qedf->dbg_ctx, "start_xmit failed rc = %d.\n", rc);
-		kfree_skb(skb);
-		return;
-	}
-
+	qed_ops->ll2->start_xmit(qedf->cdev, skb);
 }
 
 static void qedf_fcoe_process_vlan_resp(struct qedf_ctx *qedf,
@@ -97,12 +92,6 @@ static void qedf_fcoe_process_vlan_resp(struct qedf_ctx *qedf,
 		rlen -= dlen;
 	}
 
-	if (atomic_read(&qedf->link_state) == QEDF_LINK_DOWN) {
-		QEDF_INFO(&qedf->dbg_ctx, QEDF_LOG_DISC,
-			  "Dropping VLAN response as link is down.\n");
-		return;
-	}
-
 	QEDF_INFO(&(qedf->dbg_ctx), QEDF_LOG_DISC, "VLAN response, "
 		   "vid=0x%x.\n", vid);
 
@@ -119,10 +108,10 @@ void qedf_fip_send(struct fcoe_ctlr *fip, struct sk_buff *skb)
 {
 	struct qedf_ctx *qedf = container_of(fip, struct qedf_ctx, ctlr);
 	struct ethhdr *eth_hdr;
+	struct vlan_ethhdr *vlan_hdr;
 	struct fip_header *fiph;
 	u16 op, vlan_tci = 0;
 	u8 sub;
-	int rc = -1;
 
 	if (!test_bit(QEDF_LL2_STARTED, &qedf->flags)) {
 		QEDF_WARN(&(qedf->dbg_ctx), "LL2 not started\n");
@@ -135,31 +124,26 @@ void qedf_fip_send(struct fcoe_ctlr *fip, struct sk_buff *skb)
 	op = ntohs(fiph->fip_op);
 	sub = fiph->fip_subcode;
 
-	/*
-	 * Add VLAN tag to non-offload FIP frame based on current stored VLAN
-	 * for FIP/FCoE traffic.
-	 */
-	__vlan_hwaccel_put_tag(skb, htons(ETH_P_8021Q), qedf->vlan_id);
+	if (!qedf->vlan_hw_insert) {
+		vlan_hdr = skb_push(skb, sizeof(*vlan_hdr) - sizeof(*eth_hdr));
+		memcpy(vlan_hdr, eth_hdr, 2 * ETH_ALEN);
+		vlan_hdr->h_vlan_proto = htons(ETH_P_8021Q);
+		vlan_hdr->h_vlan_encapsulated_proto = eth_hdr->h_proto;
+		vlan_hdr->h_vlan_TCI = vlan_tci =  htons(qedf->vlan_id);
+	}
 
-	/* Get VLAN ID from skb for printing purposes */
-	__vlan_hwaccel_get_tag(skb, &vlan_tci);
+	/* Update eth_hdr since we added a VLAN tag */
+	eth_hdr = (struct ethhdr *)skb_mac_header(skb);
 
 	QEDF_INFO(&(qedf->dbg_ctx), QEDF_LOG_LL2, "FIP frame send: "
 	    "dest=%pM op=%x sub=%x vlan=%04x.", eth_hdr->h_dest, op, sub,
-	    vlan_tci);
+	    ntohs(vlan_tci));
 	if (qedf_dump_frames)
 		print_hex_dump(KERN_WARNING, "fip ", DUMP_PREFIX_OFFSET, 16, 1,
 		    skb->data, skb->len, false);
 
-	rc = qed_ops->ll2->start_xmit(qedf->cdev, skb, 0);
-	if (rc) {
-		QEDF_ERR(&qedf->dbg_ctx, "start_xmit failed rc = %d.\n", rc);
-		kfree_skb(skb);
-		return;
-	}
+	qed_ops->ll2->start_xmit(qedf->cdev, skb);
 }
-
-static u8 fcoe_all_enode[ETH_ALEN] = FIP_ALL_ENODE_MACS;
 
 /* Process incoming FIP frames. */
 void qedf_fip_recv(struct qedf_ctx *qedf, struct sk_buff *skb)
@@ -173,40 +157,24 @@ void qedf_fip_recv(struct qedf_ctx *qedf, struct sk_buff *skb)
 	size_t rlen, dlen;
 	u16 op;
 	u8 sub;
-	bool fcf_valid = false;
-	/* Default is to handle CVL regardless of fabric id descriptor */
-	bool fabric_id_valid = true;
-	bool fc_wwpn_valid = false;
-	u64 switch_name;
-	u16 vlan = 0;
+	bool do_reset = false;
 
 	eth_hdr = (struct ethhdr *)skb_mac_header(skb);
 	fiph = (struct fip_header *) ((void *)skb->data + 2 * ETH_ALEN + 2);
 	op = ntohs(fiph->fip_op);
 	sub = fiph->fip_subcode;
 
-	QEDF_INFO(&qedf->dbg_ctx, QEDF_LOG_LL2,
-		  "FIP frame received: skb=%p fiph=%p source=%pM destn=%pM op=%x sub=%x vlan=%04x",
-		  skb, fiph, eth_hdr->h_source, eth_hdr->h_dest, op,
-		  sub, vlan);
+	QEDF_INFO(&(qedf->dbg_ctx), QEDF_LOG_LL2, "FIP frame received: "
+	    "skb=%p fiph=%p source=%pM op=%x sub=%x", skb, fiph,
+	    eth_hdr->h_source, op, sub);
 	if (qedf_dump_frames)
 		print_hex_dump(KERN_WARNING, "fip ", DUMP_PREFIX_OFFSET, 16, 1,
 		    skb->data, skb->len, false);
 
-	if (!ether_addr_equal(eth_hdr->h_dest, qedf->mac) &&
-	    !ether_addr_equal(eth_hdr->h_dest, fcoe_all_enode) &&
-		!ether_addr_equal(eth_hdr->h_dest, qedf->data_src_addr)) {
-		QEDF_INFO(&qedf->dbg_ctx, QEDF_LOG_LL2,
-			  "Dropping FIP type 0x%x pkt due to destination MAC mismatch dest_mac=%pM ctlr.dest_addr=%pM data_src_addr=%pM.\n",
-			  op, eth_hdr->h_dest, qedf->mac,
-			  qedf->data_src_addr);
-		kfree_skb(skb);
-		return;
-	}
-
 	/* Handle FIP VLAN resp in the driver */
 	if (op == FIP_OP_VLAN && sub == FIP_SC_VL_NOTE) {
 		qedf_fcoe_process_vlan_resp(qedf, skb);
+		qedf->vlan_hw_insert = 0;
 		kfree_skb(skb);
 	} else if (op == FIP_OP_CTRL && sub == FIP_SC_CLR_VLINK) {
 		QEDF_INFO(&(qedf->dbg_ctx), QEDF_LOG_DISC, "Clear virtual "
@@ -217,7 +185,6 @@ void qedf_fip_recv(struct qedf_ctx *qedf, struct sk_buff *skb)
 			QEDF_INFO(&(qedf->dbg_ctx), QEDF_LOG_DISC,
 			    "Dropping CVL since FCF has not been selected "
 			    "yet.");
-			kfree_skb(skb);
 			return;
 		}
 
@@ -232,36 +199,25 @@ void qedf_fip_recv(struct qedf_ctx *qedf, struct sk_buff *skb)
 			switch (desc->fip_dtype) {
 			case FIP_DT_MAC:
 				mp = (struct fip_mac_desc *)desc;
-				QEDF_INFO(&qedf->dbg_ctx, QEDF_LOG_DISC,
-					  "Switch fd_mac=%pM.\n", mp->fd_mac);
+				QEDF_INFO(&(qedf->dbg_ctx), QEDF_LOG_LL2,
+				    "fd_mac=%pM\n", mp->fd_mac);
 				if (ether_addr_equal(mp->fd_mac,
 				    qedf->ctlr.sel_fcf->fcf_mac))
-					fcf_valid = true;
+					do_reset = true;
 				break;
 			case FIP_DT_NAME:
 				wp = (struct fip_wwn_desc *)desc;
-				switch_name = get_unaligned_be64(&wp->fd_wwn);
-				QEDF_INFO(&qedf->dbg_ctx, QEDF_LOG_DISC,
-					  "Switch fd_wwn=%016llx fcf_switch_name=%016llx.\n",
-					  switch_name,
-					  qedf->ctlr.sel_fcf->switch_name);
-				if (switch_name ==
-				    qedf->ctlr.sel_fcf->switch_name)
-					fc_wwpn_valid = true;
+				QEDF_INFO(&(qedf->dbg_ctx), QEDF_LOG_LL2,
+				    "fc_wwpn=%016llx.\n",
+				    get_unaligned_be64(&wp->fd_wwn));
 				break;
 			case FIP_DT_VN_ID:
 				vp = (struct fip_vn_desc *)desc;
-				QEDF_INFO(&qedf->dbg_ctx, QEDF_LOG_DISC,
-					  "vx_port fd_fc_id=%x fd_mac=%pM.\n",
-					  ntoh24(vp->fd_fc_id), vp->fd_mac);
-				/* Check vx_port fabric ID */
-				if (ntoh24(vp->fd_fc_id) !=
+				QEDF_INFO(&(qedf->dbg_ctx), QEDF_LOG_LL2,
+				    "fd_fc_id=%x.\n", ntoh24(vp->fd_fc_id));
+				if (ntoh24(vp->fd_fc_id) ==
 				    qedf->lport->port_id)
-					fabric_id_valid = false;
-				/* Check vx_port MAC */
-				if (!ether_addr_equal(vp->fd_mac,
-						      qedf->data_src_addr))
-					fabric_id_valid = false;
+					do_reset = true;
 				break;
 			default:
 				/* Ignore anything else */
@@ -271,11 +227,13 @@ void qedf_fip_recv(struct qedf_ctx *qedf, struct sk_buff *skb)
 			rlen -= dlen;
 		}
 
-		QEDF_INFO(&qedf->dbg_ctx, QEDF_LOG_DISC,
-			  "fcf_valid=%d fabric_id_valid=%d fc_wwpn_valid=%d.\n",
-			  fcf_valid, fabric_id_valid, fc_wwpn_valid);
-		if (fcf_valid && fabric_id_valid && fc_wwpn_valid)
-			qedf_ctx_soft_reset(qedf->lport);
+		QEDF_INFO(&(qedf->dbg_ctx), QEDF_LOG_LL2,
+		    "do_reset=%d.\n", do_reset);
+		if (do_reset) {
+			fcoe_ctlr_link_down(&qedf->ctlr);
+			qedf_wait_for_upload(qedf);
+			fcoe_ctlr_link_up(&qedf->ctlr);
+		}
 		kfree_skb(skb);
 	} else {
 		/* Everything else is handled by libfcoe */
@@ -284,9 +242,26 @@ void qedf_fip_recv(struct qedf_ctx *qedf, struct sk_buff *skb)
 	}
 }
 
-u8 *qedf_get_src_mac(struct fc_lport *lport)
+void qedf_update_src_mac(struct fc_lport *lport, u8 *addr)
 {
 	struct qedf_ctx *qedf = lport_priv(lport);
 
+	QEDF_INFO(&(qedf->dbg_ctx), QEDF_LOG_DISC,
+	    "Setting data_src_addr=%pM.\n", addr);
+	ether_addr_copy(qedf->data_src_addr, addr);
+}
+
+u8 *qedf_get_src_mac(struct fc_lport *lport)
+{
+	u8 mac[ETH_ALEN];
+	u8 port_id[3];
+	struct qedf_ctx *qedf = lport_priv(lport);
+
+	/* We need to use the lport port_id to create the data_src_addr */
+	if (is_zero_ether_addr(qedf->data_src_addr)) {
+		hton24(port_id, lport->port_id);
+		fc_fcoe_set_mac(mac, port_id);
+		qedf->ctlr.update_mac(lport, mac);
+	}
 	return qedf->data_src_addr;
 }

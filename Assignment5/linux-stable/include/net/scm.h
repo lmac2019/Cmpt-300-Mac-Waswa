@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef __LINUX_NET_SCM_H
 #define __LINUX_NET_SCM_H
 
@@ -8,7 +7,6 @@
 #include <linux/security.h>
 #include <linux/pid.h>
 #include <linux/nsproxy.h>
-#include <linux/sched/signal.h>
 
 /* Well, we should have at least one descriptor open
  * to accept passed FDs 8)

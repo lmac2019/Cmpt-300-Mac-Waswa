@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef BOOT_STRING_H
 #define BOOT_STRING_H
 
@@ -29,5 +28,4 @@ extern unsigned int atou(const char *s);
 extern unsigned long long simple_strtoull(const char *cp, char **endp,
 					  unsigned int base);
 
-int kstrtoull(const char *s, unsigned int base, unsigned long long *res);
 #endif /* BOOT_STRING_H */

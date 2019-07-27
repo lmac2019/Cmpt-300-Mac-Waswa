@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * INET		An implementation of the TCP/IP protocol suite for the LINUX
  *		operating system.  INET is implemented using the  BSD Socket
@@ -23,6 +22,11 @@
  *                                      interface.
  *		Alexey Kuznetsov:	Potential hang under some extreme
  *					cases removed.
+ *
+ *		This program is free software; you can redistribute it and/or
+ *		modify it under the terms of the GNU General Public License
+ *		as published by the Free Software Foundation; either version
+ *		2 of the License, or (at your option) any later version.
  */
 #include <linux/kernel.h>
 #include <linux/jiffies.h>
@@ -55,6 +59,12 @@
 #include <net/net_namespace.h>
 #include <linux/u64_stats_sync.h>
 
+struct pcpu_lstats {
+	u64			packets;
+	u64			bytes;
+	struct u64_stats_sync	syncp;
+};
+
 /* The higher levels take care of making this non-reentrant (it's
  * called with bh's disabled).
  */
@@ -65,10 +75,6 @@ static netdev_tx_t loopback_xmit(struct sk_buff *skb,
 	int len;
 
 	skb_tx_timestamp(skb);
-
-	/* do not fool net_timestamp_check() with various clock bases */
-	skb->tstamp = 0;
-
 	skb_orphan(skb);
 
 	/* Before queueing this packet to netif_rx(),
@@ -124,9 +130,21 @@ static u32 always_on(struct net_device *dev)
 	return 1;
 }
 
+static int loopback_get_ts_info(struct net_device *netdev,
+				struct ethtool_ts_info *ts_info)
+{
+	ts_info->so_timestamping = SOF_TIMESTAMPING_TX_SOFTWARE |
+				   SOF_TIMESTAMPING_RX_SOFTWARE |
+				   SOF_TIMESTAMPING_SOFTWARE;
+
+	ts_info->phc_index = -1;
+
+	return 0;
+};
+
 static const struct ethtool_ops loopback_ethtool_ops = {
 	.get_link		= always_on,
-	.get_ts_info		= ethtool_op_get_ts_info,
+	.get_ts_info		= loopback_get_ts_info,
 };
 
 static int loopback_dev_init(struct net_device *dev)

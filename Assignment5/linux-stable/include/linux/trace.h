@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _LINUX_TRACE_H
 #define _LINUX_TRACE_H
 
@@ -18,7 +17,7 @@
  */
 struct trace_export {
 	struct trace_export __rcu	*next;
-	void (*write)(struct trace_export *, const void *, unsigned int);
+	void (*write)(const void *, unsigned int);
 };
 
 int register_ftrace_export(struct trace_export *export);

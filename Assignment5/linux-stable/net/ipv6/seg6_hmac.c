@@ -1,13 +1,17 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  *  SR-IPv6 implementation -- HMAC functions
  *
  *  Author:
  *  David Lebrun <david.lebrun@uclouvain.be>
+ *
+ *
+ *  This program is free software; you can redistribute it and/or
+ *      modify it under the terms of the GNU General Public License
+ *      as published by the Free Software Foundation; either version
+ *      2 of the License, or (at your option) any later version.
  */
 
 #include <linux/errno.h>
-#include <linux/kernel.h>
 #include <linux/types.h>
 #include <linux/socket.h>
 #include <linux/sockios.h>
@@ -17,7 +21,6 @@
 #include <linux/icmpv6.h>
 #include <linux/mroute6.h>
 #include <linux/slab.h>
-#include <linux/rhashtable.h>
 
 #include <linux/netfilter.h>
 #include <linux/netfilter_ipv6.h>
@@ -107,7 +110,7 @@ static struct seg6_hmac_algo *__hmac_get_algo(u8 alg_id)
 	struct seg6_hmac_algo *algo;
 	int i, alg_count;
 
-	alg_count = ARRAY_SIZE(hmac_algos);
+	alg_count = sizeof(hmac_algos) / sizeof(struct seg6_hmac_algo);
 	for (i = 0; i < alg_count; i++) {
 		algo = &hmac_algos[i];
 		if (algo->alg_id == alg_id)
@@ -357,7 +360,7 @@ static int seg6_hmac_init_algo(void)
 	struct shash_desc *shash;
 	int i, alg_count, cpu;
 
-	alg_count = ARRAY_SIZE(hmac_algos);
+	alg_count = sizeof(hmac_algos) / sizeof(struct seg6_hmac_algo);
 
 	for (i = 0; i < alg_count; i++) {
 		struct crypto_shash **p_tfm;
@@ -369,7 +372,7 @@ static int seg6_hmac_init_algo(void)
 			return -ENOMEM;
 
 		for_each_possible_cpu(cpu) {
-			tfm = crypto_alloc_shash(algo->name, 0, 0);
+			tfm = crypto_alloc_shash(algo->name, 0, GFP_KERNEL);
 			if (IS_ERR(tfm))
 				return PTR_ERR(tfm);
 			p_tfm = per_cpu_ptr(algo->tfms, cpu);
@@ -418,7 +421,7 @@ void seg6_hmac_exit(void)
 	struct seg6_hmac_algo *algo = NULL;
 	int i, alg_count, cpu;
 
-	alg_count = ARRAY_SIZE(hmac_algos);
+	alg_count = sizeof(hmac_algos) / sizeof(struct seg6_hmac_algo);
 	for (i = 0; i < alg_count; i++) {
 		algo = &hmac_algos[i];
 		for_each_possible_cpu(cpu) {

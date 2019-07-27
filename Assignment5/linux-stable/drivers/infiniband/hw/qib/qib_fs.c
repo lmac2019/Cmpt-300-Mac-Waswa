@@ -508,8 +508,8 @@ bail:
  */
 static int qibfs_fill_super(struct super_block *sb, void *data, int silent)
 {
-	struct qib_devdata *dd;
-	unsigned long index;
+	struct qib_devdata *dd, *tmp;
+	unsigned long flags;
 	int ret;
 
 	static const struct tree_descr files[] = {
@@ -524,11 +524,17 @@ static int qibfs_fill_super(struct super_block *sb, void *data, int silent)
 		goto bail;
 	}
 
-	xa_for_each(&qib_dev_table, index, dd) {
+	spin_lock_irqsave(&qib_devs_lock, flags);
+
+	list_for_each_entry_safe(dd, tmp, &qib_dev_list, list) {
+		spin_unlock_irqrestore(&qib_devs_lock, flags);
 		ret = add_cntr_files(sb, dd);
 		if (ret)
 			goto bail;
+		spin_lock_irqsave(&qib_devs_lock, flags);
 	}
+
+	spin_unlock_irqrestore(&qib_devs_lock, flags);
 
 bail:
 	return ret;

@@ -107,10 +107,7 @@ static struct nios2_clocksource nios2_cs = {
 
 cycles_t get_cycles(void)
 {
-	/* Only read timer if it has been initialized */
-	if (nios2_cs.timer.base)
-		return nios2_timer_read(&nios2_cs.cs);
-	return 0;
+	return nios2_timer_read(&nios2_cs.cs);
 }
 EXPORT_SYMBOL(get_cycles);
 
@@ -214,12 +211,12 @@ static int __init nios2_timer_get_base_and_freq(struct device_node *np,
 {
 	*base = of_iomap(np, 0);
 	if (!*base) {
-		pr_crit("Unable to map reg for %pOFn\n", np);
+		pr_crit("Unable to map reg for %s\n", np->name);
 		return -ENXIO;
 	}
 
 	if (of_property_read_u32(np, "clock-frequency", freq)) {
-		pr_crit("Unable to get %pOFn clock frequency\n", np);
+		pr_crit("Unable to get %s clock frequency\n", np->name);
 		return -EINVAL;
 	}
 
@@ -336,9 +333,9 @@ static int __init nios2_time_init(struct device_node *timer)
 	return ret;
 }
 
-void read_persistent_clock64(struct timespec64 *ts)
+void read_persistent_clock(struct timespec *ts)
 {
-	ts->tv_sec = mktime64(2007, 1, 1, 0, 0, 0);
+	ts->tv_sec = mktime(2007, 1, 1, 0, 0, 0);
 	ts->tv_nsec = 0;
 }
 

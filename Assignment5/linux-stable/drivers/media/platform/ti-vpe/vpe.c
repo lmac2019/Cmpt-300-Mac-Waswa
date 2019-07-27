@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * TI VPE mem2mem driver, based on the virtual v4l2-mem2mem example driver
  *
@@ -12,6 +11,10 @@
  * Marek Szyprowski, <m.szyprowski@samsung.com>
  *
  * Based on the virtual v4l2-mem2mem example device
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published by
+ * the Free Software Foundation
  */
 
 #include <linux/delay.h>
@@ -873,7 +876,7 @@ static int set_srcdst_params(struct vpe_ctx *ctx)
 		/*
 		 * we make sure that the source image has a 16 byte aligned
 		 * stride, we need to do the same for the motion vector buffer
-		 * by aligning it's stride to the next 16 byte boundary. this
+		 * by aligning it's stride to the next 16 byte boundry. this
 		 * extra space will not be used by the de-interlacer, but will
 		 * ensure that vpdma operates correctly
 		 */
@@ -923,7 +926,7 @@ static struct vpe_ctx *file2ctx(struct file *file)
  * mem2mem callbacks
  */
 
-/*
+/**
  * job_ready() - check whether an instance is ready to be scheduled to run
  */
 static int job_ready(void *priv)
@@ -948,6 +951,23 @@ static void job_abort(void *priv)
 
 	/* Will cancel the transaction in the next interrupt handler */
 	ctx->aborting = 1;
+}
+
+/*
+ * Lock access to the device
+ */
+static void vpe_lock(void *priv)
+{
+	struct vpe_ctx *ctx = priv;
+	struct vpe_dev *dev = ctx->dev;
+	mutex_lock(&dev->dev_mutex);
+}
+
+static void vpe_unlock(void *priv)
+{
+	struct vpe_ctx *ctx = priv;
+	struct vpe_dev *dev = ctx->dev;
+	mutex_unlock(&dev->dev_mutex);
 }
 
 static void vpe_dump_regs(struct vpe_dev *dev)
@@ -1488,8 +1508,8 @@ handled:
 static int vpe_querycap(struct file *file, void *priv,
 			struct v4l2_capability *cap)
 {
-	strscpy(cap->driver, VPE_MODULE_NAME, sizeof(cap->driver));
-	strscpy(cap->card, VPE_MODULE_NAME, sizeof(cap->card));
+	strncpy(cap->driver, VPE_MODULE_NAME, sizeof(cap->driver) - 1);
+	strncpy(cap->card, VPE_MODULE_NAME, sizeof(cap->card) - 1);
 	snprintf(cap->bus_info, sizeof(cap->bus_info), "platform:%s",
 		VPE_MODULE_NAME);
 	cap->device_caps  = V4L2_CAP_VIDEO_M2M_MPLANE | V4L2_CAP_STREAMING;
@@ -1516,7 +1536,7 @@ static int __enum_fmt(struct v4l2_fmtdesc *f, u32 type)
 	if (!fmt)
 		return -EINVAL;
 
-	strscpy(f->description, fmt->name, sizeof(f->description));
+	strncpy(f->description, fmt->name, sizeof(f->description) - 1);
 	f->pixelformat = fmt->fourcc;
 	return 0;
 }
@@ -2401,7 +2421,7 @@ static const struct v4l2_file_operations vpe_fops = {
 	.mmap		= v4l2_m2m_fop_mmap,
 };
 
-static const struct video_device vpe_videodev = {
+static struct video_device vpe_videodev = {
 	.name		= VPE_MODULE_NAME,
 	.fops		= &vpe_fops,
 	.ioctl_ops	= &vpe_ioctl_ops,
@@ -2410,10 +2430,12 @@ static const struct video_device vpe_videodev = {
 	.vfl_dir	= VFL_DIR_M2M,
 };
 
-static const struct v4l2_m2m_ops m2m_ops = {
+static struct v4l2_m2m_ops m2m_ops = {
 	.device_run	= device_run,
 	.job_ready	= job_ready,
 	.job_abort	= job_abort,
+	.lock		= vpe_lock,
+	.unlock		= vpe_unlock,
 };
 
 static int vpe_runtime_get(struct platform_device *pdev)
@@ -2463,6 +2485,7 @@ static void vpe_fw_cb(struct platform_device *pdev)
 	}
 
 	video_set_drvdata(vfd, dev);
+	snprintf(vfd->name, sizeof(vfd->name), "%s", vpe_videodev.name);
 	dev_info(dev->v4l2_dev.dev, "Device registered as /dev/video%d\n",
 		vfd->num);
 }

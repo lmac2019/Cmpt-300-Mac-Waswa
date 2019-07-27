@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  *  linux/arch/m68k/mm/memory.c
  *
@@ -51,7 +50,7 @@ void __init init_pointer_table(unsigned long ptable)
 	pr_debug("init_pointer_table: %lx, %x\n", ptable, PD_MARKBITS(dp));
 
 	/* unreserve the page so it's possible to free that page */
-	__ClearPageReserved(PD_PAGE(dp));
+	PD_PAGE(dp)->flags &= ~(1 << PG_reserved);
 	init_page_count(PD_PAGE(dp));
 
 	return;

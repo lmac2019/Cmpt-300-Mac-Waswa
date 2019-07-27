@@ -29,7 +29,6 @@
 #include <acpi/video.h>
 #include <drm/drmP.h>
 #include <drm/drm_crtc_helper.h>
-#include <drm/drm_probe_helper.h>
 #include "radeon.h"
 #include "radeon_acpi.h"
 #include "atom.h"
@@ -352,7 +351,7 @@ out:
  * handles it.
  * Returns NOTIFY code
  */
-static int radeon_atif_handler(struct radeon_device *rdev,
+int radeon_atif_handler(struct radeon_device *rdev,
 		struct acpi_bus_event *event)
 {
 	struct radeon_atif *atif = &rdev->atif;

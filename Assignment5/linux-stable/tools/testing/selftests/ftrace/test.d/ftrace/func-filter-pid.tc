@@ -1,5 +1,4 @@
 #!/bin/sh
-# SPDX-License-Identifier: GPL-2.0
 # description: ftrace - function pid filters
 
 # Make sure that function pid matching filter works.
@@ -35,6 +34,12 @@ if [ $do_function_fork -eq 1 ]; then
 fi
 
 do_reset() {
+    reset_tracer
+    clear_trace
+    enable_tracing
+    echo > set_ftrace_filter
+    echo > set_ftrace_pid
+
     if [ $do_function_fork -eq 0 ]; then
 	return
     fi
@@ -45,7 +50,11 @@ do_reset() {
 fail() { # msg
     do_reset
     echo $1
-    exit_fail
+    exit $FAIL
+}
+
+yield() {
+    ping localhost -c 1 || sleep .001 || usleep 1 || sleep 1
 }
 
 do_test() {

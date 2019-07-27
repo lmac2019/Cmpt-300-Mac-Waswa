@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  *  Copyright (C) 1995  Linus Torvalds
  *
@@ -31,6 +30,7 @@
 #include <linux/sfi.h>
 #include <linux/apm_bios.h>
 #include <linux/initrd.h>
+#include <linux/bootmem.h>
 #include <linux/memblock.h>
 #include <linux/seq_file.h>
 #include <linux/console.h>
@@ -50,8 +50,6 @@
 #include <linux/init_ohci1394_dma.h>
 #include <linux/kvm_para.h>
 #include <linux/dma-contiguous.h>
-#include <xen/xen.h>
-#include <uapi/linux/mount.h>
 
 #include <linux/errno.h>
 #include <linux/kernel.h>
@@ -71,8 +69,6 @@
 #include <linux/crash_dump.h>
 #include <linux/tboot.h>
 #include <linux/jiffies.h>
-#include <linux/mem_encrypt.h>
-#include <linux/sizes.h>
 
 #include <linux/usb/xhci-dbgp.h>
 #include <video/edid.h>
@@ -117,8 +113,8 @@
 #include <asm/alternative.h>
 #include <asm/prom.h>
 #include <asm/microcode.h>
+#include <asm/mmu_context.h>
 #include <asm/kaslr.h>
-#include <asm/unwind.h>
 
 /*
  * max_low_pfn_mapped: highest direct mapped pfn under 4GB
@@ -137,6 +133,18 @@ RESERVE_BRK(dmi_alloc, 65536);
 
 static __initdata unsigned long _brk_start = (unsigned long)__brk_base;
 unsigned long _brk_end = (unsigned long)__brk_base;
+
+#ifdef CONFIG_X86_64
+int default_cpu_present_to_apicid(int mps_cpu)
+{
+	return __default_cpu_present_to_apicid(mps_cpu);
+}
+
+int default_check_phys_apicid_present(int phys_apicid)
+{
+	return __default_check_phys_apicid_present(phys_apicid);
+}
+#endif
 
 struct boot_params boot_params;
 
@@ -192,7 +200,9 @@ struct ist_info ist_info;
 #endif
 
 #else
-struct cpuinfo_x86 boot_cpu_data __read_mostly;
+struct cpuinfo_x86 boot_cpu_data __read_mostly = {
+	.x86_phys_bits = MAX_PHYSMEM_BITS,
+};
 EXPORT_SYMBOL(boot_cpu_data);
 #endif
 
@@ -450,17 +460,18 @@ static void __init memblock_x86_reserve_range_setup_data(void)
 #ifdef CONFIG_KEXEC_CORE
 
 /* 16M alignment for crash kernel regions */
-#define CRASH_ALIGN		SZ_16M
+#define CRASH_ALIGN		(16 << 20)
 
 /*
  * Keep the crash kernel below this limit.  On 32 bits earlier kernels
  * would limit the kernel to the low 512 MiB due to mapping restrictions.
+ * On 64bit, old kexec-tools need to under 896MiB.
  */
 #ifdef CONFIG_X86_32
-# define CRASH_ADDR_LOW_MAX	SZ_512M
-# define CRASH_ADDR_HIGH_MAX	SZ_512M
+# define CRASH_ADDR_LOW_MAX	(512 << 20)
+# define CRASH_ADDR_HIGH_MAX	(512 << 20)
 #else
-# define CRASH_ADDR_LOW_MAX	SZ_4G
+# define CRASH_ADDR_LOW_MAX	(896UL << 20)
 # define CRASH_ADDR_HIGH_MAX	MAXMEM
 #endif
 
@@ -536,33 +547,22 @@ static void __init reserve_crashkernel(void)
 		high = true;
 	}
 
-	if (xen_pv_domain()) {
-		pr_info("Ignoring crashkernel for a Xen PV domain\n");
-		return;
-	}
-
 	/* 0 means: find the address automatically */
-	if (!crash_base) {
+	if (crash_base <= 0) {
 		/*
 		 * Set CRASH_ADDR_LOW_MAX upper bound for crash memory,
-		 * crashkernel=x,high reserves memory over 4G, also allocates
-		 * 256M extra low memory for DMA buffers and swiotlb.
-		 * But the extra memory is not required for all machines.
-		 * So try low memory first and fall back to high memory
-		 * unless "crashkernel=size[KMG],high" is specified.
+		 * as old kexec-tools loads bzImage below that, unless
+		 * "crashkernel=size[KMG],high" is specified.
 		 */
-		if (!high)
-			crash_base = memblock_find_in_range(CRASH_ALIGN,
-						CRASH_ADDR_LOW_MAX,
-						crash_size, CRASH_ALIGN);
-		if (!crash_base)
-			crash_base = memblock_find_in_range(CRASH_ALIGN,
-						CRASH_ADDR_HIGH_MAX,
-						crash_size, CRASH_ALIGN);
+		crash_base = memblock_find_in_range(CRASH_ALIGN,
+						    high ? CRASH_ADDR_HIGH_MAX
+							 : CRASH_ADDR_LOW_MAX,
+						    crash_size, CRASH_ALIGN);
 		if (!crash_base) {
 			pr_info("crashkernel reservation failed - No suitable area found.\n");
 			return;
 		}
+
 	} else {
 		unsigned long long start;
 
@@ -812,6 +812,26 @@ dump_kernel_offset(struct notifier_block *self, unsigned long v, void *p)
 	return 0;
 }
 
+static void __init simple_udelay_calibration(void)
+{
+	unsigned int tsc_khz, cpu_khz;
+	unsigned long lpj;
+
+	if (!boot_cpu_has(X86_FEATURE_TSC))
+		return;
+
+	cpu_khz = x86_platform.calibrate_cpu();
+	tsc_khz = x86_platform.calibrate_tsc();
+
+	tsc_khz = tsc_khz ? : cpu_khz;
+	if (!tsc_khz)
+		return;
+
+	lpj = tsc_khz * 1000;
+	do_div(lpj, HZ);
+	loops_per_jiffy = lpj;
+}
+
 /*
  * Determine if we were loaded by an EFI loader.  If so, then we have also been
  * passed the efi memmap, systab, etc., so we should use these data structures
@@ -829,12 +849,6 @@ void __init setup_arch(char **cmdline_p)
 {
 	memblock_reserve(__pa_symbol(_text),
 			 (unsigned long)__bss_stop - (unsigned long)_text);
-
-	/*
-	 * Make sure page 0 is always reserved because on systems with
-	 * L1TF its contents can be leaked to user processes.
-	 */
-	memblock_reserve(0, PAGE_SIZE);
 
 	early_reserve_initrd();
 
@@ -868,7 +882,6 @@ void __init setup_arch(char **cmdline_p)
 	__flush_tlb_all();
 #else
 	printk(KERN_INFO "Command line: %s\n", boot_command_line);
-	boot_cpu_data.x86_phys_bits = MAX_PHYSMEM_BITS;
 #endif
 
 	/*
@@ -877,10 +890,8 @@ void __init setup_arch(char **cmdline_p)
 	 */
 	olpc_ofw_detect();
 
-	idt_setup_early_traps();
+	early_trap_init();
 	early_cpu_init();
-	arch_init_ideal_nops();
-	jump_label_init();
 	early_ioremap_init();
 
 	setup_olpc_ofw_pgd();
@@ -915,6 +926,9 @@ void __init setup_arch(char **cmdline_p)
 		set_bit(EFI_BOOT, &efi.flags);
 		set_bit(EFI_64BIT, &efi.flags);
 	}
+
+	if (efi_enabled(EFI_BOOT))
+		efi_memblock_x86_reserve_range();
 #endif
 
 	x86_init.oem.arch_setup();
@@ -968,8 +982,6 @@ void __init setup_arch(char **cmdline_p)
 
 	parse_early_param();
 
-	if (efi_enabled(EFI_BOOT))
-		efi_memblock_x86_reserve_range();
 #ifdef CONFIG_MEMORY_HOTPLUG
 	/*
 	 * Memory used by the kernel cannot be hot-removed because Linux
@@ -1006,21 +1018,29 @@ void __init setup_arch(char **cmdline_p)
 		setup_clear_cpu_cap(X86_FEATURE_APIC);
 	}
 
+#ifdef CONFIG_PCI
+	if (pci_early_dump_regs)
+		early_dump_pci_devices();
+#endif
+
 	e820__reserve_setup_data();
 	e820__finish_early_params();
 
 	if (efi_enabled(EFI_BOOT))
 		efi_init();
 
-	dmi_setup();
+	dmi_scan_machine();
+	dmi_memdev_walk();
+	dmi_set_dump_stack_arch_desc();
 
 	/*
 	 * VMware detection requires dmi to be available, so this
-	 * needs to be done after dmi_setup(), for the boot CPU.
+	 * needs to be done after dmi_scan_machine, for the BP.
 	 */
 	init_hypervisor_platform();
 
-	tsc_early_init();
+	simple_udelay_calibration();
+
 	x86_init.resources.probe_roms();
 
 	/* after parse_early_param, so could debug it */
@@ -1105,6 +1125,9 @@ void __init setup_arch(char **cmdline_p)
 	memblock_set_current_limit(ISA_END_ADDRESS);
 	e820__memblock_setup();
 
+	if (!early_xdbc_setup_hardware())
+		early_xdbc_register_console();
+
 	reserve_bios_regions();
 
 	if (efi_enabled(EFI_MEMMAP)) {
@@ -1138,18 +1161,15 @@ void __init setup_arch(char **cmdline_p)
 
 	init_mem_mapping();
 
-	idt_setup_early_pf();
+	early_trap_pf_init();
 
 	/*
 	 * Update mmu_cr4_features (and, indirectly, trampoline_cr4_features)
 	 * with the current CR4 value.  This may not be necessary, but
 	 * auditing all the early-boot CR4 manipulation would be needed to
 	 * rule it out.
-	 *
-	 * Mask off features that don't work outside long mode (just
-	 * PCIDE for now).
 	 */
-	mmu_cr4_features = __read_cr4() & ~X86_CR4_PCIDE;
+	mmu_cr4_features = __read_cr4();
 
 	memblock_set_current_limit(get_max_mapped());
 
@@ -1186,8 +1206,6 @@ void __init setup_arch(char **cmdline_p)
 
 	io_delay_init();
 
-	early_platform_quirks();
-
 	/*
 	 * Parse the ACPI tables for possible boot-time SMP configuration.
 	 */
@@ -1206,20 +1224,28 @@ void __init setup_arch(char **cmdline_p)
 
 	memblock_find_dma_reserve();
 
-	if (!early_xdbc_setup_hardware())
-		early_xdbc_register_console();
+#ifdef CONFIG_KVM_GUEST
+	kvmclock_init();
+#endif
 
 	x86_init.paging.pagetable_init();
 
 	kasan_init();
 
+#ifdef CONFIG_X86_32
+	/* sync back kernel address range */
+	clone_pgd_range(initial_page_table + KERNEL_PGD_BOUNDARY,
+			swapper_pg_dir     + KERNEL_PGD_BOUNDARY,
+			KERNEL_PGD_PTRS);
+
 	/*
-	 * Sync back kernel address range.
-	 *
-	 * FIXME: Can the later sync in setup_cpu_entry_areas() replace
-	 * this call?
+	 * sync back low identity map too.  It is used for example
+	 * in the 32-bit EFI stub.
 	 */
-	sync_initial_page_table();
+	clone_pgd_range(initial_page_table,
+			swapper_pg_dir     + KERNEL_PGD_BOUNDARY,
+			min(KERNEL_PGD_PTRS, KERNEL_PGD_BOUNDARY));
+#endif
 
 	tboot_probe();
 
@@ -1253,10 +1279,10 @@ void __init setup_arch(char **cmdline_p)
 
 	io_apic_init_mappings();
 
-	x86_init.hyper.guest_late_init();
+	kvm_guest_init();
 
 	e820__reserve_resources();
-	e820__register_nosave_regions(max_pfn);
+	e820__register_nosave_regions(max_low_pfn);
 
 	x86_init.resources.reserve_resources();
 
@@ -1276,14 +1302,14 @@ void __init setup_arch(char **cmdline_p)
 
 	mcheck_init();
 
+	arch_init_ideal_nops();
+
 	register_refined_jiffies(CLOCK_TICK_RATE);
 
 #ifdef CONFIG_EFI
 	if (efi_enabled(EFI_BOOT))
 		efi_apply_memmap_quirks();
 #endif
-
-	unwind_init();
 }
 
 #ifdef CONFIG_X86_32
@@ -1314,3 +1340,11 @@ static int __init register_kernel_offset_dumper(void)
 	return 0;
 }
 __initcall(register_kernel_offset_dumper);
+
+void arch_show_smap(struct seq_file *m, struct vm_area_struct *vma)
+{
+	if (!boot_cpu_has(X86_FEATURE_OSPKE))
+		return;
+
+	seq_printf(m, "ProtectionKey:  %8u\n", vma_pkey(vma));
+}

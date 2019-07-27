@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (c) 2017 Oracle and/or its affiliates. All rights reserved.
  */
@@ -6,7 +5,7 @@
 #include <asm/xor.h>
 #include <asm/checksum.h>
 #include <asm/trap_block.h>
-#include <linux/uaccess.h>
+#include <asm/uaccess.h>
 #include <asm/atomic.h>
 #include <asm/ftrace.h>
 #include <asm/cacheflush.h>

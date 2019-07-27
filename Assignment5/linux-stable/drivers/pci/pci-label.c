@@ -1,8 +1,6 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
- * Export the firmware instance and label associated with a PCI device to
- * sysfs
- *
+ * Purpose: Export the firmware instance and label associated with
+ * a pci device to sysfs
  * Copyright (C) 2010 Dell Inc.
  * by Narendra K <Narendra_K@dell.com>,
  * Jordan Hargrave <Jordan_Hargrave@dell.com>
@@ -125,7 +123,7 @@ static struct attribute *smbios_attributes[] = {
 	NULL,
 };
 
-static const struct attribute_group smbios_attr_group = {
+static struct attribute_group smbios_attr_group = {
 	.attrs = smbios_attributes,
 	.is_visible = smbios_instance_string_exist,
 };
@@ -262,7 +260,7 @@ static struct attribute *acpi_attributes[] = {
 	NULL,
 };
 
-static const struct attribute_group acpi_attr_group = {
+static struct attribute_group acpi_attr_group = {
 	.attrs = acpi_attributes,
 	.is_visible = acpi_index_string_exist,
 };

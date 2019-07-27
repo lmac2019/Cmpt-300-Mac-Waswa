@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * stk-webcam.c : Driver for Syntek 1125 USB webcam controller
  *
@@ -7,6 +6,16 @@
  *
  * Some parts are inspired from cafe_ccic.c
  * Copyright 2006-2007 Jonathan Corbet
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  */
 
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
@@ -46,7 +55,7 @@ MODULE_AUTHOR("Jaime Velasco Juan <jsagarribay@gmail.com> and Nicolas VIVIEN");
 MODULE_DESCRIPTION("Syntek DC1125 webcam driver");
 
 /* Some cameras have audio interfaces, we aren't interested in those */
-static const struct usb_device_id stkwebcam_table[] = {
+static struct usb_device_id stkwebcam_table[] = {
 	{ USB_DEVICE_AND_INTERFACE_INFO(0x174f, 0xa311, 0xff, 0xff, 0xff) },
 	{ USB_DEVICE_AND_INTERFACE_INFO(0x05e1, 0x0501, 0xff, 0xff, 0xff) },
 	{ }
@@ -107,13 +116,6 @@ static const struct dmi_system_id stk_upside_down_dmi_table[] = {
 			DMI_MATCH(DMI_PRODUCT_NAME, "T12Rg-H")
 		}
 	},
-	{
-		.ident = "ASUS A6VM",
-		.matches = {
-			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer Inc."),
-			DMI_MATCH(DMI_PRODUCT_NAME, "A6VM")
-		}
-	},
 	{}
 };
 
@@ -162,11 +164,7 @@ int stk_camera_read_reg(struct stk_camera *dev, u16 index, u8 *value)
 		*value = *buf;
 
 	kfree(buf);
-
-	if (ret < 0)
-		return ret;
-	else
-		return 0;
+	return ret;
 }
 
 static int stk_start_stream(struct stk_camera *dev)
@@ -569,9 +567,8 @@ static int stk_prepare_sio_buffers(struct stk_camera *dev, unsigned n_sbufs)
 	if (dev->sio_bufs != NULL)
 		pr_err("sio_bufs already allocated\n");
 	else {
-		dev->sio_bufs = kcalloc(n_sbufs,
-					sizeof(struct stk_sio_buffer),
-					GFP_KERNEL);
+		dev->sio_bufs = kzalloc(n_sbufs * sizeof(struct stk_sio_buffer),
+				GFP_KERNEL);
 		if (dev->sio_bufs == NULL)
 			return -ENOMEM;
 		for (i = 0; i < n_sbufs; i++) {
@@ -724,18 +721,18 @@ static ssize_t v4l_stk_read(struct file *fp, char __user *buf,
 	return ret;
 }
 
-static __poll_t v4l_stk_poll(struct file *fp, poll_table *wait)
+static unsigned int v4l_stk_poll(struct file *fp, poll_table *wait)
 {
 	struct stk_camera *dev = video_drvdata(fp);
-	__poll_t res = v4l2_ctrl_poll(fp, wait);
+	unsigned res = v4l2_ctrl_poll(fp, wait);
 
 	poll_wait(fp, &dev->wait_frame, wait);
 
 	if (!is_present(dev))
-		return EPOLLERR;
+		return POLLERR;
 
 	if (!list_empty(&dev->sio_full))
-		return res | EPOLLIN | EPOLLRDNORM;
+		return res | POLLIN | POLLRDNORM;
 
 	return res;
 }
@@ -795,8 +792,8 @@ static int stk_vidioc_querycap(struct file *filp,
 {
 	struct stk_camera *dev = video_drvdata(filp);
 
-	strscpy(cap->driver, "stk", sizeof(cap->driver));
-	strscpy(cap->card, "stk", sizeof(cap->card));
+	strcpy(cap->driver, "stk");
+	strcpy(cap->card, "stk");
 	usb_make_path(dev->udev, cap->bus_info, sizeof(cap->bus_info));
 
 	cap->device_caps = V4L2_CAP_VIDEO_CAPTURE
@@ -811,7 +808,7 @@ static int stk_vidioc_enum_input(struct file *filp,
 	if (input->index != 0)
 		return -EINVAL;
 
-	strscpy(input->name, "Syntek USB Camera", sizeof(input->name));
+	strcpy(input->name, "Syntek USB Camera");
 	input->type = V4L2_INPUT_TYPE_CAMERA;
 	return 0;
 }
@@ -861,23 +858,23 @@ static int stk_vidioc_enum_fmt_vid_cap(struct file *filp,
 	switch (fmtd->index) {
 	case 0:
 		fmtd->pixelformat = V4L2_PIX_FMT_RGB565;
-		strscpy(fmtd->description, "r5g6b5", sizeof(fmtd->description));
+		strcpy(fmtd->description, "r5g6b5");
 		break;
 	case 1:
 		fmtd->pixelformat = V4L2_PIX_FMT_RGB565X;
-		strscpy(fmtd->description, "r5g6b5BE", sizeof(fmtd->description));
+		strcpy(fmtd->description, "r5g6b5BE");
 		break;
 	case 2:
 		fmtd->pixelformat = V4L2_PIX_FMT_UYVY;
-		strscpy(fmtd->description, "yuv4:2:2", sizeof(fmtd->description));
+		strcpy(fmtd->description, "yuv4:2:2");
 		break;
 	case 3:
 		fmtd->pixelformat = V4L2_PIX_FMT_SBGGR8;
-		strscpy(fmtd->description, "Raw bayer", sizeof(fmtd->description));
+		strcpy(fmtd->description, "Raw bayer");
 		break;
 	case 4:
 		fmtd->pixelformat = V4L2_PIX_FMT_YUYV;
-		strscpy(fmtd->description, "yuv4:2:2", sizeof(fmtd->description));
+		strcpy(fmtd->description, "yuv4:2:2");
 		break;
 	default:
 		return -EINVAL;
@@ -997,7 +994,7 @@ static int stk_setup_format(struct stk_camera *dev)
 		stk_camera_write_reg(dev, 0x001c, 0x46);
 	/*
 	 * Registers 0x0115 0x0114 are the size of each line (bytes),
-	 * regs 0x0117 0x0116 are the height of the image.
+	 * regs 0x0117 0x0116 are the heigth of the image.
 	 */
 	stk_camera_write_reg(dev, 0x0115,
 		((stk_sizes[i].w * depth) >> 8) & 0xff);
@@ -1135,7 +1132,7 @@ static int stk_vidioc_dqbuf(struct file *filp,
 	sbuf->v4lbuf.flags &= ~V4L2_BUF_FLAG_QUEUED;
 	sbuf->v4lbuf.flags |= V4L2_BUF_FLAG_DONE;
 	sbuf->v4lbuf.sequence = ++dev->sequence;
-	sbuf->v4lbuf.timestamp = ns_to_timeval(ktime_get_ns());
+	v4l2_get_timestamp(&sbuf->v4lbuf.timestamp);
 
 	*buf = sbuf->v4lbuf;
 	return 0;
@@ -1205,7 +1202,7 @@ static const struct v4l2_ctrl_ops stk_ctrl_ops = {
 	.s_ctrl = stk_s_ctrl,
 };
 
-static const struct v4l2_file_operations v4l_stk_fops = {
+static struct v4l2_file_operations v4l_stk_fops = {
 	.owner = THIS_MODULE,
 	.open = v4l_stk_open,
 	.release = v4l_stk_release,
@@ -1244,9 +1241,10 @@ static void stk_v4l_dev_release(struct video_device *vd)
 	if (dev->sio_bufs != NULL || dev->isobufs != NULL)
 		pr_err("We are leaking memory\n");
 	usb_put_intf(dev->interface);
+	kfree(dev);
 }
 
-static const struct video_device stk_v4l_data = {
+static struct video_device stk_v4l_data = {
 	.name = "stkwebcam",
 	.fops = &v4l_stk_fops,
 	.ioctl_ops = &v4l_stk_ioctl_ops,
@@ -1393,7 +1391,6 @@ static void stk_camera_disconnect(struct usb_interface *interface)
 	video_unregister_device(&dev->vdev);
 	v4l2_ctrl_handler_free(&dev->hdl);
 	v4l2_device_unregister(&dev->v4l2_dev);
-	kfree(dev);
 }
 
 #ifdef CONFIG_PM

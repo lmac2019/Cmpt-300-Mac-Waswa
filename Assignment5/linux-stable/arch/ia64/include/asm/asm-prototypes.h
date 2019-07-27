@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _ASM_IA64_ASM_PROTOTYPES_H
 #define _ASM_IA64_ASM_PROTOTYPES_H
 
@@ -9,7 +8,7 @@
 #include <asm/page.h>
 #include <asm/pal.h>
 #include <asm/string.h>
-#include <linux/uaccess.h>
+#include <asm/uaccess.h>
 #include <asm/unwind.h>
 #include <asm/xor.h>
 

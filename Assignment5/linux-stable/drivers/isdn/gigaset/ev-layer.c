@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Stuff used by all variants of the driver
  *
@@ -7,6 +6,10 @@
  *                       Tilman Schmidt <tilman@imap.cc>.
  *
  * =====================================================================
+ *	This program is free software; you can redistribute it and/or
+ *	modify it under the terms of the GNU General Public License as
+ *	published by the Free Software Foundation; either version 2 of
+ *	the License, or (at your option) any later version.
  * =====================================================================
  */
 
@@ -1033,7 +1036,7 @@ static void handle_icall(struct cardstate *cs, struct bc_state *bcs,
 		break;
 	default:
 		dev_err(cs->dev, "internal error: disposition=%d\n", retval);
-		/* fall through */
+		/* --v-- fall through --v-- */
 	case ICALL_IGNORE:
 	case ICALL_REJECT:
 		/* hang up actively
@@ -1316,7 +1319,7 @@ static void do_action(int action, struct cardstate *cs,
 			cs->commands_pending = 1;
 			break;
 		}
-		/* fall through - bad cid */
+		/* bad cid: fall through */
 	case ACT_FAILCID:
 		cs->cur_at_seq = SEQ_NONE;
 		channel = cs->curchannel;

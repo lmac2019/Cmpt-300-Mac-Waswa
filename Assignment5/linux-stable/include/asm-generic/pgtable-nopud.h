@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _PGTABLE_NOPUD_H
 #define _PGTABLE_NOPUD_H
 
@@ -9,7 +8,7 @@
 #else
 #include <asm-generic/pgtable-nop4d.h>
 
-#define __PAGETABLE_PUD_FOLDED 1
+#define __PAGETABLE_PUD_FOLDED
 
 /*
  * Having the pud type consist of a p4d gets the size right, and allows
@@ -35,7 +34,6 @@ static inline void p4d_clear(p4d_t *p4d)	{ }
 #define pud_ERROR(pud)				(p4d_ERROR((pud).p4d))
 
 #define p4d_populate(mm, p4d, pud)		do { } while (0)
-#define p4d_populate_safe(mm, p4d, pud)		do { } while (0)
 /*
  * (puds are folded into p4ds so this doesn't get actually called,
  * but the define is needed for a generic inline function.)

@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  *  linux/fs/affs/inode.c
  *
@@ -22,7 +21,6 @@
 #include <linux/writeback.h>
 #include <linux/blkdev.h>
 #include <linux/seq_file.h>
-#include <linux/iversion.h>
 #include "affs.h"
 
 static int affs_statfs(struct dentry *dentry, struct kstatfs *buf);
@@ -82,7 +80,7 @@ void affs_mark_sb_dirty(struct super_block *sb)
 	struct affs_sb_info *sbi = AFFS_SB(sb);
 	unsigned long delay;
 
-	if (sb_rdonly(sb))
+	if (sb->s_flags & MS_RDONLY)
 	       return;
 
 	spin_lock(&sbi->work_lock);
@@ -104,7 +102,7 @@ static struct inode *affs_alloc_inode(struct super_block *sb)
 	if (!i)
 		return NULL;
 
-	inode_set_iversion(&i->vfs_inode, 1);
+	i->vfs_inode.i_version = 1;
 	i->i_lc = NULL;
 	i->i_ext_bh = NULL;
 	i->i_pa_cnt = 0;
@@ -112,9 +110,15 @@ static struct inode *affs_alloc_inode(struct super_block *sb)
 	return &i->vfs_inode;
 }
 
-static void affs_free_inode(struct inode *inode)
+static void affs_i_callback(struct rcu_head *head)
 {
+	struct inode *inode = container_of(head, struct inode, i_rcu);
 	kmem_cache_free(affs_inode_cachep, AFFS_I(inode));
+}
+
+static void affs_destroy_inode(struct inode *inode)
+{
+	call_rcu(&inode->i_rcu, affs_i_callback);
 }
 
 static void init_once(void *foo)
@@ -150,7 +154,7 @@ static void destroy_inodecache(void)
 
 static const struct super_operations affs_sops = {
 	.alloc_inode	= affs_alloc_inode,
-	.free_inode	= affs_free_inode,
+	.destroy_inode	= affs_destroy_inode,
 	.write_inode	= affs_write_inode,
 	.evict_inode	= affs_evict_inode,
 	.put_super	= affs_put_super,
@@ -236,7 +240,6 @@ parse_options(char *options, kuid_t *uid, kgid_t *gid, int *mode, int *reserved,
 			affs_set_opt(*mount_opts, SF_NO_TRUNCATE);
 			break;
 		case Opt_prefix:
-			kfree(*prefix);
 			*prefix = match_strdup(&args[0]);
 			if (!*prefix)
 				return 0;
@@ -353,7 +356,7 @@ static int affs_fill_super(struct super_block *sb, void *data, int silent)
 
 	sb->s_magic             = AFFS_SUPER_MAGIC;
 	sb->s_op                = &affs_sops;
-	sb->s_flags |= SB_NODIRATIME;
+	sb->s_flags |= MS_NODIRATIME;
 
 	sbi = kzalloc(sizeof(struct affs_sb_info), GFP_KERNEL);
 	if (!sbi)
@@ -461,9 +464,9 @@ got_root:
 	 * not recommended.
 	 */
 	if ((chksum == FS_DCFFS || chksum == MUFS_DCFFS || chksum == FS_DCOFS
-	     || chksum == MUFS_DCOFS) && !sb_rdonly(sb)) {
+	     || chksum == MUFS_DCOFS) && !(sb->s_flags & MS_RDONLY)) {
 		pr_notice("Dircache FS - mounting %s read only\n", sb->s_id);
-		sb->s_flags |= SB_RDONLY;
+		sb->s_flags |= MS_RDONLY;
 	}
 	switch (chksum) {
 	case MUFS_FS:
@@ -482,20 +485,19 @@ got_root:
 		break;
 	case MUFS_OFS:
 		affs_set_opt(sbi->s_flags, SF_MUFS);
-		/* fall through */
+		/* fall thru */
 	case FS_OFS:
 		affs_set_opt(sbi->s_flags, SF_OFS);
-		sb->s_flags |= SB_NOEXEC;
+		sb->s_flags |= MS_NOEXEC;
 		break;
 	case MUFS_DCOFS:
 	case MUFS_INTLOFS:
 		affs_set_opt(sbi->s_flags, SF_MUFS);
-		/* fall through */
 	case FS_DCOFS:
 	case FS_INTLOFS:
 		affs_set_opt(sbi->s_flags, SF_INTL);
 		affs_set_opt(sbi->s_flags, SF_OFS);
-		sb->s_flags |= SB_NOEXEC;
+		sb->s_flags |= MS_NOEXEC;
 		break;
 	default:
 		pr_err("Unknown filesystem on device %s: %08X\n",
@@ -511,7 +513,7 @@ got_root:
 			sig, sig[3] + '0', blocksize);
 	}
 
-	sb->s_flags |= SB_NODEV | SB_NOSUID;
+	sb->s_flags |= MS_NODEV | MS_NOSUID;
 
 	sbi->s_data_blksize = sb->s_blocksize;
 	if (affs_test_opt(sbi->s_flags, SF_OFS))
@@ -568,7 +570,7 @@ affs_remount(struct super_block *sb, int *flags, char *data)
 	pr_debug("%s(flags=0x%x,opts=\"%s\")\n", __func__, *flags, data);
 
 	sync_filesystem(sb);
-	*flags |= SB_NODIRATIME;
+	*flags |= MS_NODIRATIME;
 
 	memcpy(volume, sbi->s_volume, 32);
 	if (!parse_options(data, &uid, &gid, &mode, &reserved, &root_block,
@@ -594,10 +596,10 @@ affs_remount(struct super_block *sb, int *flags, char *data)
 	memcpy(sbi->s_volume, volume, 32);
 	spin_unlock(&sbi->symlink_lock);
 
-	if ((bool)(*flags & SB_RDONLY) == sb_rdonly(sb))
+	if ((*flags & MS_RDONLY) == (sb->s_flags & MS_RDONLY))
 		return 0;
 
-	if (*flags & SB_RDONLY)
+	if (*flags & MS_RDONLY)
 		affs_free_bitmap(sb);
 	else
 		res = affs_init_bitmap(sb, flags);

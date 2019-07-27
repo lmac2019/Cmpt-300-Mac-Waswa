@@ -1,10 +1,22 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * ASIX AX8817X based USB 2.0 Ethernet Devices
  * Copyright (C) 2003-2006 David Hollis <dhollis@davehollis.com>
  * Copyright (C) 2005 Phil Chang <pchang23@sbcglobal.net>
  * Copyright (C) 2006 James Painter <jamie.painter@iname.com>
  * Copyright (c) 2002-2003 TiVo Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "asix.h"
@@ -614,7 +626,7 @@ static int asix_suspend(struct usb_interface *intf, pm_message_t message)
 	struct usbnet *dev = usb_get_intfdata(intf);
 	struct asix_common_private *priv = dev->driver_priv;
 
-	if (priv && priv->suspend)
+	if (priv->suspend)
 		priv->suspend(dev);
 
 	return usbnet_suspend(intf, message);
@@ -630,12 +642,10 @@ static void ax88772_restore_phy(struct usbnet *dev)
 				     priv->presvd_phy_advertise);
 
 		/* Restore BMCR */
-		if (priv->presvd_phy_bmcr & BMCR_ANENABLE)
-			priv->presvd_phy_bmcr |= BMCR_ANRESTART;
-
 		asix_mdio_write_nopm(dev->net, dev->mii.phy_id, MII_BMCR,
 				     priv->presvd_phy_bmcr);
 
+		mii_nway_restart(&dev->mii);
 		priv->presvd_phy_advertise = 0;
 		priv->presvd_phy_bmcr = 0;
 	}
@@ -668,7 +678,7 @@ static int asix_resume(struct usb_interface *intf)
 	struct usbnet *dev = usb_get_intfdata(intf);
 	struct asix_common_private *priv = dev->driver_priv;
 
-	if (priv && priv->resume)
+	if (priv->resume)
 		priv->resume(dev);
 
 	return usbnet_resume(intf);
@@ -681,32 +691,24 @@ static int ax88772_bind(struct usbnet *dev, struct usb_interface *intf)
 	u32 phyid;
 	struct asix_common_private *priv;
 
-	usbnet_get_endpoints(dev, intf);
+	usbnet_get_endpoints(dev,intf);
 
-	/* Maybe the boot loader passed the MAC address via device tree */
-	if (!eth_platform_get_mac_address(&dev->udev->dev, buf)) {
-		netif_dbg(dev, ifup, dev->net,
-			  "MAC address read from device tree");
+	/* Get the MAC address */
+	if (dev->driver_info->data & FLAG_EEPROM_MAC) {
+		for (i = 0; i < (ETH_ALEN >> 1); i++) {
+			ret = asix_read_cmd(dev, AX_CMD_READ_EEPROM, 0x04 + i,
+					    0, 2, buf + i * 2, 0);
+			if (ret < 0)
+				break;
+		}
 	} else {
-		/* Try getting the MAC address from EEPROM */
-		if (dev->driver_info->data & FLAG_EEPROM_MAC) {
-			for (i = 0; i < (ETH_ALEN >> 1); i++) {
-				ret = asix_read_cmd(dev, AX_CMD_READ_EEPROM,
-						    0x04 + i, 0, 2, buf + i * 2,
-						    0);
-				if (ret < 0)
-					break;
-			}
-		} else {
-			ret = asix_read_cmd(dev, AX_CMD_READ_NODE_ID,
-					    0, 0, ETH_ALEN, buf, 0);
-		}
+		ret = asix_read_cmd(dev, AX_CMD_READ_NODE_ID,
+				0, 0, ETH_ALEN, buf, 0);
+	}
 
-		if (ret < 0) {
-			netdev_dbg(dev->net, "Failed to read MAC address: %d\n",
-				   ret);
-			return ret;
-		}
+	if (ret < 0) {
+		netdev_dbg(dev->net, "Failed to read MAC address: %d\n", ret);
+		return ret;
 	}
 
 	asix_set_netdev_dev_addr(dev, buf);
@@ -727,13 +729,8 @@ static int ax88772_bind(struct usbnet *dev, struct usb_interface *intf)
 	asix_read_cmd(dev, AX_CMD_STATMNGSTS_REG, 0, 0, 1, &chipcode, 0);
 	chipcode &= AX_CHIPCODE_MASK;
 
-	ret = (chipcode == AX_AX88772_CHIPCODE) ? ax88772_hw_reset(dev, 0) :
-						  ax88772a_hw_reset(dev, 0);
-
-	if (ret < 0) {
-		netdev_dbg(dev->net, "Failed to reset AX88772: %d\n", ret);
-		return ret;
-	}
+	(chipcode == AX_AX88772_CHIPCODE) ? ax88772_hw_reset(dev, 0) :
+					    ax88772a_hw_reset(dev, 0);
 
 	/* Read PHYID register *AFTER* the PHY was reset properly */
 	phyid = asix_get_phyid(dev);

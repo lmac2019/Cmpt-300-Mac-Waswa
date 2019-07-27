@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _LINUX_SCHED_TASK_H
 #define _LINUX_SCHED_TASK_H
 
@@ -31,6 +30,7 @@ extern int lockdep_tasklist_lock_is_held(void);
 
 extern asmlinkage void schedule_tail(struct task_struct *prev);
 extern void init_idle(struct task_struct *idle, int cpu);
+extern void init_idle_bootup_task(struct task_struct *idle);
 
 extern int sched_fork(unsigned long clone_flags, struct task_struct *p);
 extern void sched_dead(struct task_struct *p);
@@ -38,8 +38,6 @@ extern void sched_dead(struct task_struct *p);
 void __noreturn do_task_dead(void);
 
 extern void proc_caches_init(void);
-
-extern void fork_init(void);
 
 extern void release_task(struct task_struct * p);
 
@@ -76,9 +74,8 @@ extern void exit_itimers(struct signal_struct *);
 extern long _do_fork(unsigned long, unsigned long, unsigned long, int __user *, int __user *, unsigned long);
 extern long do_fork(unsigned long, unsigned long, unsigned long, int __user *, int __user *);
 struct task_struct *fork_idle(int);
-struct mm_struct *copy_init_mm(void);
 extern pid_t kernel_thread(int (*fn)(void *), void *arg, unsigned long flags);
-extern long kernel_wait4(pid_t, int __user *, int, struct rusage *);
+extern long kernel_wait4(pid_t, int *, int, struct rusage *);
 
 extern void free_task(struct task_struct *tsk);
 
@@ -89,13 +86,13 @@ extern void sched_exec(void);
 #define sched_exec()   {}
 #endif
 
-#define get_task_struct(tsk) do { refcount_inc(&(tsk)->usage); } while(0)
+#define get_task_struct(tsk) do { atomic_inc(&(tsk)->usage); } while(0)
 
 extern void __put_task_struct(struct task_struct *t);
 
 static inline void put_task_struct(struct task_struct *t)
 {
-	if (refcount_dec_and_test(&t->usage))
+	if (atomic_dec_and_test(&t->usage))
 		__put_task_struct(t);
 }
 
@@ -105,20 +102,6 @@ struct task_struct *task_rcu_dereference(struct task_struct **ptask);
 extern int arch_task_struct_size __read_mostly;
 #else
 # define arch_task_struct_size (sizeof(struct task_struct))
-#endif
-
-#ifndef CONFIG_HAVE_ARCH_THREAD_STRUCT_WHITELIST
-/*
- * If an architecture has not declared a thread_struct whitelist we
- * must assume something there may need to be copied to userspace.
- */
-static inline void arch_thread_struct_whitelist(unsigned long *offset,
-						unsigned long *size)
-{
-	*offset = 0;
-	/* Handle dynamically sized thread_struct. */
-	*size = arch_task_struct_size - offsetof(struct task_struct, thread);
-}
 #endif
 
 #ifdef CONFIG_VMAP_STACK

@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _LINUX_RCUWAIT_H_
 #define _LINUX_RCUWAIT_H_
 
@@ -18,7 +17,7 @@
  * awoken.
  */
 struct rcuwait {
-	struct task_struct __rcu *task;
+	struct task_struct *task;
 };
 
 #define __RCUWAIT_INITIALIZER(name)		\

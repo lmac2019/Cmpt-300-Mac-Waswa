@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * MIPI-DSI based s6e8aa0 AMOLED LCD 5.3 inch panel driver.
  *
@@ -10,6 +9,10 @@
  * Eunchul Kim <chulspro.kim@samsung.com>
  * Tomasz Figa <t.figa@samsung.com>
  * Andrzej Hajda <a.hajda@samsung.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
 */
 
 #include <drm/drmP.h>
@@ -820,7 +823,7 @@ static void s6e8aa0_read_mtp_id(struct s6e8aa0 *ctx)
 	int ret, i;
 
 	ret = s6e8aa0_dcs_read(ctx, 0xd1, id, ARRAY_SIZE(id));
-	if (ret < 0 || ret < ARRAY_SIZE(id) || id[0] == 0x00) {
+	if (ret < ARRAY_SIZE(id) || id[0] == 0x00) {
 		dev_err(ctx->dev, "read id failed\n");
 		ctx->error = -EIO;
 		return;

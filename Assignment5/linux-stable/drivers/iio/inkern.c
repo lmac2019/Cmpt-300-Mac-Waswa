@@ -1,7 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /* The industrial I/O core in kernel channel mapping
  *
  * Copyright (c) 2011 Jonathan Cameron
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published by
+ * the Free Software Foundation.
  */
 #include <linux/err.h>
 #include <linux/export.h>
@@ -41,7 +44,7 @@ int iio_map_array_register(struct iio_dev *indio_dev, struct iio_map *maps)
 		}
 		mapi->map = &maps[i];
 		mapi->indio_dev = indio_dev;
-		list_add_tail(&mapi->l, &iio_map_list);
+		list_add(&mapi->l, &iio_map_list);
 		i++;
 	}
 error_ret:
@@ -202,8 +205,8 @@ static struct iio_channel *of_iio_channel_get_by_name(struct device_node *np,
 		if (!IS_ERR(chan) || PTR_ERR(chan) == -EPROBE_DEFER)
 			break;
 		else if (name && index >= 0) {
-			pr_err("ERROR: could not get IIO channel %pOF:%s(%i)\n",
-				np, name ? name : "", index);
+			pr_err("ERROR: could not get IIO channel %s:%s(%i)\n",
+				np->full_name, name ? name : "", index);
 			return NULL;
 		}
 
@@ -433,7 +436,7 @@ struct iio_channel *iio_channel_get_all(struct device *dev)
 	}
 
 	/* NULL terminated array to save passing size */
-	chans = kcalloc(nummaps + 1, sizeof(*chans), GFP_KERNEL);
+	chans = kzalloc(sizeof(*chans)*(nummaps + 1), GFP_KERNEL);
 	if (chans == NULL) {
 		ret = -ENOMEM;
 		goto error_ret;
@@ -661,8 +664,9 @@ err_unlock:
 }
 EXPORT_SYMBOL_GPL(iio_convert_raw_to_processed);
 
-int iio_read_channel_attribute(struct iio_channel *chan, int *val, int *val2,
-			       enum iio_chan_info_enum attribute)
+static int iio_read_channel_attribute(struct iio_channel *chan,
+				      int *val, int *val2,
+				      enum iio_chan_info_enum attribute)
 {
 	int ret;
 
@@ -678,7 +682,6 @@ err_unlock:
 
 	return ret;
 }
-EXPORT_SYMBOL_GPL(iio_read_channel_attribute);
 
 int iio_read_channel_offset(struct iio_channel *chan, int *val, int *val2)
 {
@@ -730,11 +733,11 @@ static int iio_channel_read_avail(struct iio_channel *chan,
 						 vals, type, length, info);
 }
 
-int iio_read_avail_channel_attribute(struct iio_channel *chan,
-				     const int **vals, int *type, int *length,
-				     enum iio_chan_info_enum attribute)
+int iio_read_avail_channel_raw(struct iio_channel *chan,
+			       const int **vals, int *length)
 {
 	int ret;
+	int type;
 
 	mutex_lock(&chan->indio_dev->info_exist_lock);
 	if (!chan->indio_dev->info) {
@@ -742,22 +745,10 @@ int iio_read_avail_channel_attribute(struct iio_channel *chan,
 		goto err_unlock;
 	}
 
-	ret = iio_channel_read_avail(chan, vals, type, length, attribute);
+	ret = iio_channel_read_avail(chan,
+				     vals, &type, length, IIO_CHAN_INFO_RAW);
 err_unlock:
 	mutex_unlock(&chan->indio_dev->info_exist_lock);
-
-	return ret;
-}
-EXPORT_SYMBOL_GPL(iio_read_avail_channel_attribute);
-
-int iio_read_avail_channel_raw(struct iio_channel *chan,
-			       const int **vals, int *length)
-{
-	int ret;
-	int type;
-
-	ret = iio_read_avail_channel_attribute(chan, vals, &type, length,
-					 IIO_CHAN_INFO_RAW);
 
 	if (ret >= 0 && type != IIO_VAL_INT)
 		/* raw values are assumed to be IIO_VAL_INT */
@@ -859,8 +850,7 @@ static int iio_channel_write(struct iio_channel *chan, int val, int val2,
 						chan->channel, val, val2, info);
 }
 
-int iio_write_channel_attribute(struct iio_channel *chan, int val, int val2,
-				enum iio_chan_info_enum attribute)
+int iio_write_channel_raw(struct iio_channel *chan, int val)
 {
 	int ret;
 
@@ -870,17 +860,11 @@ int iio_write_channel_attribute(struct iio_channel *chan, int val, int val2,
 		goto err_unlock;
 	}
 
-	ret = iio_channel_write(chan, val, val2, attribute);
+	ret = iio_channel_write(chan, val, 0, IIO_CHAN_INFO_RAW);
 err_unlock:
 	mutex_unlock(&chan->indio_dev->info_exist_lock);
 
 	return ret;
-}
-EXPORT_SYMBOL_GPL(iio_write_channel_attribute);
-
-int iio_write_channel_raw(struct iio_channel *chan, int val)
-{
-	return iio_write_channel_attribute(chan, val, 0, IIO_CHAN_INFO_RAW);
 }
 EXPORT_SYMBOL_GPL(iio_write_channel_raw);
 

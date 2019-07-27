@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Linux driver for digital TV devices equipped with B2C2 FlexcopII(b)/III
  * flexcop-usb.c - covers the USB part
@@ -597,7 +596,7 @@ static void flexcop_usb_disconnect(struct usb_interface *intf)
 	info("%s successfully deinitialized and disconnected.", DRIVER_NAME);
 }
 
-static const struct usb_device_id flexcop_usb_table[] = {
+static struct usb_device_id flexcop_usb_table [] = {
 	{ USB_DEVICE(0x0af7, 0x0101) },
 	{ }
 };

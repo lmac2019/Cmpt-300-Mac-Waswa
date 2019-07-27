@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  *  xenfs.c - a filesystem for passing info between the a domain and
  *  the hypervisor.

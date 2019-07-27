@@ -1,8 +1,12 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * OpenFirmware helpers for memory drivers
  *
  * Copyright (C) 2012 Texas Instruments, Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  */
 
 #include <linux/device.h>
@@ -122,8 +126,8 @@ const struct lpddr2_timings *of_get_ddr_timings(struct device_node *np_ddr,
 			arr_sz++;
 
 	if (arr_sz)
-		timings = devm_kcalloc(dev, arr_sz, sizeof(*timings),
-				       GFP_KERNEL);
+		timings = devm_kzalloc(dev, sizeof(*timings) * arr_sz,
+			GFP_KERNEL);
 
 	if (!timings)
 		goto default_timings;

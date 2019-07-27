@@ -1,8 +1,21 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Copyright 2010 Benjamin Herrenschmidt, IBM Corp
  *                <benh@kernel.crashing.org>
  *     and        David Gibson, IBM Corporation.
+ *
+ *   This program is free software;  you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY;  without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
+ *   the GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program;  if not, write to the Free Software
+ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
 #include <linux/kernel.h>
@@ -47,7 +60,7 @@ scom_map_t scom_map_device(struct device_node *dev, int index)
 	parent = scom_find_parent(dev);
 
 	if (parent == NULL)
-		return NULL;
+		return 0;
 
 	/*
 	 * We support "scom-reg" properties for adding scom registers
@@ -70,7 +83,7 @@ scom_map_t scom_map_device(struct device_node *dev, int index)
 	size >>= 2;
 
 	if (index >= (size / (2*cells)))
-		return NULL;
+		return 0;
 
 	reg = of_read_number(&prop[index * cells * 2], cells);
 	cnt = of_read_number(&prop[index * cells * 2 + cells], cells);
@@ -181,13 +194,12 @@ static int scom_debug_init_one(struct dentry *root, struct device_node *dn,
 
 	ent->dn = of_node_get(dn);
 	snprintf(ent->name, 16, "%08x", i);
-	ent->path.data = (void*)kasprintf(GFP_KERNEL, "%pOF", dn);
-	ent->path.size = strlen((char *)ent->path.data);
+	ent->path.data = (void*) dn->full_name;
+	ent->path.size = strlen(dn->full_name);
 
 	dir = debugfs_create_dir(ent->name, root);
 	if (!dir) {
 		of_node_put(dn);
-		kfree(ent->path.data);
 		kfree(ent);
 		return -1;
 	}

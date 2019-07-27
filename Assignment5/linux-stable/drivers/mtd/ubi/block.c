@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2014 Ezequiel Garcia
  * Copyright (c) 2011 Free Electrons
@@ -7,6 +6,15 @@
  *   Copyright (c) International Business Machines Corp., 2006
  *   Copyright (c) Nokia Corporation, 2007
  *   Authors: Artem Bityutskiy, Frank Haverkamp
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 2.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
+ * the GNU General Public License for more details.
  */
 
 /*
@@ -91,8 +99,6 @@ struct ubiblock {
 
 /* Linked list of all ubiblock instances */
 static LIST_HEAD(ubiblock_devices);
-static DEFINE_IDR(ubiblock_minor_idr);
-/* Protects ubiblock_devices and ubiblock_minor_idr */
 static DEFINE_MUTEX(devices_mutex);
 static int ubiblock_major;
 
@@ -236,7 +242,7 @@ static int ubiblock_open(struct block_device *bdev, fmode_t mode)
 	 * in any case.
 	 */
 	if (mode & FMODE_WRITE) {
-		ret = -EROFS;
+		ret = -EPERM;
 		goto out_unlock;
 	}
 
@@ -345,6 +351,8 @@ static const struct blk_mq_ops ubiblock_mq_ops = {
 	.init_request	= ubiblock_init_request,
 };
 
+static DEFINE_IDR(ubiblock_minor_idr);
+
 int ubiblock_create(struct ubi_volume_info *vi)
 {
 	struct ubiblock *dev;
@@ -357,15 +365,14 @@ int ubiblock_create(struct ubi_volume_info *vi)
 	/* Check that the volume isn't already handled */
 	mutex_lock(&devices_mutex);
 	if (find_dev_nolock(vi->ubi_num, vi->vol_id)) {
-		ret = -EEXIST;
-		goto out_unlock;
+		mutex_unlock(&devices_mutex);
+		return -EEXIST;
 	}
+	mutex_unlock(&devices_mutex);
 
 	dev = kzalloc(sizeof(struct ubiblock), GFP_KERNEL);
-	if (!dev) {
-		ret = -ENOMEM;
-		goto out_unlock;
-	}
+	if (!dev)
+		return -ENOMEM;
 
 	mutex_init(&dev->dev_mutex);
 
@@ -376,7 +383,7 @@ int ubiblock_create(struct ubi_volume_info *vi)
 	/* Initialize the gendisk of this ubiblock device */
 	gd = alloc_disk(1);
 	if (!gd) {
-		pr_err("UBI: block: alloc_disk failed\n");
+		pr_err("UBI: block: alloc_disk failed");
 		ret = -ENODEV;
 		goto out_free_dev;
 	}
@@ -430,13 +437,14 @@ int ubiblock_create(struct ubi_volume_info *vi)
 		goto out_free_queue;
 	}
 
+	mutex_lock(&devices_mutex);
 	list_add_tail(&dev->list, &ubiblock_devices);
+	mutex_unlock(&devices_mutex);
 
 	/* Must be the last step: anyone can call file ops from now on */
 	add_disk(dev->gd);
 	dev_info(disk_to_dev(dev->gd), "created from ubi%d:%d(%s)",
 		 dev->ubi_num, dev->vol_id, vi->name);
-	mutex_unlock(&devices_mutex);
 	return 0;
 
 out_free_queue:
@@ -449,8 +457,6 @@ out_put_disk:
 	put_disk(dev->gd);
 out_free_dev:
 	kfree(dev);
-out_unlock:
-	mutex_unlock(&devices_mutex);
 
 	return ret;
 }
@@ -472,36 +478,30 @@ static void ubiblock_cleanup(struct ubiblock *dev)
 int ubiblock_remove(struct ubi_volume_info *vi)
 {
 	struct ubiblock *dev;
-	int ret;
 
 	mutex_lock(&devices_mutex);
 	dev = find_dev_nolock(vi->ubi_num, vi->vol_id);
 	if (!dev) {
-		ret = -ENODEV;
-		goto out_unlock;
+		mutex_unlock(&devices_mutex);
+		return -ENODEV;
 	}
 
 	/* Found a device, let's lock it so we can check if it's busy */
 	mutex_lock(&dev->dev_mutex);
 	if (dev->refcnt > 0) {
-		ret = -EBUSY;
-		goto out_unlock_dev;
+		mutex_unlock(&dev->dev_mutex);
+		mutex_unlock(&devices_mutex);
+		return -EBUSY;
 	}
 
 	/* Remove from device list */
 	list_del(&dev->list);
+	mutex_unlock(&devices_mutex);
+
 	ubiblock_cleanup(dev);
 	mutex_unlock(&dev->dev_mutex);
-	mutex_unlock(&devices_mutex);
-
 	kfree(dev);
 	return 0;
-
-out_unlock_dev:
-	mutex_unlock(&dev->dev_mutex);
-out_unlock:
-	mutex_unlock(&devices_mutex);
-	return ret;
 }
 
 static int ubiblock_resize(struct ubi_volume_info *vi)
@@ -607,7 +607,7 @@ static void __init ubiblock_create_from_param(void)
 		desc = open_volume_desc(p->name, p->ubi_num, p->vol_id);
 		if (IS_ERR(desc)) {
 			pr_err(
-			       "UBI: block: can't open volume on ubi%d_%d, err=%ld\n",
+			       "UBI: block: can't open volume on ubi%d_%d, err=%ld",
 			       p->ubi_num, p->vol_id, PTR_ERR(desc));
 			continue;
 		}
@@ -618,7 +618,7 @@ static void __init ubiblock_create_from_param(void)
 		ret = ubiblock_create(&vi);
 		if (ret) {
 			pr_err(
-			       "UBI: block: can't add '%s' volume on ubi%d_%d, err=%d\n",
+			       "UBI: block: can't add '%s' volume on ubi%d_%d, err=%d",
 			       vi.name, p->ubi_num, p->vol_id, ret);
 			continue;
 		}
@@ -630,7 +630,6 @@ static void ubiblock_remove_all(void)
 	struct ubiblock *next;
 	struct ubiblock *dev;
 
-	mutex_lock(&devices_mutex);
 	list_for_each_entry_safe(dev, next, &ubiblock_devices, list) {
 		/* The module is being forcefully removed */
 		WARN_ON(dev->desc);
@@ -639,7 +638,6 @@ static void ubiblock_remove_all(void)
 		ubiblock_cleanup(dev);
 		kfree(dev);
 	}
-	mutex_unlock(&devices_mutex);
 }
 
 int __init ubiblock_init(void)

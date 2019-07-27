@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 #include <linux/etherdevice.h>
 #include "ipvlan.h"
 #include <linux/if_vlan.h>
@@ -25,7 +24,7 @@
 #include <linux/virtio_net.h>
 
 #define TUN_OFFLOADS (NETIF_F_HW_CSUM | NETIF_F_TSO_ECN | NETIF_F_TSO | \
-		      NETIF_F_TSO6)
+		      NETIF_F_TSO6 | NETIF_F_UFO)
 
 static dev_t ipvtap_major;
 static struct cdev ipvtap_cdev;
@@ -198,8 +197,8 @@ static int ipvtap_init(void)
 {
 	int err;
 
-	err = tap_create_cdev(&ipvtap_cdev, &ipvtap_major, "ipvtap",
-			      THIS_MODULE);
+	err = tap_create_cdev(&ipvtap_cdev, &ipvtap_major, "ipvtap");
+
 	if (err)
 		goto out1;
 

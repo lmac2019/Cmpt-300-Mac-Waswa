@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  *	X.25 Packet Layer release 002
  *
@@ -7,6 +6,12 @@
  *	screw up. It might even work.
  *
  *	This code REQUIRES 2.1.15 or higher
+ *
+ *	This module:
+ *		This module is free software; you can redistribute it and/or
+ *		modify it under the terms of the GNU General Public License
+ *		as published by the Free Software Foundation; either version
+ *		2 of the License, or (at your option) any later version.
  *
  *	History
  *	X.25 001	Jonathan Naylor	  Started coding.
@@ -31,7 +36,7 @@
 LIST_HEAD(x25_neigh_list);
 DEFINE_RWLOCK(x25_neigh_list_lock);
 
-static void x25_t20timer_expiry(struct timer_list *);
+static void x25_t20timer_expiry(unsigned long);
 
 static void x25_transmit_restart_confirmation(struct x25_neigh *nb);
 static void x25_transmit_restart_request(struct x25_neigh *nb);
@@ -44,9 +49,9 @@ static inline void x25_start_t20timer(struct x25_neigh *nb)
 	mod_timer(&nb->t20timer, jiffies + nb->t20);
 }
 
-static void x25_t20timer_expiry(struct timer_list *t)
+static void x25_t20timer_expiry(unsigned long param)
 {
-	struct x25_neigh *nb = from_timer(nb, t, t20timer);
+	struct x25_neigh *nb = (struct x25_neigh *)param;
 
 	x25_transmit_restart_request(nb);
 
@@ -247,7 +252,7 @@ void x25_link_device_up(struct net_device *dev)
 		return;
 
 	skb_queue_head_init(&nb->queue);
-	timer_setup(&nb->t20timer, x25_t20timer_expiry, 0);
+	setup_timer(&nb->t20timer, x25_t20timer_expiry, (unsigned long)nb);
 
 	dev_hold(dev);
 	nb->dev      = dev;

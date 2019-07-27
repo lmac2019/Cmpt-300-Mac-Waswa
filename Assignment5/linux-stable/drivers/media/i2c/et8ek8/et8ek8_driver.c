@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * et8ek8_driver.c
  *
@@ -12,6 +11,15 @@
  *
  * This driver is based on the Micron MT9T012 camera imager driver
  * (C) Texas Instruments.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  */
 
 #include <linux/clk.h>
@@ -35,7 +43,7 @@
 
 #define ET8EK8_NAME		"et8ek8"
 #define ET8EK8_PRIV_MEM_SIZE	128
-#define ET8EK8_MAX_MSG		8
+#define ET8EK8_MAX_MSG		48
 
 struct et8ek8_sensor {
 	struct v4l2_subdev subdev;
@@ -212,8 +220,7 @@ static void et8ek8_i2c_create_msg(struct i2c_client *client, u16 len, u16 reg,
 
 /*
  * A buffered write method that puts the wanted register write
- * commands in smaller number of message lists and passes the lists to
- * the i2c framework
+ * commands in a message list and passes the list to the i2c framework
  */
 static int et8ek8_i2c_buffered_write_regs(struct i2c_client *client,
 					  const struct et8ek8_reg *wnext,
@@ -224,7 +231,11 @@ static int et8ek8_i2c_buffered_write_regs(struct i2c_client *client,
 	int wcnt = 0;
 	u16 reg, data_length;
 	u32 val;
-	int rval;
+
+	if (WARN_ONCE(cnt > ET8EK8_MAX_MSG,
+		      ET8EK8_NAME ": %s: too many messages.\n", __func__)) {
+		return -EINVAL;
+	}
 
 	/* Create new write messages for all writes */
 	while (wcnt < cnt) {
@@ -238,21 +249,10 @@ static int et8ek8_i2c_buffered_write_regs(struct i2c_client *client,
 
 		/* Update write count */
 		wcnt++;
-
-		if (wcnt < ET8EK8_MAX_MSG)
-			continue;
-
-		rval = i2c_transfer(client->adapter, msg, wcnt);
-		if (rval < 0)
-			return rval;
-
-		cnt -= wcnt;
-		wcnt = 0;
 	}
 
-	rval = i2c_transfer(client->adapter, msg, wcnt);
-
-	return rval < 0 ? rval : 0;
+	/* Now we send everything ... */
+	return i2c_transfer(client->adapter, msg, wcnt);
 }
 
 /*
@@ -1438,7 +1438,6 @@ static int et8ek8_probe(struct i2c_client *client,
 	sensor->subdev.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 	sensor->subdev.internal_ops = &et8ek8_internal_ops;
 
-	sensor->subdev.entity.function = MEDIA_ENT_F_CAM_SENSOR;
 	sensor->pad.flags = MEDIA_PAD_FL_SOURCE;
 	ret = media_entity_pads_init(&sensor->subdev.entity, 1, &sensor->pad);
 	if (ret < 0) {
@@ -1446,7 +1445,7 @@ static int et8ek8_probe(struct i2c_client *client,
 		goto err_mutex;
 	}
 
-	ret = v4l2_async_register_subdev_sensor_common(&sensor->subdev);
+	ret = v4l2_async_register_subdev(&sensor->subdev);
 	if (ret < 0)
 		goto err_entity;
 

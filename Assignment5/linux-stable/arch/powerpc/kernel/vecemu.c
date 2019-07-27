@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * Routines to emulate some Altivec/VMX instructions, specifically
  * those that can trap when given denormalized operands in Java mode.
@@ -8,7 +7,6 @@
 #include <linux/sched.h>
 #include <asm/ptrace.h>
 #include <asm/processor.h>
-#include <asm/switch_to.h>
 #include <linux/uaccess.h>
 
 /* Functions in vector.S */

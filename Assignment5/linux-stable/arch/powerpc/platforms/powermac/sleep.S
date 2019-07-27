@@ -1,8 +1,13 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later */
 /*
  * This file contains sleep low-level functions for PowerBook G3.
  *    Copyright (C) 1999 Benjamin Herrenschmidt (benh@kernel.crashing.org)
  *    and Paul Mackerras (paulus@samba.org).
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version
+ * 2 of the License, or (at your option) any later version.
+ *
  */
 
 #include <asm/processor.h>
@@ -13,7 +18,6 @@
 #include <asm/thread_info.h>
 #include <asm/asm-offsets.h>
 #include <asm/mmu.h>
-#include <asm/feature-fixups.h>
 
 #define MAGIC	0x4c617273	/* 'Lars' */
 
@@ -51,7 +55,7 @@
  * vector that will be called by the ROM on wakeup
  */
 _GLOBAL(low_sleep_handler)
-#ifndef CONFIG_PPC_BOOK3S_32
+#ifndef CONFIG_6xx
 	blr
 #else
 	mflr	r0
@@ -389,5 +393,5 @@ sleep_storage:
 	.long 0
 	.balign	L1_CACHE_BYTES, 0
 
-#endif /* CONFIG_PPC_BOOK3S_32 */
+#endif /* CONFIG_6xx */
 	.section .text

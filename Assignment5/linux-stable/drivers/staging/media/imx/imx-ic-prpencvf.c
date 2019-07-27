@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * V4L2 Capture IC Preprocess Subdev for Freescale i.MX5/6 SOC
  *
@@ -7,6 +6,11 @@
  * for resizing, colorspace conversion, and rotation.
  *
  * Copyright (c) 2012-2017 Mentor Graphics Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  */
 #include <linux/delay.h>
 #include <linux/interrupt.h>
@@ -44,7 +48,7 @@
 
 #define MAX_W_SRC  1024
 #define MAX_H_SRC  1024
-#define W_ALIGN_SRC   1 /* multiple of 2 pixels */
+#define W_ALIGN_SRC   4 /* multiple of 16 pixels */
 #define H_ALIGN_SRC   1 /* multiple of 2 lines */
 
 #define S_ALIGN       1 /* multiple of 2 */
@@ -99,10 +103,8 @@ struct prp_priv {
 	int nfb4eof_irq;
 
 	int stream_count;
-	u32 frame_sequence; /* frame sequence counter */
 	bool last_eof;  /* waiting for last EOF at stream off */
 	bool nfb4eof;    /* NFB4EOF encountered during streaming */
-	bool interweave_swap; /* swap top/bottom lines when interweaving */
 	struct completion last_eof_comp;
 };
 
@@ -132,19 +134,19 @@ static inline struct prp_priv *sd_to_priv(struct v4l2_subdev *sd)
 
 static void prp_put_ipu_resources(struct prp_priv *priv)
 {
-	if (priv->ic)
+	if (!IS_ERR_OR_NULL(priv->ic))
 		ipu_ic_put(priv->ic);
 	priv->ic = NULL;
 
-	if (priv->out_ch)
+	if (!IS_ERR_OR_NULL(priv->out_ch))
 		ipu_idmac_put(priv->out_ch);
 	priv->out_ch = NULL;
 
-	if (priv->rot_in_ch)
+	if (!IS_ERR_OR_NULL(priv->rot_in_ch))
 		ipu_idmac_put(priv->rot_in_ch);
 	priv->rot_in_ch = NULL;
 
-	if (priv->rot_out_ch)
+	if (!IS_ERR_OR_NULL(priv->rot_out_ch))
 		ipu_idmac_put(priv->rot_out_ch);
 	priv->rot_out_ch = NULL;
 }
@@ -152,46 +154,43 @@ static void prp_put_ipu_resources(struct prp_priv *priv)
 static int prp_get_ipu_resources(struct prp_priv *priv)
 {
 	struct imx_ic_priv *ic_priv = priv->ic_priv;
-	struct ipu_ic *ic;
-	struct ipuv3_channel *out_ch, *rot_in_ch, *rot_out_ch;
 	int ret, task = ic_priv->task_id;
 
 	priv->ipu = priv->md->ipu[ic_priv->ipu_id];
 
-	ic = ipu_ic_get(priv->ipu, task);
-	if (IS_ERR(ic)) {
+	priv->ic = ipu_ic_get(priv->ipu, task);
+	if (IS_ERR(priv->ic)) {
 		v4l2_err(&ic_priv->sd, "failed to get IC\n");
-		ret = PTR_ERR(ic);
+		ret = PTR_ERR(priv->ic);
 		goto out;
 	}
-	priv->ic = ic;
 
-	out_ch = ipu_idmac_get(priv->ipu, prp_channel[task].out_ch);
-	if (IS_ERR(out_ch)) {
+	priv->out_ch = ipu_idmac_get(priv->ipu,
+				     prp_channel[task].out_ch);
+	if (IS_ERR(priv->out_ch)) {
 		v4l2_err(&ic_priv->sd, "could not get IDMAC channel %u\n",
 			 prp_channel[task].out_ch);
-		ret = PTR_ERR(out_ch);
+		ret = PTR_ERR(priv->out_ch);
 		goto out;
 	}
-	priv->out_ch = out_ch;
 
-	rot_in_ch = ipu_idmac_get(priv->ipu, prp_channel[task].rot_in_ch);
-	if (IS_ERR(rot_in_ch)) {
+	priv->rot_in_ch = ipu_idmac_get(priv->ipu,
+					prp_channel[task].rot_in_ch);
+	if (IS_ERR(priv->rot_in_ch)) {
 		v4l2_err(&ic_priv->sd, "could not get IDMAC channel %u\n",
 			 prp_channel[task].rot_in_ch);
-		ret = PTR_ERR(rot_in_ch);
+		ret = PTR_ERR(priv->rot_in_ch);
 		goto out;
 	}
-	priv->rot_in_ch = rot_in_ch;
 
-	rot_out_ch = ipu_idmac_get(priv->ipu, prp_channel[task].rot_out_ch);
-	if (IS_ERR(rot_out_ch)) {
+	priv->rot_out_ch = ipu_idmac_get(priv->ipu,
+					 prp_channel[task].rot_out_ch);
+	if (IS_ERR(priv->rot_out_ch)) {
 		v4l2_err(&ic_priv->sd, "could not get IDMAC channel %u\n",
 			 prp_channel[task].rot_out_ch);
-		ret = PTR_ERR(rot_out_ch);
+		ret = PTR_ERR(priv->rot_out_ch);
 		goto out;
 	}
-	priv->rot_out_ch = rot_out_ch;
 
 	return 0;
 out:
@@ -208,15 +207,12 @@ static void prp_vb2_buf_done(struct prp_priv *priv, struct ipuv3_channel *ch)
 
 	done = priv->active_vb2_buf[priv->ipu_buf_num];
 	if (done) {
-		done->vbuf.field = vdev->fmt.fmt.pix.field;
-		done->vbuf.sequence = priv->frame_sequence;
 		vb = &done->vbuf.vb2_buf;
 		vb->timestamp = ktime_get_ns();
 		vb2_buffer_done(vb, priv->nfb4eof ?
 				VB2_BUF_STATE_ERROR : VB2_BUF_STATE_DONE);
 	}
 
-	priv->frame_sequence++;
 	priv->nfb4eof = false;
 
 	/* get next queued buffer */
@@ -231,9 +227,6 @@ static void prp_vb2_buf_done(struct prp_priv *priv, struct ipuv3_channel *ch)
 
 	if (ipu_idmac_buffer_is_ready(ch, priv->ipu_buf_num))
 		ipu_idmac_clear_buffer(ch, priv->ipu_buf_num);
-
-	if (priv->interweave_swap && ch == priv->out_ch)
-		phys += vdev->fmt.fmt.pix.bytesperline;
 
 	ipu_cpmem_set_buffer(ch, priv->ipu_buf_num, phys);
 }
@@ -297,9 +290,9 @@ static irqreturn_t prp_nfb4eof_interrupt(int irq, void *dev_id)
  * EOF timeout timer function. This is an unrecoverable condition
  * without a stream restart.
  */
-static void prp_eof_timeout(struct timer_list *t)
+static void prp_eof_timeout(unsigned long data)
 {
-	struct prp_priv *priv = from_timer(priv, t, eof_timeout_timer);
+	struct prp_priv *priv = (struct prp_priv *)data;
 	struct imx_media_video_dev *vdev = priv->vdev;
 	struct imx_ic_priv *ic_priv = priv->ic_priv;
 
@@ -354,30 +347,20 @@ static int prp_setup_channel(struct prp_priv *priv,
 {
 	struct imx_media_video_dev *vdev = priv->vdev;
 	const struct imx_media_pixfmt *outcc;
-	struct v4l2_mbus_framefmt *outfmt;
+	struct v4l2_mbus_framefmt *infmt;
 	unsigned int burst_size;
 	struct ipu_image image;
-	bool interweave;
 	int ret;
 
-	outfmt = &priv->format_mbus[PRPENCVF_SRC_PAD];
+	infmt = &priv->format_mbus[PRPENCVF_SINK_PAD];
 	outcc = vdev->cc;
 
 	ipu_cpmem_zero(channel);
 
 	memset(&image, 0, sizeof(image));
 	image.pix = vdev->fmt.fmt.pix;
-	image.rect = vdev->compose;
-
-	/*
-	 * If the field type at capture interface is interlaced, and
-	 * the output IDMAC pad is sequential, enable interweave at
-	 * the IDMAC output channel.
-	 */
-	interweave = V4L2_FIELD_IS_INTERLACED(image.pix.field) &&
-		V4L2_FIELD_IS_SEQUENTIAL(outfmt->field);
-	priv->interweave_swap = interweave &&
-		image.pix.field == V4L2_FIELD_INTERLACED_BT;
+	image.rect.width = image.pix.width;
+	image.rect.height = image.pix.height;
 
 	if (rot_swap_width_height) {
 		swap(image.pix.width, image.pix.height);
@@ -388,29 +371,8 @@ static int prp_setup_channel(struct prp_priv *priv,
 			(image.pix.width * outcc->bpp) >> 3;
 	}
 
-	if (priv->interweave_swap && channel == priv->out_ch) {
-		/* start interweave scan at 1st top line (2nd line) */
-		image.rect.top = 1;
-	}
-
 	image.phys0 = addr0;
 	image.phys1 = addr1;
-
-	/*
-	 * Skip writing U and V components to odd rows in the output
-	 * channels for planar 4:2:0 (but not when enabling IDMAC
-	 * interweaving, they are incompatible).
-	 */
-	if ((channel == priv->out_ch && !interweave) ||
-	    channel == priv->rot_out_ch) {
-		switch (image.pix.pixelformat) {
-		case V4L2_PIX_FMT_YUV420:
-		case V4L2_PIX_FMT_YVU420:
-		case V4L2_PIX_FMT_NV12:
-			ipu_cpmem_skip_odd_chroma_rows(channel);
-			break;
-		}
-	}
 
 	ret = ipu_cpmem_set_image(channel, &image);
 	if (ret)
@@ -429,12 +391,10 @@ static int prp_setup_channel(struct prp_priv *priv,
 	if (rot_mode)
 		ipu_cpmem_set_rotation(channel, rot_mode);
 
-	if (interweave && channel == priv->out_ch)
-		ipu_cpmem_interlaced_scan(channel,
-					  priv->interweave_swap ?
-					  -image.pix.bytesperline :
-					  image.pix.bytesperline,
-					  image.pix.pixelformat);
+	if (image.pix.field == V4L2_FIELD_NONE &&
+	    V4L2_FIELD_HAS_BOTH(infmt->field) &&
+	    channel == priv->out_ch)
+		ipu_cpmem_interlaced_scan(channel, image.pix.bytesperline);
 
 	ret = ipu_ic_task_idma_init(priv->ic, channel,
 				    image.pix.width, image.pix.height,
@@ -663,7 +623,6 @@ static int prp_start(struct prp_priv *priv)
 
 	/* init EOF completion waitq */
 	init_completion(&priv->last_eof_comp);
-	priv->frame_sequence = 0;
 	priv->last_eof = false;
 	priv->nfb4eof = false;
 
@@ -702,23 +661,12 @@ static int prp_start(struct prp_priv *priv)
 		goto out_free_nfb4eof_irq;
 	}
 
-	/* start upstream */
-	ret = v4l2_subdev_call(priv->src_sd, video, s_stream, 1);
-	ret = (ret && ret != -ENOIOCTLCMD) ? ret : 0;
-	if (ret) {
-		v4l2_err(&ic_priv->sd,
-			 "upstream stream on failed: %d\n", ret);
-		goto out_free_eof_irq;
-	}
-
 	/* start the EOF timeout timer */
 	mod_timer(&priv->eof_timeout_timer,
 		  jiffies + msecs_to_jiffies(IMX_MEDIA_EOF_TIMEOUT));
 
 	return 0;
 
-out_free_eof_irq:
-	devm_free_irq(ic_priv->dev, priv->eof_irq, priv);
 out_free_nfb4eof_irq:
 	devm_free_irq(ic_priv->dev, priv->nfb4eof_irq, priv);
 out_unsetup:
@@ -749,12 +697,6 @@ static void prp_stop(struct prp_priv *priv)
 		msecs_to_jiffies(IMX_MEDIA_EOF_TIMEOUT));
 	if (ret == 0)
 		v4l2_warn(&ic_priv->sd, "wait last EOF timeout\n");
-
-	/* stop upstream */
-	ret = v4l2_subdev_call(priv->src_sd, video, s_stream, 0);
-	if (ret && ret != -ENOIOCTLCMD)
-		v4l2_warn(&ic_priv->sd,
-			  "upstream stream off failed: %d\n", ret);
 
 	devm_free_irq(ic_priv->dev, priv->eof_irq, priv);
 	devm_free_irq(ic_priv->dev, priv->nfb4eof_irq, priv);
@@ -877,7 +819,8 @@ static void prp_try_fmt(struct prp_priv *priv,
 	infmt = __prp_get_fmt(priv, cfg, PRPENCVF_SINK_PAD, sdformat->which);
 
 	if (sdformat->pad == PRPENCVF_SRC_PAD) {
-		sdformat->format.field = infmt->field;
+		if (sdformat->format.field != V4L2_FIELD_NONE)
+			sdformat->format.field = infmt->field;
 
 		prp_bound_align_output(&sdformat->format, infmt,
 				       priv->rot_mode);
@@ -908,7 +851,6 @@ static int prp_set_fmt(struct v4l2_subdev *sd,
 	const struct imx_media_pixfmt *cc;
 	struct v4l2_pix_format vdev_fmt;
 	struct v4l2_mbus_framefmt *fmt;
-	struct v4l2_rect vdev_compose;
 	int ret = 0;
 
 	if (sdformat->pad >= PRPENCVF_NUM_PADS)
@@ -950,11 +892,11 @@ static int prp_set_fmt(struct v4l2_subdev *sd,
 	priv->cc[sdformat->pad] = cc;
 
 	/* propagate output pad format to capture device */
-	imx_media_mbus_fmt_to_pix_fmt(&vdev_fmt, &vdev_compose,
+	imx_media_mbus_fmt_to_pix_fmt(&vdev_fmt,
 				      &priv->format_mbus[PRPENCVF_SRC_PAD],
 				      priv->cc[PRPENCVF_SRC_PAD]);
 	mutex_unlock(&priv->lock);
-	imx_media_capture_device_set_format(vdev, &vdev_fmt, &vdev_compose);
+	imx_media_capture_device_set_format(vdev, &vdev_fmt);
 
 	return 0;
 out:
@@ -967,7 +909,7 @@ static int prp_enum_frame_size(struct v4l2_subdev *sd,
 			       struct v4l2_subdev_frame_size_enum *fse)
 {
 	struct prp_priv *priv = sd_to_priv(sd);
-	struct v4l2_subdev_format format = {};
+	struct v4l2_subdev_format format = {0};
 	const struct imx_media_pixfmt *cc;
 	int ret = 0;
 
@@ -1187,6 +1129,15 @@ static int prp_s_stream(struct v4l2_subdev *sd, int enable)
 	if (ret)
 		goto out;
 
+	/* start/stop upstream */
+	ret = v4l2_subdev_call(priv->src_sd, video, s_stream, enable);
+	ret = (ret && ret != -ENOIOCTLCMD) ? ret : 0;
+	if (ret) {
+		if (enable)
+			prp_stop(priv);
+		goto out;
+	}
+
 update_count:
 	priv->stream_count += enable ? 1 : -1;
 	if (priv->stream_count < 0)
@@ -1219,14 +1170,9 @@ static int prp_s_frame_interval(struct v4l2_subdev *sd,
 	if (fi->pad >= PRPENCVF_NUM_PADS)
 		return -EINVAL;
 
+	/* No limits on frame interval */
 	mutex_lock(&priv->lock);
-
-	/* No limits on valid frame intervals */
-	if (fi->interval.numerator == 0 || fi->interval.denominator == 0)
-		fi->interval = priv->frame_interval;
-	else
-		priv->frame_interval = fi->interval;
-
+	priv->frame_interval = fi->interval;
 	mutex_unlock(&priv->lock);
 
 	return 0;
@@ -1266,7 +1212,7 @@ static int prp_registered(struct v4l2_subdev *sd)
 	if (ret)
 		return ret;
 
-	ret = imx_media_capture_device_register(priv->md, priv->vdev);
+	ret = imx_media_capture_device_register(priv->vdev);
 	if (ret)
 		return ret;
 
@@ -1293,7 +1239,6 @@ static void prp_unregistered(struct v4l2_subdev *sd)
 }
 
 static const struct v4l2_subdev_pad_ops prp_pad_ops = {
-	.init_cfg = imx_media_init_cfg,
 	.enum_mbus_code = prp_enum_mbus_code,
 	.enum_frame_size = prp_enum_frame_size,
 	.get_fmt = prp_get_fmt,
@@ -1333,7 +1278,9 @@ static int prp_init(struct imx_ic_priv *ic_priv)
 	priv->ic_priv = ic_priv;
 
 	spin_lock_init(&priv->irqlock);
-	timer_setup(&priv->eof_timeout_timer, prp_eof_timeout, 0);
+	init_timer(&priv->eof_timeout_timer);
+	priv->eof_timeout_timer.data = (unsigned long)priv;
+	priv->eof_timeout_timer.function = prp_eof_timeout;
 
 	priv->vdev = imx_media_capture_device_init(&ic_priv->sd,
 						   PRPENCVF_SRC_PAD);

@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * linux/arch/arm/mach-omap2/id.c
  *
@@ -9,6 +8,10 @@
  *
  * Copyright (C) 2009-11 Texas Instruments
  * Added OMAP4 support - Santosh Shilimkar <santosh.shilimkar@ti.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  */
 
 #include <linux/module.h>
@@ -196,8 +199,8 @@ void __init omap2xxx_check_revision(void)
 
 	pr_info("%s", soc_name);
 	if ((omap_rev() >> 8) & 0x0f)
-		pr_cont("%s", soc_rev);
-	pr_cont("\n");
+		pr_info("%s", soc_rev);
+	pr_info("\n");
 }
 
 #define OMAP3_SHOW_FEATURE(feat)		\
@@ -654,34 +657,12 @@ void __init dra7xxx_check_revision(void)
 {
 	u32 idcode;
 	u16 hawkeye;
-	u8 rev, package;
-	struct omap_die_id odi;
+	u8 rev;
 
-	omap_get_die_id(&odi);
-	package = (odi.id_2 >> 16) & 0x3;
 	idcode = read_tap_reg(OMAP_TAP_IDCODE);
 	hawkeye = (idcode >> 12) & 0xffff;
 	rev = (idcode >> 28) & 0xff;
 	switch (hawkeye) {
-	case 0xbb50:
-		switch (rev) {
-		case 0:
-		default:
-			switch (package) {
-			case 0x2:
-				omap_revision = DRA762_ABZ_REV_ES1_0;
-				break;
-			case 0x3:
-				omap_revision = DRA762_ACD_REV_ES1_0;
-				break;
-			default:
-				omap_revision = DRA762_REV_ES1_0;
-				break;
-			}
-			break;
-		}
-		break;
-
 	case 0xb990:
 		switch (rev) {
 		case 0:
@@ -703,11 +684,8 @@ void __init dra7xxx_check_revision(void)
 			omap_revision = DRA722_REV_ES1_0;
 			break;
 		case 1:
-			omap_revision = DRA722_REV_ES2_0;
-			break;
-		case 2:
 		default:
-			omap_revision = DRA722_REV_ES2_1;
+			omap_revision = DRA722_REV_ES2_0;
 			break;
 		}
 		break;

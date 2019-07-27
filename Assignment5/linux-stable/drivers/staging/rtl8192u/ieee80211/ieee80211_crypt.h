@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Original code based on Host AP (software wireless LAN access point) driver
  * for Intersil Prism2/2.5/3.
@@ -11,6 +10,11 @@
  * <jketreno@linux.intel.com>
  *
  * Copyright (c) 2004, Intel Corporation
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation. See README and COPYING for
+ * more details.
  */
 
 /*
@@ -79,7 +83,7 @@ int ieee80211_register_crypto_ops(struct ieee80211_crypto_ops *ops);
 int ieee80211_unregister_crypto_ops(struct ieee80211_crypto_ops *ops);
 struct ieee80211_crypto_ops *ieee80211_get_crypto_ops(const char *name);
 void ieee80211_crypt_deinit_entries(struct ieee80211_device *ieee, int force);
-void ieee80211_crypt_deinit_handler(struct timer_list *t);
+void ieee80211_crypt_deinit_handler(unsigned long data);
 void ieee80211_crypt_delayed_deinit(struct ieee80211_device *ieee,
 				    struct ieee80211_crypt_data **crypt);
 

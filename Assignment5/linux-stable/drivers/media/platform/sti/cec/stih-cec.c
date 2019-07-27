@@ -1,8 +1,11 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * STIH4xx CEC driver
  * Copyright (C) STMicroelectronics SA 2016
  *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  */
 #include <linux/clk.h>
 #include <linux/interrupt.h>
@@ -301,19 +304,26 @@ static int stih_cec_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct resource *res;
 	struct stih_cec *cec;
-	struct device *hdmi_dev;
+	struct device_node *np;
+	struct platform_device *hdmi_dev;
 	int ret;
-
-	hdmi_dev = cec_notifier_parse_hdmi_phandle(dev);
-
-	if (IS_ERR(hdmi_dev))
-		return PTR_ERR(hdmi_dev);
 
 	cec = devm_kzalloc(dev, sizeof(*cec), GFP_KERNEL);
 	if (!cec)
 		return -ENOMEM;
 
-	cec->notifier = cec_notifier_get(hdmi_dev);
+	np = of_parse_phandle(pdev->dev.of_node, "hdmi-phandle", 0);
+
+	if (!np) {
+		dev_err(&pdev->dev, "Failed to find hdmi node in device tree\n");
+		return -ENODEV;
+	}
+
+	hdmi_dev = of_find_device_by_node(np);
+	if (!hdmi_dev)
+		return -EPROBE_DEFER;
+
+	cec->notifier = cec_notifier_get(&hdmi_dev->dev);
 	if (!cec->notifier)
 		return -ENOMEM;
 
@@ -341,7 +351,9 @@ static int stih_cec_probe(struct platform_device *pdev)
 	}
 
 	cec->adap = cec_allocate_adapter(&sti_cec_adap_ops, cec,
-			CEC_NAME, CEC_CAP_DEFAULTS, CEC_MAX_LOG_ADDRS);
+			CEC_NAME,
+			CEC_CAP_LOG_ADDRS | CEC_CAP_PASSTHROUGH |
+			CEC_CAP_TRANSMIT, CEC_MAX_LOG_ADDRS);
 	ret = PTR_ERR_OR_ZERO(cec->adap);
 	if (ret)
 		return ret;

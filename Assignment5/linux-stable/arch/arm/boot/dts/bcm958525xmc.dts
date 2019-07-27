@@ -39,6 +39,10 @@
 	model = "NorthStar Plus XMC (BCM958525xmc)";
 	compatible = "brcm,bcm58525", "brcm,nsp";
 
+	aliases {
+		serial0 = &uart0;
+	};
+
 	chosen {
 		stdout-path = "serial0:115200n8";
 	};
@@ -196,13 +200,5 @@
 };
 
 &uart0 {
-	status = "okay";
-};
-
-&usb3_phy {
-	status = "okay";
-};
-
-&xhci {
 	status = "okay";
 };

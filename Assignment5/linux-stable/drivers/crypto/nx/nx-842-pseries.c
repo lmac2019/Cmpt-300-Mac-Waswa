@@ -1,6 +1,19 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Driver for IBM Power 842 compression accelerator
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * Copyright (C) IBM Corporation, 2012
  *
@@ -283,7 +296,7 @@ static int nx842_pseries_compress(const unsigned char *in, unsigned int inlen,
 	struct nx842_workmem *workmem;
 	struct nx842_scatterlist slin, slout;
 	struct nx_csbcpb *csbcpb;
-	int ret = 0;
+	int ret = 0, max_sync_size;
 	unsigned long inbuf, outbuf;
 	struct vio_pfo_op op = {
 		.done = NULL,
@@ -306,6 +319,7 @@ static int nx842_pseries_compress(const unsigned char *in, unsigned int inlen,
 		rcu_read_unlock();
 		return -ENODEV;
 	}
+	max_sync_size = local_devdata->max_sync_size;
 	dev = local_devdata->dev;
 
 	/* Init scatterlist */
@@ -413,7 +427,7 @@ static int nx842_pseries_decompress(const unsigned char *in, unsigned int inlen,
 	struct nx842_workmem *workmem;
 	struct nx842_scatterlist slin, slout;
 	struct nx_csbcpb *csbcpb;
-	int ret = 0;
+	int ret = 0, max_sync_size;
 	unsigned long inbuf, outbuf;
 	struct vio_pfo_op op = {
 		.done = NULL,
@@ -437,6 +451,7 @@ static int nx842_pseries_decompress(const unsigned char *in, unsigned int inlen,
 		rcu_read_unlock();
 		return -ENODEV;
 	}
+	max_sync_size = local_devdata->max_sync_size;
 	dev = local_devdata->dev;
 
 	workmem = PTR_ALIGN(wmem, WORKMEM_ALIGN);
@@ -1067,7 +1082,7 @@ static int nx842_remove(struct vio_dev *viodev)
 	return 0;
 }
 
-static const struct vio_device_id nx842_vio_driver_ids[] = {
+static struct vio_device_id nx842_vio_driver_ids[] = {
 	{"ibm,compression-v1", "ibm,compression"},
 	{"", ""},
 };
@@ -1090,9 +1105,10 @@ static int __init nx842_pseries_init(void)
 
 	RCU_INIT_POINTER(devdata, NULL);
 	new_devdata = kzalloc(sizeof(*new_devdata), GFP_KERNEL);
-	if (!new_devdata)
+	if (!new_devdata) {
+		pr_err("Could not allocate memory for device data\n");
 		return -ENOMEM;
-
+	}
 	RCU_INIT_POINTER(devdata, new_devdata);
 
 	ret = vio_register_driver(&nx842_vio_driver);

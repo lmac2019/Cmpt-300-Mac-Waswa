@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * connection tracking expectations.
  */
@@ -48,7 +47,7 @@ struct nf_conntrack_expect {
 	/* Expectation class */
 	unsigned int class;
 
-#if IS_ENABLED(CONFIG_NF_NAT)
+#ifdef CONFIG_NF_NAT_NEEDED
 	union nf_inet_addr saved_addr;
 	/* This is the original per-proto part, used to map the
 	 * expected connection the way the recipient expects. */
@@ -107,11 +106,6 @@ static inline void nf_ct_unlink_expect(struct nf_conntrack_expect *exp)
 void nf_ct_remove_expectations(struct nf_conn *ct);
 void nf_ct_unexpect_related(struct nf_conntrack_expect *exp);
 bool nf_ct_remove_expect(struct nf_conntrack_expect *exp);
-
-void nf_ct_expect_iterate_destroy(bool (*iter)(struct nf_conntrack_expect *e, void *data), void *data);
-void nf_ct_expect_iterate_net(struct net *net,
-			      bool (*iter)(struct nf_conntrack_expect *e, void *data),
-                              void *data, u32 portid, int report);
 
 /* Allocate space for an expectation: this is mandatory before calling
    nf_ct_expect_related.  You will have to call put afterwards. */

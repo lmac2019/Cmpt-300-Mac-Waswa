@@ -43,3 +43,16 @@ ssh root@localhost -p8888
 
 ## Power Off QEMU
 poweroff
+
+
+## Adding a syscall
+Create a folder in the linux-stable directory
+Create a .c file in this folder
+Add the system call content in the .c file
+Create a Makefile
+Add obj-y := name_of_file.o [dependency_file.o dependency_file_2.o] to the Makefile
+Edit the Makefile in the linux-stable folder to include the new folder (about line 993):
+    ifeq ($(KBUILD_EXTMOD),)
+    core-y += kernel/ mm/ fs/ ipc/ security/ crypto/ block/ new_folder/
+Add a syscall entry to the file in linux-stable at the path arch/x86/entry/syscalls/syscall_64.tbl as follows:
+    340 common cs300_test sys_cs300_test

@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * FSL SoC setup code
  *
@@ -6,6 +5,11 @@
  *
  * 2006 (c) MontaVista Software, Inc.
  * Vitaly Bordug <vbordug@ru.mvista.com>
+ *
+ * This program is free software; you can redistribute  it and/or modify it
+ * under  the terms of  the GNU General  Public License as published by the
+ * Free Software Foundation;  either version 2 of the  License, or (at your
+ * option) any later version.
  */
 
 #include <linux/stddef.h>
@@ -94,7 +98,7 @@ u32 fsl_get_sys_freq(void)
 }
 EXPORT_SYMBOL(fsl_get_sys_freq);
 
-#if defined(CONFIG_CPM) || defined(CONFIG_QUICC_ENGINE)
+#if defined(CONFIG_CPM2) || defined(CONFIG_QUICC_ENGINE) || defined(CONFIG_8xx)
 
 u32 get_brgfreq(void)
 {

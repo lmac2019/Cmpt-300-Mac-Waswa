@@ -1,9 +1,8 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _4LEVEL_FIXUP_H
 #define _4LEVEL_FIXUP_H
 
 #define __ARCH_HAS_4LEVEL_HACK
-#define __PAGETABLE_PUD_FOLDED 1
+#define __PAGETABLE_PUD_FOLDED
 
 #define PUD_SHIFT			PGDIR_SHIFT
 #define PUD_SIZE			PGDIR_SIZE

@@ -1,8 +1,12 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Code for Kernel probes Jump optimization.
  *
  * Copyright 2017, Anju T, IBM Corp.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version
+ * 2 of the License, or (at your option) any later version.
  */
 
 #include <linux/kprobes.h>
@@ -100,10 +104,8 @@ static unsigned long can_optimize(struct kprobe *p)
 	 * and that can be emulated.
 	 */
 	if (!is_conditional_branch(*p->ainsn.insn) &&
-			analyse_instr(&op, &regs, *p->ainsn.insn) == 1) {
-		emulate_update_regs(&regs, &op);
+			analyse_instr(&op, &regs, *p->ainsn.insn))
 		nip = regs.nip;
-	}
 
 	return nip;
 }
@@ -111,23 +113,32 @@ static unsigned long can_optimize(struct kprobe *p)
 static void optimized_callback(struct optimized_kprobe *op,
 			       struct pt_regs *regs)
 {
+	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
+	unsigned long flags;
+
 	/* This is possible if op is under delayed unoptimizing */
 	if (kprobe_disabled(&op->kp))
 		return;
 
-	preempt_disable();
+	local_irq_save(flags);
+	hard_irq_disable();
 
 	if (kprobe_running()) {
 		kprobes_inc_nmissed_count(&op->kp);
 	} else {
 		__this_cpu_write(current_kprobe, &op->kp);
 		regs->nip = (unsigned long)op->kp.addr;
-		get_kprobe_ctlblk()->kprobe_status = KPROBE_HIT_ACTIVE;
+		kcb->kprobe_status = KPROBE_HIT_ACTIVE;
 		opt_pre_handler(&op->kp, regs);
 		__this_cpu_write(current_kprobe, NULL);
 	}
 
-	preempt_enable_no_resched();
+	/*
+	 * No need for an explicit __hard_irq_enable() here.
+	 * local_irq_restore() will re-enable interrupts,
+	 * if they were hard disabled.
+	 */
+	local_irq_restore(flags);
 }
 NOKPROBE_SYMBOL(optimized_callback);
 

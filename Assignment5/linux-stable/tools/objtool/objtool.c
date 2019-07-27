@@ -1,6 +1,18 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Copyright (C) 2015 Josh Poimboeuf <jpoimboe@redhat.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -30,11 +42,10 @@ struct cmd_struct {
 };
 
 static const char objtool_usage_string[] =
-	"objtool COMMAND [ARGS]";
+	"objtool [OPTIONS] COMMAND [ARGS]";
 
 static struct cmd_struct objtool_cmds[] = {
 	{"check",	cmd_check,	"Perform stack metadata validation on an object file" },
-	{"orc",		cmd_orc,	"Generate in-place ORC unwind tables for an object file" },
 };
 
 bool help;
@@ -58,7 +69,7 @@ static void cmd_usage(void)
 
 	printf("\n");
 
-	exit(129);
+	exit(1);
 }
 
 static void handle_options(int *argc, const char ***argv)
@@ -74,7 +85,9 @@ static void handle_options(int *argc, const char ***argv)
 			break;
 		} else {
 			fprintf(stderr, "Unknown option: %s\n", cmd);
-			cmd_usage();
+			fprintf(stderr, "\n Usage: %s\n",
+				objtool_usage_string);
+			exit(1);
 		}
 
 		(*argv)++;

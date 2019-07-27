@@ -1,8 +1,11 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * keymap imported from cxusb.c
  *
  * Copyright (C) 2016 Sean Young
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 2.
  */
 
 #include <media/rc-map.h>
@@ -58,10 +61,10 @@ static struct rc_map_table rc_map_dvico_mce_table[] = {
 
 static struct rc_map_list dvico_mce_map = {
 	.map = {
-		.scan     = rc_map_dvico_mce_table,
-		.size     = ARRAY_SIZE(rc_map_dvico_mce_table),
-		.rc_proto = RC_PROTO_NEC,
-		.name     = RC_MAP_DVICO_MCE,
+		.scan    = rc_map_dvico_mce_table,
+		.size    = ARRAY_SIZE(rc_map_dvico_mce_table),
+		.rc_type = RC_TYPE_NEC,
+		.name    = RC_MAP_DVICO_MCE,
 	}
 };
 

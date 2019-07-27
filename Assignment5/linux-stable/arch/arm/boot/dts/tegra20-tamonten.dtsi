@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 #include "tegra20.dtsi"
 
 / {
@@ -15,7 +14,7 @@
 		stdout-path = "serial0:115200n8";
 	};
 
-	memory@0 {
+	memory {
 		reg = <0x00000000 0x20000000>;
 	};
 

@@ -1,10 +1,24 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * IBM ASM Service Processor Device Driver
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
  * Copyright (C) IBM Corporation, 2004
  *
  * Author: Max Asböck <amax@us.ibm.com>
+ *
  */
 
 /*
@@ -493,14 +507,35 @@ static int remote_settings_file_close(struct inode *inode, struct file *file)
 static ssize_t remote_settings_file_read(struct file *file, char __user *buf, size_t count, loff_t *offset)
 {
 	void __iomem *address = (void __iomem *)file->private_data;
+	unsigned char *page;
+	int retval;
 	int len = 0;
 	unsigned int value;
-	char lbuf[20];
+
+	if (*offset < 0)
+		return -EINVAL;
+	if (count == 0 || count > 1024)
+		return 0;
+	if (*offset != 0)
+		return 0;
+
+	page = (unsigned char *)__get_free_page(GFP_KERNEL);
+	if (!page)
+		return -ENOMEM;
 
 	value = readl(address);
-	len = snprintf(lbuf, sizeof(lbuf), "%d\n", value);
+	len = sprintf(page, "%d\n", value);
 
-	return simple_read_from_buffer(buf, count, offset, lbuf, len);
+	if (copy_to_user(buf, page, len)) {
+		retval = -EFAULT;
+		goto exit;
+	}
+	*offset += len;
+	retval = len;
+
+exit:
+	free_page((unsigned long)page);
+	return retval;
 }
 
 static ssize_t remote_settings_file_write(struct file *file, const char __user *ubuff, size_t count, loff_t *offset)

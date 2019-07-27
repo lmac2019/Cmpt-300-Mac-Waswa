@@ -1,4 +1,3 @@
-# SPDX-License-Identifier: GPL-2.0-only
 config BRCMUTIL
 	tristate
 
@@ -61,6 +60,7 @@ config BRCMFMAC_PCIE
 	bool "PCIE bus interface support for FullMAC driver"
 	depends on BRCMFMAC
 	depends on PCI
+	depends on HAS_DMA
 	select BRCMFMAC_PROTO_MSGBUF
 	select FW_LOADER
 	---help---

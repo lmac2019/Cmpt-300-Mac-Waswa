@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright IBM Corp. 2000, 2009
  * Author(s): Utz Bacher <utz.bacher@de.ibm.com>
@@ -40,7 +39,7 @@ static LIST_HEAD(tiq_list);
 static DEFINE_MUTEX(tiq_list_lock);
 
 /* Adapter interrupt definitions */
-static void tiqdio_thinint_handler(struct airq_struct *airq, bool floating);
+static void tiqdio_thinint_handler(struct airq_struct *airq);
 
 static struct airq_struct tiqdio_airq = {
 	.handler = tiqdio_thinint_handler,
@@ -57,8 +56,10 @@ static u32 *get_indicator(void)
 	int i;
 
 	for (i = 0; i < TIQDIO_NR_NONSHARED_IND; i++)
-		if (!atomic_cmpxchg(&q_indicators[i].count, 0, 1))
+		if (!atomic_read(&q_indicators[i].count)) {
+			atomic_set(&q_indicators[i].count, 1);
 			return &q_indicators[i].ind;
+		}
 
 	/* use the shared indicator */
 	atomic_inc(&q_indicators[TIQDIO_SHARED_IND].count);
@@ -67,11 +68,13 @@ static u32 *get_indicator(void)
 
 static void put_indicator(u32 *addr)
 {
-	struct indicator_t *ind = container_of(addr, struct indicator_t, ind);
+	int i;
 
 	if (!addr)
 		return;
-	atomic_dec(&ind->count);
+	i = ((unsigned long)addr - (unsigned long)q_indicators) /
+		sizeof(struct indicator_t);
+	atomic_dec(&q_indicators[i].count);
 }
 
 void tiqdio_add_input_queues(struct qdio_irq *irq_ptr)
@@ -79,6 +82,7 @@ void tiqdio_add_input_queues(struct qdio_irq *irq_ptr)
 	mutex_lock(&tiq_list_lock);
 	list_add_rcu(&irq_ptr->input_qs[0]->entry, &tiq_list);
 	mutex_unlock(&tiq_list_lock);
+	xchg(irq_ptr->dsci, 1 << 7);
 }
 
 void tiqdio_remove_input_queues(struct qdio_irq *irq_ptr)
@@ -86,14 +90,14 @@ void tiqdio_remove_input_queues(struct qdio_irq *irq_ptr)
 	struct qdio_q *q;
 
 	q = irq_ptr->input_qs[0];
-	if (!q)
+	/* if establish triggered an error */
+	if (!q || !q->entry.prev || !q->entry.next)
 		return;
 
 	mutex_lock(&tiq_list_lock);
 	list_del_rcu(&q->entry);
 	mutex_unlock(&tiq_list_lock);
 	synchronize_rcu();
-	INIT_LIST_HEAD(&q->entry);
 }
 
 static inline int has_multiple_inq_on_dsci(struct qdio_irq *irq_ptr)
@@ -178,7 +182,7 @@ static inline void tiqdio_call_inq_handlers(struct qdio_irq *irq)
  * tiqdio_thinint_handler - thin interrupt handler for qdio
  * @airq: pointer to adapter interrupt descriptor
  */
-static void tiqdio_thinint_handler(struct airq_struct *airq, bool floating)
+static void tiqdio_thinint_handler(struct airq_struct *airq)
 {
 	u32 si_used = clear_shared_ind();
 	struct qdio_q *q;
@@ -240,9 +244,8 @@ out:
 /* allocate non-shared indicators and shared indicator */
 int __init tiqdio_allocate_memory(void)
 {
-	q_indicators = kcalloc(TIQDIO_NR_INDICATORS,
-			       sizeof(struct indicator_t),
-			       GFP_KERNEL);
+	q_indicators = kzalloc(sizeof(struct indicator_t) * TIQDIO_NR_INDICATORS,
+			     GFP_KERNEL);
 	if (!q_indicators)
 		return -ENOMEM;
 	return 0;

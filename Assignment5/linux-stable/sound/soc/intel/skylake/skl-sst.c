@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * skl-sst.c - HDA DSP library functions for SKL platform
  *
@@ -6,6 +5,15 @@
  * Author:Rafal Redzimski <rafal.f.redzimski@intel.com>
  *	Jeeja KP <jeeja.kp@intel.com>
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as version 2, as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  */
 
 #include <linux/module.h>
@@ -382,7 +390,7 @@ out:
 }
 
 static int
-skl_load_library(struct sst_dsp *ctx, struct skl_lib_info *linfo, int lib_count)
+kbl_load_library(struct sst_dsp *ctx, struct skl_lib_info *linfo, int lib_count)
 {
 	struct skl_sst *skl = ctx->thread_context;
 	struct firmware stripped_fw;
@@ -495,12 +503,21 @@ static void skl_clear_module_table(struct sst_dsp *ctx)
 	}
 }
 
-static const struct skl_dsp_fw_ops skl_fw_ops = {
+static struct skl_dsp_fw_ops skl_fw_ops = {
 	.set_state_D0 = skl_set_dsp_D0,
 	.set_state_D3 = skl_set_dsp_D3,
 	.load_fw = skl_load_base_firmware,
 	.get_fw_errcode = skl_get_errorcode,
-	.load_library = skl_load_library,
+	.load_mod = skl_load_module,
+	.unload_mod = skl_unload_module,
+};
+
+static struct skl_dsp_fw_ops kbl_fw_ops = {
+	.set_state_D0 = skl_set_dsp_D0,
+	.set_state_D3 = skl_set_dsp_D3,
+	.load_fw = skl_load_base_firmware,
+	.get_fw_errcode = skl_get_errorcode,
+	.load_library = kbl_load_library,
 	.load_mod = skl_load_module,
 	.unload_mod = skl_unload_module,
 };
@@ -544,17 +561,34 @@ int skl_sst_dsp_init(struct device *dev, void __iomem *mmio_base, int irq,
 	sst_dsp_mailbox_init(sst, (SKL_ADSP_SRAM0_BASE + SKL_ADSP_W0_STAT_SZ),
 			SKL_ADSP_W0_UP_SZ, SKL_ADSP_SRAM1_BASE, SKL_ADSP_W1_SZ);
 
-	ret = skl_ipc_init(dev, skl);
-	if (ret) {
-		skl_dsp_free(sst);
+	sst->fw_ops = skl_fw_ops;
+
+	skl->cores.count = 2;
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(skl_sst_dsp_init);
+
+int kbl_sst_dsp_init(struct device *dev, void __iomem *mmio_base, int irq,
+		const char *fw_name, struct skl_dsp_loader_ops dsp_ops,
+		struct skl_sst **dsp)
+{
+	struct sst_dsp *sst;
+	int ret;
+
+	ret = skl_sst_dsp_init(dev, mmio_base, irq, fw_name, dsp_ops, dsp);
+	if (ret < 0) {
+		dev_err(dev, "%s: Init failed %d\n", __func__, ret);
 		return ret;
 	}
 
-	sst->fw_ops = skl_fw_ops;
+	sst = (*dsp)->dsp;
+	sst->fw_ops = kbl_fw_ops;
 
-	return skl_dsp_acquire_irq(sst);
+	return 0;
+
 }
-EXPORT_SYMBOL_GPL(skl_sst_dsp_init);
+EXPORT_SYMBOL_GPL(kbl_sst_dsp_init);
 
 int skl_sst_init_fw(struct device *dev, struct skl_sst *ctx)
 {

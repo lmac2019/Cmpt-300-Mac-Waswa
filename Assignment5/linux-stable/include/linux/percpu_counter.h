@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _LINUX_PERCPU_COUNTER_H
 #define _LINUX_PERCPU_COUNTER_H
 /*
@@ -86,7 +85,7 @@ static inline s64 percpu_counter_read_positive(struct percpu_counter *fbc)
 	return 0;
 }
 
-static inline bool percpu_counter_initialized(struct percpu_counter *fbc)
+static inline int percpu_counter_initialized(struct percpu_counter *fbc)
 {
 	return (fbc->counters != NULL);
 }
@@ -167,9 +166,9 @@ static inline s64 percpu_counter_sum(struct percpu_counter *fbc)
 	return percpu_counter_read(fbc);
 }
 
-static inline bool percpu_counter_initialized(struct percpu_counter *fbc)
+static inline int percpu_counter_initialized(struct percpu_counter *fbc)
 {
-	return true;
+	return 1;
 }
 
 #endif	/* CONFIG_SMP */

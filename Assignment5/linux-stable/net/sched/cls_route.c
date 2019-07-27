@@ -1,6 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * net/sched/cls_route.c	ROUTE4 classifier.
+ *
+ *		This program is free software; you can redistribute it and/or
+ *		modify it under the terms of the GNU General Public License
+ *		as published by the Free Software Foundation; either version
+ *		2 of the License, or (at your option) any later version.
  *
  * Authors:	Alexey Kuznetsov, <kuznet@ms2.inr.ac.ru>
  */
@@ -53,7 +57,7 @@ struct route4_filter {
 	u32			handle;
 	struct route4_bucket	*bkt;
 	struct tcf_proto	*tp;
-	struct rcu_work		rwork;
+	struct rcu_head		rcu;
 };
 
 #define ROUTE4_FAILURE ((struct route4_filter *)(-1L))
@@ -109,7 +113,7 @@ static inline int route4_hash_wild(void)
 #define ROUTE4_APPLY_RESULT()					\
 {								\
 	*res = f->res;						\
-	if (tcf_exts_has_actions(&f->exts)) {			\
+	if (tcf_exts_is_available(&f->exts)) {			\
 		int r = tcf_exts_exec(skb, &f->exts, res);	\
 		if (r < 0) {					\
 			dont_cache = 1;				\
@@ -212,7 +216,7 @@ static inline u32 from_hash(u32 id)
 	return 16 + (id & 0xF);
 }
 
-static void *route4_get(struct tcf_proto *tp, u32 handle)
+static unsigned long route4_get(struct tcf_proto *tp, u32 handle)
 {
 	struct route4_head *head = rtnl_dereference(tp->root);
 	struct route4_bucket *b;
@@ -221,11 +225,11 @@ static void *route4_get(struct tcf_proto *tp, u32 handle)
 
 	h1 = to_hash(handle);
 	if (h1 > 256)
-		return NULL;
+		return 0;
 
 	h2 = from_hash(handle >> 16);
 	if (h2 > 32)
-		return NULL;
+		return 0;
 
 	b = rtnl_dereference(head->table[h1]);
 	if (b) {
@@ -233,9 +237,9 @@ static void *route4_get(struct tcf_proto *tp, u32 handle)
 		     f;
 		     f = rtnl_dereference(f->next))
 			if (f->handle == handle)
-				return f;
+				return (unsigned long)f;
 	}
-	return NULL;
+	return 0;
 }
 
 static int route4_init(struct tcf_proto *tp)
@@ -250,30 +254,15 @@ static int route4_init(struct tcf_proto *tp)
 	return 0;
 }
 
-static void __route4_delete_filter(struct route4_filter *f)
+static void route4_delete_filter(struct rcu_head *head)
 {
+	struct route4_filter *f = container_of(head, struct route4_filter, rcu);
+
 	tcf_exts_destroy(&f->exts);
-	tcf_exts_put_net(&f->exts);
 	kfree(f);
 }
 
-static void route4_delete_filter_work(struct work_struct *work)
-{
-	struct route4_filter *f = container_of(to_rcu_work(work),
-					       struct route4_filter,
-					       rwork);
-	rtnl_lock();
-	__route4_delete_filter(f);
-	rtnl_unlock();
-}
-
-static void route4_queue_work(struct route4_filter *f)
-{
-	tcf_queue_work(&f->rwork, route4_delete_filter_work);
-}
-
-static void route4_destroy(struct tcf_proto *tp, bool rtnl_held,
-			   struct netlink_ext_ack *extack)
+static void route4_destroy(struct tcf_proto *tp)
 {
 	struct route4_head *head = rtnl_dereference(tp->root);
 	int h1, h2;
@@ -295,10 +284,7 @@ static void route4_destroy(struct tcf_proto *tp, bool rtnl_held,
 					next = rtnl_dereference(f->next);
 					RCU_INIT_POINTER(b->ht[h2], next);
 					tcf_unbind_filter(tp, &f->res);
-					if (tcf_exts_get_net(&f->exts))
-						route4_queue_work(f);
-					else
-						__route4_delete_filter(f);
+					call_rcu(&f->rcu, route4_delete_filter);
 				}
 			}
 			RCU_INIT_POINTER(head->table[h1], NULL);
@@ -308,11 +294,10 @@ static void route4_destroy(struct tcf_proto *tp, bool rtnl_held,
 	kfree_rcu(head, rcu);
 }
 
-static int route4_delete(struct tcf_proto *tp, void *arg, bool *last,
-			 bool rtnl_held, struct netlink_ext_ack *extack)
+static int route4_delete(struct tcf_proto *tp, unsigned long arg, bool *last)
 {
 	struct route4_head *head = rtnl_dereference(tp->root);
-	struct route4_filter *f = arg;
+	struct route4_filter *f = (struct route4_filter *)arg;
 	struct route4_filter __rcu **fp;
 	struct route4_filter *nf;
 	struct route4_bucket *b;
@@ -340,8 +325,7 @@ static int route4_delete(struct tcf_proto *tp, void *arg, bool *last,
 
 			/* Delete it */
 			tcf_unbind_filter(tp, &f->res);
-			tcf_exts_get_net(&f->exts);
-			tcf_queue_work(&f->rwork, route4_delete_filter_work);
+			call_rcu(&f->rcu, route4_delete_filter);
 
 			/* Strip RTNL protected tree */
 			for (i = 0; i <= 32; i++) {
@@ -382,38 +366,43 @@ static int route4_set_parms(struct net *net, struct tcf_proto *tp,
 			    unsigned long base, struct route4_filter *f,
 			    u32 handle, struct route4_head *head,
 			    struct nlattr **tb, struct nlattr *est, int new,
-			    bool ovr, struct netlink_ext_ack *extack)
+			    bool ovr)
 {
 	u32 id = 0, to = 0, nhandle = 0x8000;
 	struct route4_filter *fp;
 	unsigned int h1;
 	struct route4_bucket *b;
+	struct tcf_exts e;
 	int err;
 
-	err = tcf_exts_validate(net, tp, tb, est, &f->exts, ovr, true, extack);
+	err = tcf_exts_init(&e, TCA_ROUTE4_ACT, TCA_ROUTE4_POLICE);
 	if (err < 0)
 		return err;
+	err = tcf_exts_validate(net, tp, tb, est, &e, ovr);
+	if (err < 0)
+		goto errout;
 
+	err = -EINVAL;
 	if (tb[TCA_ROUTE4_TO]) {
 		if (new && handle & 0x8000)
-			return -EINVAL;
+			goto errout;
 		to = nla_get_u32(tb[TCA_ROUTE4_TO]);
 		if (to > 0xFF)
-			return -EINVAL;
+			goto errout;
 		nhandle = to;
 	}
 
 	if (tb[TCA_ROUTE4_FROM]) {
 		if (tb[TCA_ROUTE4_IIF])
-			return -EINVAL;
+			goto errout;
 		id = nla_get_u32(tb[TCA_ROUTE4_FROM]);
 		if (id > 0xFF)
-			return -EINVAL;
+			goto errout;
 		nhandle |= id << 16;
 	} else if (tb[TCA_ROUTE4_IIF]) {
 		id = nla_get_u32(tb[TCA_ROUTE4_IIF]);
 		if (id > 0x7FFF)
-			return -EINVAL;
+			goto errout;
 		nhandle |= (id | 0x8000) << 16;
 	} else
 		nhandle |= 0xFFFF << 16;
@@ -421,25 +410,27 @@ static int route4_set_parms(struct net *net, struct tcf_proto *tp,
 	if (handle && new) {
 		nhandle |= handle & 0x7F00;
 		if (nhandle != handle)
-			return -EINVAL;
+			goto errout;
 	}
 
 	h1 = to_hash(nhandle);
 	b = rtnl_dereference(head->table[h1]);
 	if (!b) {
+		err = -ENOBUFS;
 		b = kzalloc(sizeof(struct route4_bucket), GFP_KERNEL);
 		if (b == NULL)
-			return -ENOBUFS;
+			goto errout;
 
 		rcu_assign_pointer(head->table[h1], b);
 	} else {
 		unsigned int h2 = from_hash(nhandle >> 16);
 
+		err = -EEXIST;
 		for (fp = rtnl_dereference(b->ht[h2]);
 		     fp;
 		     fp = rtnl_dereference(fp->next))
 			if (fp->handle == f->handle)
-				return -EEXIST;
+				goto errout;
 	}
 
 	if (tb[TCA_ROUTE4_TO])
@@ -459,13 +450,17 @@ static int route4_set_parms(struct net *net, struct tcf_proto *tp,
 		tcf_bind_filter(tp, &f->res, base);
 	}
 
+	tcf_exts_change(tp, &f->exts, &e);
+
 	return 0;
+errout:
+	tcf_exts_destroy(&e);
+	return err;
 }
 
 static int route4_change(struct net *net, struct sk_buff *in_skb,
 			 struct tcf_proto *tp, unsigned long base, u32 handle,
-			 struct nlattr **tca, void **arg, bool ovr,
-			 bool rtnl_held, struct netlink_ext_ack *extack)
+			 struct nlattr **tca, unsigned long *arg, bool ovr)
 {
 	struct route4_head *head = rtnl_dereference(tp->root);
 	struct route4_filter __rcu **fp;
@@ -480,12 +475,11 @@ static int route4_change(struct net *net, struct sk_buff *in_skb,
 	if (opt == NULL)
 		return handle ? -EINVAL : 0;
 
-	err = nla_parse_nested_deprecated(tb, TCA_ROUTE4_MAX, opt,
-					  route4_policy, NULL);
+	err = nla_parse_nested(tb, TCA_ROUTE4_MAX, opt, route4_policy, NULL);
 	if (err < 0)
 		return err;
 
-	fold = *arg;
+	fold = (struct route4_filter *)*arg;
 	if (fold && handle && fold->handle != handle)
 			return -EINVAL;
 
@@ -494,7 +488,7 @@ static int route4_change(struct net *net, struct sk_buff *in_skb,
 	if (!f)
 		goto errout;
 
-	err = tcf_exts_init(&f->exts, net, TCA_ROUTE4_ACT, TCA_ROUTE4_POLICE);
+	err = tcf_exts_init(&f->exts, TCA_ROUTE4_ACT, TCA_ROUTE4_POLICE);
 	if (err < 0)
 		goto errout;
 
@@ -510,7 +504,7 @@ static int route4_change(struct net *net, struct sk_buff *in_skb,
 	}
 
 	err = route4_set_parms(net, tp, base, f, handle, head, tb,
-			       tca[TCA_RATE], new, ovr, extack);
+			       tca[TCA_RATE], new, ovr);
 	if (err < 0)
 		goto errout;
 
@@ -522,7 +516,7 @@ static int route4_change(struct net *net, struct sk_buff *in_skb,
 		if (f->handle < f1->handle)
 			break;
 
-	tcf_block_netif_keep_dst(tp->chain->block);
+	netif_keep_dst(qdisc_dev(tp->q));
 	rcu_assign_pointer(f->next, f1);
 	rcu_assign_pointer(*fp, f);
 
@@ -543,11 +537,10 @@ static int route4_change(struct net *net, struct sk_buff *in_skb,
 	}
 
 	route4_reset_fastmap(head);
-	*arg = f;
+	*arg = (unsigned long)f;
 	if (fold) {
 		tcf_unbind_filter(tp, &fold->res);
-		tcf_exts_get_net(&fold->exts);
-		tcf_queue_work(&fold->rwork, route4_delete_filter_work);
+		call_rcu(&fold->rcu, route4_delete_filter);
 	}
 	return 0;
 
@@ -558,13 +551,15 @@ errout:
 	return err;
 }
 
-static void route4_walk(struct tcf_proto *tp, struct tcf_walker *arg,
-			bool rtnl_held)
+static void route4_walk(struct tcf_proto *tp, struct tcf_walker *arg)
 {
 	struct route4_head *head = rtnl_dereference(tp->root);
 	unsigned int h, h1;
 
-	if (head == NULL || arg->stop)
+	if (head == NULL)
+		arg->stop = 1;
+
+	if (arg->stop)
 		return;
 
 	for (h = 0; h <= 256; h++) {
@@ -581,7 +576,7 @@ static void route4_walk(struct tcf_proto *tp, struct tcf_walker *arg,
 						arg->count++;
 						continue;
 					}
-					if (arg->fn(tp, f, arg) < 0) {
+					if (arg->fn(tp, (unsigned long)f, arg) < 0) {
 						arg->stop = 1;
 						return;
 					}
@@ -592,10 +587,10 @@ static void route4_walk(struct tcf_proto *tp, struct tcf_walker *arg,
 	}
 }
 
-static int route4_dump(struct net *net, struct tcf_proto *tp, void *fh,
-		       struct sk_buff *skb, struct tcmsg *t, bool rtnl_held)
+static int route4_dump(struct net *net, struct tcf_proto *tp, unsigned long fh,
+		       struct sk_buff *skb, struct tcmsg *t)
 {
-	struct route4_filter *f = fh;
+	struct route4_filter *f = (struct route4_filter *)fh;
 	struct nlattr *nest;
 	u32 id;
 
@@ -604,7 +599,7 @@ static int route4_dump(struct net *net, struct tcf_proto *tp, void *fh,
 
 	t->tcm_handle = f->handle;
 
-	nest = nla_nest_start_noflag(skb, TCA_OPTIONS);
+	nest = nla_nest_start(skb, TCA_OPTIONS);
 	if (nest == NULL)
 		goto nla_put_failure;
 
@@ -641,14 +636,6 @@ nla_put_failure:
 	return -1;
 }
 
-static void route4_bind_class(void *fh, u32 classid, unsigned long cl)
-{
-	struct route4_filter *f = fh;
-
-	if (f && f->res.classid == classid)
-		f->res.class = cl;
-}
-
 static struct tcf_proto_ops cls_route4_ops __read_mostly = {
 	.kind		=	"route",
 	.classify	=	route4_classify,
@@ -659,7 +646,6 @@ static struct tcf_proto_ops cls_route4_ops __read_mostly = {
 	.delete		=	route4_delete,
 	.walk		=	route4_walk,
 	.dump		=	route4_dump,
-	.bind_class	=	route4_bind_class,
 	.owner		=	THIS_MODULE,
 };
 

@@ -73,7 +73,7 @@ int (*ivtv_ext_init)(struct ivtv *);
 EXPORT_SYMBOL(ivtv_ext_init);
 
 /* add your revision and whatnot here */
-static const struct pci_device_id ivtv_pci_tbl[] = {
+static struct pci_device_id ivtv_pci_tbl[] = {
 	{PCI_VENDOR_ID_ICOMP, PCI_DEVICE_ID_IVTV15,
 	 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
 	{PCI_VENDOR_ID_ICOMP, PCI_DEVICE_ID_IVTV16,
@@ -770,7 +770,8 @@ static int ivtv_init_struct1(struct ivtv *itv)
 	init_waitqueue_head(&itv->event_waitq);
 	init_waitqueue_head(&itv->vsync_waitq);
 	init_waitqueue_head(&itv->dma_waitq);
-	timer_setup(&itv->dma_timer, ivtv_unfinished_dma, 0);
+	setup_timer(&itv->dma_timer, ivtv_unfinished_dma,
+		    (unsigned long)itv);
 
 	itv->cur_dma_stream = -1;
 	itv->cur_pio_stream = -1;
@@ -999,7 +1000,7 @@ static int ivtv_probe(struct pci_dev *pdev, const struct pci_device_id *pci_id)
 	int vbi_buf_size;
 	struct ivtv *itv;
 
-	itv = kzalloc(sizeof(struct ivtv), GFP_KERNEL);
+	itv = kzalloc(sizeof(struct ivtv), GFP_ATOMIC);
 	if (itv == NULL)
 		return -ENOMEM;
 	itv->pdev = pdev;

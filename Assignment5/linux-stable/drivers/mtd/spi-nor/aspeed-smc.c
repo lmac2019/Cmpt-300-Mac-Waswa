@@ -1,8 +1,12 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * ASPEED Static Memory Controller driver
  *
  * Copyright (c) 2015-2016, IBM Corporation.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version
+ * 2 of the License, or (at your option) any later version.
  */
 
 #include <linux/bug.h>
@@ -617,18 +621,19 @@ static void aspeed_smc_chip_set_type(struct aspeed_smc_chip *chip, int type)
 }
 
 /*
- * The first chip of the AST2500 FMC flash controller is strapped by
- * hardware, or autodetected, but other chips need to be set. Enforce
- * the 4B setting for all chips.
+ * The AST2500 FMC flash controller should be strapped by hardware, or
+ * autodetected, but the AST2500 SPI flash needs to be set.
  */
 static void aspeed_smc_chip_set_4b(struct aspeed_smc_chip *chip)
 {
 	struct aspeed_smc_controller *controller = chip->controller;
 	u32 reg;
 
-	reg = readl(controller->regs + CE_CONTROL_REG);
-	reg |= 1 << chip->cs;
-	writel(reg, controller->regs + CE_CONTROL_REG);
+	if (chip->controller->info == &spi_2500_info) {
+		reg = readl(controller->regs + CE_CONTROL_REG);
+		reg |= 1 << chip->cs;
+		writel(reg, controller->regs + CE_CONTROL_REG);
+	}
 }
 
 /*
@@ -857,9 +862,8 @@ static int aspeed_smc_probe(struct platform_device *pdev)
 		return -ENODEV;
 	info = match->data;
 
-	controller = devm_kzalloc(&pdev->dev,
-				  struct_size(controller, chips, info->nce),
-				  GFP_KERNEL);
+	controller = devm_kzalloc(&pdev->dev, sizeof(*controller) +
+		info->nce * sizeof(controller->chips[0]), GFP_KERNEL);
 	if (!controller)
 		return -ENOMEM;
 	controller->info = info;

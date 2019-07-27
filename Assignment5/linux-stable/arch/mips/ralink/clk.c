@@ -1,5 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
+ *  This program is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License version 2 as published
+ *  by the Free Software Foundation.
  *
  *  Copyright (C) 2011 Gabor Juhos <juhosg@openwrt.org>
  *  Copyright (C) 2013 John Crispin <john@phrozen.org>
@@ -51,9 +53,6 @@ EXPORT_SYMBOL_GPL(clk_disable);
 
 unsigned long clk_get_rate(struct clk *clk)
 {
-	if (!clk)
-		return 0;
-
 	return clk->rate;
 }
 EXPORT_SYMBOL_GPL(clk_get_rate);

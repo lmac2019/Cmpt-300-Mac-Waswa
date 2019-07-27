@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  *    character device frontend for tape device driver
  *
@@ -290,7 +289,7 @@ tapechar_open (struct inode *inode, struct file *filp)
 	rc = tape_open(device);
 	if (rc == 0) {
 		filp->private_data = device;
-		stream_open(inode, filp);
+		nonseekable_open(inode, filp);
 	} else
 		tape_put_device(device);
 

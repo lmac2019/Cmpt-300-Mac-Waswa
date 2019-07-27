@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef __S390_VDSO_H__
 #define __S390_VDSO_H__
 
@@ -46,9 +45,7 @@ struct vdso_per_cpu_data {
 };
 
 extern struct vdso_data *vdso_data;
-extern struct vdso_data boot_vdso_data;
 
-void vdso_alloc_boot_cpu(struct lowcore *lowcore);
 int vdso_alloc_per_cpu(struct lowcore *lowcore);
 void vdso_free_per_cpu(struct lowcore *lowcore);
 

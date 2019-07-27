@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Media entity
  *
@@ -6,9 +5,19 @@
  *
  * Contacts: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
  *	     Sakari Ailus <sakari.ailus@iki.fi>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  */
 
 #include <linux/bitmap.h>
+#include <linux/module.h>
 #include <linux/property.h>
 #include <linux/slab.h>
 #include <media/media-entity.h>
@@ -55,6 +64,22 @@ static inline const char *intf_type(struct media_interface *intf)
 		return "v4l-swradio";
 	case MEDIA_INTF_T_V4L_TOUCH:
 		return "v4l-touch";
+	case MEDIA_INTF_T_ALSA_PCM_CAPTURE:
+		return "alsa-pcm-capture";
+	case MEDIA_INTF_T_ALSA_PCM_PLAYBACK:
+		return "alsa-pcm-playback";
+	case MEDIA_INTF_T_ALSA_CONTROL:
+		return "alsa-control";
+	case MEDIA_INTF_T_ALSA_COMPRESS:
+		return "alsa-compress";
+	case MEDIA_INTF_T_ALSA_RAWMIDI:
+		return "alsa-rawmidi";
+	case MEDIA_INTF_T_ALSA_HWDEP:
+		return "alsa-hwdep";
+	case MEDIA_INTF_T_ALSA_SEQUENCER:
+		return "alsa-sequencer";
+	case MEDIA_INTF_T_ALSA_TIMER:
+		return "alsa-timer";
 	default:
 		return "unknown-intf";
 	}
@@ -189,19 +214,11 @@ void media_gobj_destroy(struct media_gobj *gobj)
 	gobj->mdev = NULL;
 }
 
-/*
- * TODO: Get rid of this.
- */
-#define MEDIA_ENTITY_MAX_PADS		512
-
 int media_entity_pads_init(struct media_entity *entity, u16 num_pads,
 			   struct media_pad *pads)
 {
 	struct media_device *mdev = entity->graph_obj.mdev;
 	unsigned int i;
-
-	if (num_pads >= MEDIA_ENTITY_MAX_PADS)
-		return -E2BIG;
 
 	entity->num_pads = num_pads;
 	entity->pads = pads;
@@ -262,6 +279,11 @@ static struct media_entity *stack_pop(struct media_graph *graph)
 
 #define link_top(en)	((en)->stack[(en)->top].link)
 #define stack_top(en)	((en)->stack[(en)->top].entity)
+
+/*
+ * TODO: Get rid of this.
+ */
+#define MEDIA_ENTITY_MAX_PADS		512
 
 /**
  * media_graph_walk_init - Allocate resources for graph walk
@@ -427,10 +449,7 @@ __must_check int __media_pipeline_start(struct media_entity *entity,
 
 		entity->stream_count++;
 
-		if (entity->pipe && entity->pipe != pipe) {
-			pr_err("Pipe active for %s. Can't start for %s\n",
-				entity->name,
-				entity_err->name);
+		if (WARN_ON(entity->pipe && entity->pipe != pipe)) {
 			ret = -EBUSY;
 			goto error;
 		}
@@ -582,6 +601,33 @@ void media_pipeline_stop(struct media_entity *entity)
 EXPORT_SYMBOL_GPL(media_pipeline_stop);
 
 /* -----------------------------------------------------------------------------
+ * Module use count
+ */
+
+struct media_entity *media_entity_get(struct media_entity *entity)
+{
+	if (entity == NULL)
+		return NULL;
+
+	if (entity->graph_obj.mdev->dev &&
+	    !try_module_get(entity->graph_obj.mdev->dev->driver->owner))
+		return NULL;
+
+	return entity;
+}
+EXPORT_SYMBOL_GPL(media_entity_get);
+
+void media_entity_put(struct media_entity *entity)
+{
+	if (entity == NULL)
+		return;
+
+	if (entity->graph_obj.mdev->dev)
+		module_put(entity->graph_obj.mdev->dev->driver->owner);
+}
+EXPORT_SYMBOL_GPL(media_entity_put);
+
+/* -----------------------------------------------------------------------------
  * Links management
  */
 
@@ -628,32 +674,6 @@ static void __media_entity_remove_link(struct media_entity *entity,
 	media_gobj_destroy(&link->graph_obj);
 	kfree(link);
 }
-
-int media_get_pad_index(struct media_entity *entity, bool is_sink,
-			enum media_pad_signal_type sig_type)
-{
-	int i;
-	bool pad_is_sink;
-
-	if (!entity)
-		return -EINVAL;
-
-	for (i = 0; i < entity->num_pads; i++) {
-		if (entity->pads[i].flags == MEDIA_PAD_FL_SINK)
-			pad_is_sink = true;
-		else if (entity->pads[i].flags == MEDIA_PAD_FL_SOURCE)
-			pad_is_sink = false;
-		else
-			continue;	/* This is an error! */
-
-		if (pad_is_sink != is_sink)
-			continue;
-		if (entity->pads[i].sig_type == sig_type)
-			return i;
-	}
-	return -EINVAL;
-}
-EXPORT_SYMBOL_GPL(media_get_pad_index);
 
 int
 media_create_pad_link(struct media_entity *source, u16 source_pad,
@@ -897,7 +917,7 @@ media_entity_find_link(struct media_pad *source, struct media_pad *sink)
 }
 EXPORT_SYMBOL_GPL(media_entity_find_link);
 
-struct media_pad *media_entity_remote_pad(const struct media_pad *pad)
+struct media_pad *media_entity_remote_pad(struct media_pad *pad)
 {
 	struct media_link *link;
 

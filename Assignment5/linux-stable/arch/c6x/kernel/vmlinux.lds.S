@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * ld script for the c6x kernel
  *
@@ -88,6 +87,16 @@ SECTIONS
 	{
 		*(.const .const.* .gnu.linkonce.r.*)
 		*(.switch)
+	}
+
+	. = ALIGN (8) ;
+	__fdt_blob : AT(ADDR(__fdt_blob) - LOAD_OFFSET)
+	{
+		_fdt_start = . ;	/* place for fdt blob */
+		*(__fdt_blob) ;		/* Any link-placed DTB */
+		BYTE(0);		/* section always has contents */
+	        . = _fdt_start + 0x4000;	/* Pad up to 16kbyte */
+		_fdt_end = . ;
 	}
 
 	_etext = .;

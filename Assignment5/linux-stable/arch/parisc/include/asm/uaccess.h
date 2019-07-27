@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef __PARISC_UACCESS_H
 #define __PARISC_UACCESS_H
 
@@ -16,6 +15,7 @@
 
 #define segment_eq(a, b) ((a).seg == (b).seg)
 
+#define get_ds()	(KERNEL_DS)
 #define get_fs()	(current_thread_info()->addr_limit)
 #define set_fs(x)	(current_thread_info()->addr_limit = (x))
 
@@ -26,7 +26,7 @@
  * that put_user is the same as __put_user, etc.
  */
 
-#define access_ok(uaddr, size)	\
+#define access_ok(type, uaddr, size)	\
 	( (uaddr) == (uaddr) )
 
 #define put_user __put_user

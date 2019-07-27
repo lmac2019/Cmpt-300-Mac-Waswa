@@ -1,9 +1,12 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /**
  * IIO driver for the MiraMEMS DA311 3-axis accelerometer
  *
  * Copyright (c) 2016 Hans de Goede <hdegoede@redhat.com>
  * Copyright (c) 2011-2013 MiraMEMS Sensing Technology Co., Ltd.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
  */
 
 #include <linux/module.h>
@@ -136,7 +139,7 @@ static int da311_register_mask_write(struct i2c_client *client, u16 addr,
 /* Init sequence taken from the android driver */
 static int da311_reset(struct i2c_client *client)
 {
-	static const struct {
+	const struct {
 		u16 addr;
 		u8 mask;
 		u8 data;
@@ -209,6 +212,7 @@ static int da311_read_raw(struct iio_dev *indio_dev,
 }
 
 static const struct iio_info da311_info = {
+	.driver_module	= THIS_MODULE,
 	.read_raw	= da311_read_raw,
 };
 

@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  *  Copyright IBM Corp. 2008
  *  Author(s): Martin Schwidefsky (schwidefsky@de.ibm.com)
@@ -109,8 +108,7 @@ static void show_cpu_summary(struct seq_file *m, void *v)
 {
 	static const char *hwcap_str[] = {
 		"esan3", "zarch", "stfle", "msa", "ldisp", "eimm", "dfp",
-		"edat", "etf3eh", "highgprs", "te", "vx", "vxd", "vxe", "gs",
-		"vxe2", "vxp", "sort", "dflt"
+		"edat", "etf3eh", "highgprs", "te", "vx", "vxd", "vxe", "gs"
 	};
 	static const char * const int_hwcap_str[] = {
 		"sie"
@@ -198,21 +196,3 @@ const struct seq_operations cpuinfo_op = {
 	.stop	= c_stop,
 	.show	= show_cpuinfo,
 };
-
-int s390_isolate_bp(void)
-{
-	if (!test_facility(82))
-		return -EOPNOTSUPP;
-	set_thread_flag(TIF_ISOLATE_BP);
-	return 0;
-}
-EXPORT_SYMBOL(s390_isolate_bp);
-
-int s390_isolate_bp_guest(void)
-{
-	if (!test_facility(82))
-		return -EOPNOTSUPP;
-	set_thread_flag(TIF_ISOLATE_BP_GUEST);
-	return 0;
-}
-EXPORT_SYMBOL(s390_isolate_bp_guest);

@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 /* dvb-usb-dvb.c is part of the DVB USB library.
  *
  * Copyright (C) 2004-6 Patrick Boettcher (patrick.boettcher@posteo.de)
@@ -132,14 +131,10 @@ static void dvb_usb_media_device_unregister(struct dvb_usb_adapter *adap)
 	if (!adap->dvb_adap.mdev)
 		return;
 
-	mutex_lock(&adap->dvb_adap.mdev_lock);
-
 	media_device_unregister(adap->dvb_adap.mdev);
 	media_device_cleanup(adap->dvb_adap.mdev);
 	kfree(adap->dvb_adap.mdev);
 	adap->dvb_adap.mdev = NULL;
-
-	mutex_unlock(&adap->dvb_adap.mdev_lock);
 #endif
 }
 

@@ -1,4 +1,3 @@
-# SPDX-License-Identifier: GPL-2.0-only
 menuconfig ISDN_DRV_GIGASET
 	tristate "Siemens Gigaset support"
 	depends on TTY

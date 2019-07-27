@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 #ifndef _UAPI_IPV6_H
 #define _UAPI_IPV6_H
 
@@ -186,7 +185,6 @@ enum {
 	DEVCONF_ADDR_GEN_MODE,
 	DEVCONF_DISABLE_POLICY,
 	DEVCONF_ACCEPT_RA_RT_INFO_MIN_PLEN,
-	DEVCONF_NDISC_TCLASS,
 	DEVCONF_MAX
 };
 

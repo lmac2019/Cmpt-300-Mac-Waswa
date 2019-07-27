@@ -1,6 +1,14 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright(c) 2013-2015 Intel Corporation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  */
 #include <linux/device.h>
 #include <linux/sizes.h>
@@ -140,7 +148,7 @@ ssize_t nd_namespace_store(struct device *dev,
 	char *name;
 
 	if (dev->driver) {
-		dev_dbg(dev, "namespace already active\n");
+		dev_dbg(dev, "%s: -EBUSY\n", __func__);
 		return -EBUSY;
 	}
 
@@ -268,17 +276,22 @@ static int nsio_rw_bytes(struct nd_namespace_common *ndns,
 	if (rw == READ) {
 		if (unlikely(is_bad_pmem(&nsio->bb, sector, sz_align)))
 			return -EIO;
-		if (memcpy_mcsafe(buf, nsio->addr + offset, size) != 0)
-			return -EIO;
-		return 0;
+		return memcpy_mcsafe(buf, nsio->addr + offset, size);
 	}
 
 	if (unlikely(is_bad_pmem(&nsio->bb, sector, sz_align))) {
+		/*
+		 * FIXME: nsio_rw_bytes() may be called from atomic
+		 * context in the btt case and the ACPI DSM path for
+		 * clearing the error takes sleeping locks and allocates
+		 * memory. An explicit error clearing path, and support
+		 * for tracking badblocks in BTT metadata is needed to
+		 * work around this collision.
+		 */
 		if (IS_ALIGNED(offset, 512) && IS_ALIGNED(size, 512)
 				&& !(flags & NVDIMM_IO_ATOMIC)) {
 			long cleared;
 
-			might_sleep();
 			cleared = nvdimm_clear_poison(&ndns->dev,
 					nsio->res.start + offset, size);
 			if (cleared < size)

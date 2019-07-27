@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Common data handling layer for ser_gigaset and usb_gigaset
  *
@@ -7,6 +6,10 @@
  *                       Stefan Eilers.
  *
  * =====================================================================
+ *	This program is free software; you can redistribute it and/or
+ *	modify it under the terms of the GNU General Public License as
+ *	published by the Free Software Foundation; either version 2 of
+ *	the License, or (at your option) any later version.
  * =====================================================================
  */
 
@@ -62,7 +65,7 @@ static unsigned cmd_loop(unsigned numbytes, struct inbuf_t *inbuf)
 				cs->respdata[0] = 0;
 				break;
 			}
-			/* fall through */
+			/* --v-- fall through --v-- */
 		case '\r':
 			/* end of message line, pass to response handler */
 			if (cbytes >= MAX_RESP_SIZE) {
@@ -97,7 +100,7 @@ static unsigned cmd_loop(unsigned numbytes, struct inbuf_t *inbuf)
 				goto exit;
 			}
 			/* quoted or not in DLE mode: treat as regular data */
-			/* fall through */
+			/* --v-- fall through --v-- */
 		default:
 			/* append to line buffer if possible */
 			if (cbytes < MAX_RESP_SIZE)

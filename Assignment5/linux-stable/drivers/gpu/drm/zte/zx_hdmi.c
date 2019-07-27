@@ -1,7 +1,11 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright 2016 Linaro Ltd.
  * Copyright 2016 ZTE Corporation.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
  */
 
 #include <linux/clk.h>
@@ -16,9 +20,9 @@
 #include <linux/of_device.h>
 
 #include <drm/drm_atomic_helper.h>
+#include <drm/drm_crtc_helper.h>
 #include <drm/drm_edid.h>
 #include <drm/drm_of.h>
-#include <drm/drm_probe_helper.h>
 #include <drm/drmP.h>
 
 #include <sound/hdmi-codec.h>
@@ -104,7 +108,6 @@ static int zx_hdmi_config_video_vsi(struct zx_hdmi *hdmi,
 	int ret;
 
 	ret = drm_hdmi_vendor_infoframe_from_display_mode(&frame.vendor.hdmi,
-							  &hdmi->connector,
 							  mode);
 	if (ret) {
 		DRM_DEV_ERROR(hdmi->dev, "failed to get vendor infoframe: %d\n",
@@ -121,9 +124,7 @@ static int zx_hdmi_config_video_avi(struct zx_hdmi *hdmi,
 	union hdmi_infoframe frame;
 	int ret;
 
-	ret = drm_hdmi_avi_infoframe_from_display_mode(&frame.avi,
-						       &hdmi->connector,
-						       mode);
+	ret = drm_hdmi_avi_infoframe_from_display_mode(&frame.avi, mode);
 	if (ret) {
 		DRM_DEV_ERROR(hdmi->dev, "failed to get avi infoframe: %d\n",
 			      ret);
@@ -270,7 +271,7 @@ static int zx_hdmi_connector_get_modes(struct drm_connector *connector)
 
 	hdmi->sink_is_hdmi = drm_detect_hdmi_monitor(edid);
 	hdmi->sink_has_audio = drm_detect_monitor_audio(edid);
-	drm_connector_update_edid_property(connector, edid);
+	drm_mode_connector_update_edid_property(connector, edid);
 	ret = drm_add_edid_modes(connector, edid);
 	kfree(edid);
 
@@ -299,6 +300,7 @@ zx_hdmi_connector_detect(struct drm_connector *connector, bool force)
 }
 
 static const struct drm_connector_funcs zx_hdmi_connector_funcs = {
+	.dpms = drm_atomic_helper_connector_dpms,
 	.fill_modes = drm_helper_probe_single_connector_modes,
 	.detect = zx_hdmi_connector_detect,
 	.destroy = drm_connector_cleanup,
@@ -324,7 +326,7 @@ static int zx_hdmi_register(struct drm_device *drm, struct zx_hdmi *hdmi)
 	drm_connector_helper_add(&hdmi->connector,
 				 &zx_hdmi_connector_helper_funcs);
 
-	drm_connector_attach_encoder(&hdmi->connector, encoder);
+	drm_mode_connector_attach_encoder(&hdmi->connector, encoder);
 
 	return 0;
 }

@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #if !defined(_DRM_TRACE_H_) || defined(TRACE_HEADER_MULTI_READ)
 #define _DRM_TRACE_H_
 
@@ -62,5 +61,5 @@ TRACE_EVENT(drm_vblank_event_delivered,
 
 /* This part must be outside protection */
 #undef TRACE_INCLUDE_PATH
-#define TRACE_INCLUDE_PATH ../../drivers/gpu/drm
+#define TRACE_INCLUDE_PATH .
 #include <trace/define_trace.h>

@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Freescale MXS LRADC touchscreen driver
  *
@@ -8,6 +7,16 @@
  * Authors:
  *  Marek Vasut <marex@denx.de>
  *  Ksenija Stanojevic <ksenija.stanojevic@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  */
 
 #include <linux/device.h>
@@ -21,7 +30,7 @@
 #include <linux/of_irq.h>
 #include <linux/platform_device.h>
 
-static const char * const mxs_lradc_ts_irq_names[] = {
+const char *mxs_lradc_ts_irq_names[] = {
 	"mxs-lradc-touchscreen",
 	"mxs-lradc-channel6",
 	"mxs-lradc-channel7",
@@ -575,7 +584,7 @@ static void mxs_lradc_ts_hw_init(struct mxs_lradc_ts *ts)
 
 static int mxs_lradc_ts_register(struct mxs_lradc_ts *ts)
 {
-	struct input_dev *input;
+	struct input_dev *input = ts->ts_input;
 	struct device *dev = ts->dev;
 
 	input = devm_input_allocate_device(dev);
@@ -621,11 +630,9 @@ static int mxs_lradc_ts_probe(struct platform_device *pdev)
 	spin_lock_init(&ts->lock);
 
 	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	if (!iores)
-		return -EINVAL;
 	ts->base = devm_ioremap(dev, iores->start, resource_size(iores));
-	if (!ts->base)
-		return -ENOMEM;
+	if (IS_ERR(ts->base))
+		return PTR_ERR(ts->base);
 
 	ret = of_property_read_u32(node, "fsl,lradc-touchscreen-wires",
 				   &ts_wires);

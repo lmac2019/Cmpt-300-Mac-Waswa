@@ -60,31 +60,23 @@
  */
 void i915_check_vgpu(struct drm_i915_private *dev_priv)
 {
-	struct intel_uncore *uncore = &dev_priv->uncore;
 	u64 magic;
 	u16 version_major;
 
 	BUILD_BUG_ON(sizeof(struct vgt_if) != VGT_PVINFO_SIZE);
 
-	magic = __raw_uncore_read64(uncore, vgtif_reg(magic));
+	magic = __raw_i915_read64(dev_priv, vgtif_reg(magic));
 	if (magic != VGT_MAGIC)
 		return;
 
-	version_major = __raw_uncore_read16(uncore, vgtif_reg(version_major));
+	version_major = __raw_i915_read16(dev_priv, vgtif_reg(version_major));
 	if (version_major < VGT_VERSION_MAJOR) {
 		DRM_INFO("VGT interface version mismatch!\n");
 		return;
 	}
 
-	dev_priv->vgpu.caps = __raw_uncore_read32(uncore, vgtif_reg(vgt_caps));
-
 	dev_priv->vgpu.active = true;
 	DRM_INFO("Virtual GPU for Intel GVT-g detected.\n");
-}
-
-bool intel_vgpu_has_full_ppgtt(struct drm_i915_private *dev_priv)
-{
-	return dev_priv->vgpu.caps & VGT_CAPS_FULL_PPGTT;
 }
 
 struct _balloon_info_ {
@@ -106,7 +98,7 @@ static void vgt_deballoon_space(struct i915_ggtt *ggtt,
 			 node->start + node->size,
 			 node->size / 1024);
 
-	ggtt->vm.reserved -= node->size;
+	ggtt->base.reserved -= node->size;
 	drm_mm_remove_node(node);
 }
 
@@ -142,11 +134,11 @@ static int vgt_balloon_space(struct i915_ggtt *ggtt,
 
 	DRM_INFO("balloon space: range [ 0x%lx - 0x%lx ] %lu KiB.\n",
 		 start, end, size / 1024);
-	ret = i915_gem_gtt_reserve(&ggtt->vm, node,
+	ret = i915_gem_gtt_reserve(&ggtt->base, node,
 				   size, start, I915_COLOR_UNEVICTABLE,
 				   0);
 	if (!ret)
-		ggtt->vm.reserved += size;
+		ggtt->base.reserved += size;
 
 	return ret;
 }
@@ -198,7 +190,7 @@ static int vgt_balloon_space(struct i915_ggtt *ggtt,
 int intel_vgt_balloon(struct drm_i915_private *dev_priv)
 {
 	struct i915_ggtt *ggtt = &dev_priv->ggtt;
-	unsigned long ggtt_end = ggtt->vm.total;
+	unsigned long ggtt_end = ggtt->base.total;
 
 	unsigned long mappable_base, mappable_size, mappable_end;
 	unsigned long unmappable_base, unmappable_size, unmappable_end;

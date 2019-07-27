@@ -1,8 +1,16 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  *  skl-sst-utils.c - SKL sst utils functions
  *
  *  Copyright (C) 2016 Intel Corp
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as version 2, as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  */
 
 #include <linux/device.h>
@@ -170,8 +178,7 @@ static inline int skl_pvtid_128(struct uuid_module *module)
  * skl_get_pvt_id: generate a private id for use as module id
  *
  * @ctx: driver context
- * @uuid_mod: module's uuid
- * @instance_id: module's instance id
+ * @mconfig: module configuration data
  *
  * This generates a 128 bit private unique id for a module TYPE so that
  * module instance is unique
@@ -201,8 +208,7 @@ EXPORT_SYMBOL_GPL(skl_get_pvt_id);
  * skl_put_pvt_id: free up the private id allocated
  *
  * @ctx: driver context
- * @uuid_mod: module's uuid
- * @pvt_id: module pvt id
+ * @mconfig: module configuration data
  *
  * This frees a 128 bit private unique id previously generated
  */
@@ -245,7 +251,6 @@ int snd_skl_parse_uuids(struct sst_dsp *ctx, const struct firmware *fw,
 	struct uuid_module *module;
 	struct firmware stripped_fw;
 	unsigned int safe_file;
-	int ret = 0;
 
 	/* Get the FW pointer to derive ADSP header */
 	stripped_fw.data = fw->data;
@@ -294,10 +299,8 @@ int snd_skl_parse_uuids(struct sst_dsp *ctx, const struct firmware *fw,
 
 	for (i = 0; i < num_entry; i++, mod_entry++) {
 		module = kzalloc(sizeof(*module), GFP_KERNEL);
-		if (!module) {
-			ret = -ENOMEM;
-			goto free_uuid_list;
-		}
+		if (!module)
+			return -ENOMEM;
 
 		uuid_bin = (uuid_le *)mod_entry->uuid.id;
 		memcpy(&module->uuid, uuid_bin, sizeof(module->uuid));
@@ -308,8 +311,8 @@ int snd_skl_parse_uuids(struct sst_dsp *ctx, const struct firmware *fw,
 		size = sizeof(int) * mod_entry->instance_max_count;
 		module->instance_id = devm_kzalloc(ctx->dev, size, GFP_KERNEL);
 		if (!module->instance_id) {
-			ret = -ENOMEM;
-			goto free_uuid_list;
+			kfree(module);
+			return -ENOMEM;
 		}
 
 		list_add_tail(&module->list, &skl->uuid_list);
@@ -320,10 +323,6 @@ int snd_skl_parse_uuids(struct sst_dsp *ctx, const struct firmware *fw,
 	}
 
 	return 0;
-
-free_uuid_list:
-	skl_freeup_uuid_list(skl);
-	return ret;
 }
 
 void skl_freeup_uuid_list(struct skl_sst *ctx)
@@ -369,6 +368,7 @@ int skl_sst_ctx_init(struct device *dev, int irq, const char *fw_name,
 {
 	struct skl_sst *skl;
 	struct sst_dsp *sst;
+	int ret;
 
 	skl = devm_kzalloc(dev, sizeof(*skl), GFP_KERNEL);
 	if (skl == NULL)
@@ -388,12 +388,15 @@ int skl_sst_ctx_init(struct device *dev, int irq, const char *fw_name,
 	sst->dsp_ops = dsp_ops;
 	init_waitqueue_head(&skl->mod_load_wait);
 	INIT_LIST_HEAD(&sst->module_list);
+	ret = skl_ipc_init(dev, skl);
+	if (ret)
+		return ret;
 
 	skl->is_first_boot = true;
 	if (dsp)
 		*dsp = skl;
 
-	return 0;
+	return ret;
 }
 
 int skl_prepare_lib_load(struct skl_sst *skl, struct skl_lib_info *linfo,

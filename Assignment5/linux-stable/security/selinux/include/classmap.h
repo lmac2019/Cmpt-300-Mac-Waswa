@@ -1,6 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #include <linux/capability.h>
-#include <linux/socket.h>
 
 #define COMMON_FILE_SOCK_PERMS "ioctl", "read", "write", "create", \
     "getattr", "setattr", "lock", "relabelfrom", "relabelto", "append", "map"
@@ -50,8 +48,6 @@ struct security_class_mapping secclass_map[] = {
 	    "setrlimit", "rlimitinh", "dyntransition", "setcurrent",
 	    "execmem", "execstack", "execheap", "setkeycreate",
 	    "setsockcreate", "getrlimit", NULL } },
-	{ "process2",
-	  { "nnp_transition", "nosuid_transition", NULL } },
 	{ "system",
 	  { "ipc_info", "syslog_read", "syslog_mod",
 	    "syslog_console", "module_request", "module_load", NULL } },
@@ -177,7 +173,7 @@ struct security_class_mapping secclass_map[] = {
 	  { COMMON_CAP2_PERMS, NULL } },
 	{ "sctp_socket",
 	  { COMMON_SOCK_PERMS,
-	    "node_bind", "name_connect", "association", NULL } },
+	    "node_bind", NULL } },
 	{ "icmp_socket",
 	  { COMMON_SOCK_PERMS,
 	    "node_bind", NULL } },
@@ -239,13 +235,9 @@ struct security_class_mapping secclass_map[] = {
 	  { "access", NULL } },
 	{ "infiniband_endport",
 	  { "manage_subnet", NULL } },
-	{ "bpf",
-	  {"map_create", "map_read", "map_write", "prog_load", "prog_run"} },
-	{ "xdp_socket",
-	  { COMMON_SOCK_PERMS, NULL } },
 	{ NULL }
   };
 
-#if PF_MAX > 45
+#if PF_MAX > 44
 #error New address family defined, please update secclass_map.
 #endif

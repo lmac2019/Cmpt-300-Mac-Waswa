@@ -63,7 +63,8 @@ static void ipoib_get_drvinfo(struct net_device *netdev,
 {
 	struct ipoib_dev_priv *priv = ipoib_priv(netdev);
 
-	ib_get_device_fw_str(priv->ca, drvinfo->fw_version);
+	ib_get_device_fw_str(priv->ca, drvinfo->fw_version,
+			     sizeof(drvinfo->fw_version));
 
 	strlcpy(drvinfo->bus_info, dev_name(priv->ca->dev.parent),
 		sizeof(drvinfo->bus_info));
@@ -99,10 +100,9 @@ static int ipoib_set_coalesce(struct net_device *dev,
 	    coal->rx_max_coalesced_frames > 0xffff)
 		return -EINVAL;
 
-	ret = rdma_set_cq_moderation(priv->recv_cq,
-				     coal->rx_max_coalesced_frames,
-				     coal->rx_coalesce_usecs);
-	if (ret && ret != -EOPNOTSUPP) {
+	ret = ib_modify_cq(priv->recv_cq, coal->rx_max_coalesced_frames,
+			   coal->rx_coalesce_usecs);
+	if (ret && ret != -ENOSYS) {
 		ipoib_warn(priv, "failed modifying CQ (%d)\n", ret);
 		return ret;
 	}

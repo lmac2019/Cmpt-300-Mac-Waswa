@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Helpers for the host side of a virtio ring.
  *
@@ -192,7 +191,7 @@ static int resize_iovec(struct vringh_kiov *iov, gfp_t gfp)
 	if (flag)
 		new = krealloc(iov->iov, new_num * sizeof(struct iovec), gfp);
 	else {
-		new = kmalloc_array(new_num, sizeof(struct iovec), gfp);
+		new = kmalloc(new_num * sizeof(struct iovec), gfp);
 		if (new) {
 			memcpy(new, iov->iov,
 			       iov->max_num * sizeof(struct iovec));

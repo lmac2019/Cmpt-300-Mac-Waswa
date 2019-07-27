@@ -1,10 +1,14 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Line 6 Pod HD
  *
  * Copyright (C) 2011 Stefan Hajnoczi <stefanha@gmail.com>
  * Copyright (C) 2015 Andrej Krutak <dev@andree.sk>
  * Copyright (C) 2017 Hans P. Moller <hmoller@uc.cl>
+ *
+ *	This program is free software; you can redistribute it and/or
+ *	modify it under the terms of the GNU General Public License as
+ *	published by the Free Software Foundation, version 2.
+ *
  */
 
 #include <linux/usb.h>
@@ -35,8 +39,7 @@ enum {
 	LINE6_PODHD500_1,
 	LINE6_PODX3,
 	LINE6_PODX3LIVE,
-	LINE6_PODHD500X,
-	LINE6_PODHDDESKTOP
+	LINE6_PODHD500X
 };
 
 struct usb_line6_podhd {
@@ -154,7 +157,7 @@ static struct line6_pcm_properties podx3_pcm_properties = {
 };
 static struct usb_driver podhd_driver;
 
-static void podhd_startup_start_workqueue(struct timer_list *t);
+static void podhd_startup_start_workqueue(unsigned long data);
 static void podhd_startup_workqueue(struct work_struct *work);
 static int podhd_startup_finalize(struct usb_line6_podhd *pod);
 
@@ -204,12 +207,12 @@ static void podhd_startup(struct usb_line6_podhd *pod)
 
 	/* delay startup procedure: */
 	line6_start_timer(&pod->startup_timer, PODHD_STARTUP_DELAY,
-		podhd_startup_start_workqueue);
+		podhd_startup_start_workqueue, (unsigned long)pod);
 }
 
-static void podhd_startup_start_workqueue(struct timer_list *t)
+static void podhd_startup_start_workqueue(unsigned long data)
 {
-	struct usb_line6_podhd *pod = from_timer(pod, t, startup_timer);
+	struct usb_line6_podhd *pod = (struct usb_line6_podhd *)data;
 
 	CHECK_STARTUP_PROGRESS(pod->startup_progress,
 		PODHD_STARTUP_SCHEDULE_WORKQUEUE);
@@ -221,13 +224,9 @@ static void podhd_startup_start_workqueue(struct timer_list *t)
 static int podhd_dev_start(struct usb_line6_podhd *pod)
 {
 	int ret;
-	u8 *init_bytes;
+	u8 init_bytes[8];
 	int i;
 	struct usb_device *usbdev = pod->line6.usbdev;
-
-	init_bytes = kmalloc(8, GFP_KERNEL);
-	if (!init_bytes)
-		return -ENOMEM;
 
 	ret = usb_control_msg(usbdev, usb_sndctrlpipe(usbdev, 0),
 					0x67, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT,
@@ -235,18 +234,18 @@ static int podhd_dev_start(struct usb_line6_podhd *pod)
 					NULL, 0, LINE6_TIMEOUT * HZ);
 	if (ret < 0) {
 		dev_err(pod->line6.ifcdev, "read request failed (error %d)\n", ret);
-		goto exit;
+		return ret;
 	}
 
 	/* NOTE: looks like some kind of ping message */
 	ret = usb_control_msg(usbdev, usb_rcvctrlpipe(usbdev, 0), 0x67,
 					USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
 					0x11, 0x0,
-					init_bytes, 3, LINE6_TIMEOUT * HZ);
+					&init_bytes, 3, LINE6_TIMEOUT * HZ);
 	if (ret < 0) {
 		dev_err(pod->line6.ifcdev,
 			"receive length failed (error %d)\n", ret);
-		goto exit;
+		return ret;
 	}
 
 	pod->firmware_version =
@@ -255,7 +254,7 @@ static int podhd_dev_start(struct usb_line6_podhd *pod)
 	for (i = 0; i <= 16; i++) {
 		ret = line6_read_data(&pod->line6, 0xf000 + 0x08 * i, init_bytes, 8);
 		if (ret < 0)
-			goto exit;
+			return ret;
 	}
 
 	ret = usb_control_msg(usbdev, usb_sndctrlpipe(usbdev, 0),
@@ -263,9 +262,10 @@ static int podhd_dev_start(struct usb_line6_podhd *pod)
 					USB_TYPE_STANDARD | USB_RECIP_DEVICE | USB_DIR_OUT,
 					1, 0,
 					NULL, 0, LINE6_TIMEOUT * HZ);
-exit:
-	kfree(init_bytes);
-	return ret;
+	if (ret < 0)
+		return ret;
+
+	return 0;
 }
 
 static void podhd_startup_workqueue(struct work_struct *work)
@@ -301,8 +301,7 @@ static void podhd_disconnect(struct usb_line6 *line6)
 
 		intf = usb_ifnum_to_if(line6->usbdev,
 					pod->line6.properties->ctrl_if);
-		if (intf)
-			usb_driver_release_interface(&podhd_driver, intf);
+		usb_driver_release_interface(&podhd_driver, intf);
 	}
 }
 
@@ -317,9 +316,6 @@ static int podhd_init(struct usb_line6 *line6,
 	struct usb_interface *intf;
 
 	line6->disconnect = podhd_disconnect;
-
-	timer_setup(&pod->startup_timer, NULL, 0);
-	INIT_WORK(&pod->startup_work, podhd_startup_workqueue);
 
 	if (pod->line6.properties->capabilities & LINE6_CAP_CONTROL) {
 		/* claim the data interface */
@@ -362,6 +358,8 @@ static int podhd_init(struct usb_line6 *line6,
 	}
 
 	/* init device and delay registering */
+	init_timer(&pod->startup_timer);
+	INIT_WORK(&pod->startup_work, podhd_startup_workqueue);
 	podhd_startup(pod);
 	return 0;
 }
@@ -379,7 +377,6 @@ static const struct usb_device_id podhd_id_table[] = {
 	{ LINE6_IF_NUM(0x414A, 0), .driver_info = LINE6_PODX3 },
 	{ LINE6_IF_NUM(0x414B, 0), .driver_info = LINE6_PODX3LIVE },
 	{ LINE6_IF_NUM(0x4159, 0), .driver_info = LINE6_PODHD500X },
-	{ LINE6_IF_NUM(0x4156, 0), .driver_info = LINE6_PODHDDESKTOP },
 	{}
 };
 
@@ -459,18 +456,6 @@ static const struct line6_properties podhd_properties_table[] = {
 		.name = "POD HD500X",
 		.capabilities	= LINE6_CAP_CONTROL
 				| LINE6_CAP_PCM | LINE6_CAP_HWMON,
-		.altsetting = 1,
-		.ep_ctrl_r = 0x81,
-		.ep_ctrl_w = 0x01,
-		.ctrl_if = 1,
-		.ep_audio_r = 0x86,
-		.ep_audio_w = 0x02,
-	},
-	[LINE6_PODHDDESKTOP] = {
-		.id = "PODHDDESKTOP",
-		.name = "POD HDDESKTOP",
-		.capabilities    = LINE6_CAP_CONTROL
-			| LINE6_CAP_PCM | LINE6_CAP_HWMON,
 		.altsetting = 1,
 		.ep_ctrl_r = 0x81,
 		.ep_ctrl_w = 0x01,

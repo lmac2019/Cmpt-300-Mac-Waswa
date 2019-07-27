@@ -1,8 +1,17 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Sync File validation framework and debug information
  *
  * Copyright (C) 2012 Google, Inc.
+ *
+ * This software is licensed under the terms of the GNU General Public
+ * License version 2, as published by the Free Software Foundation, and
+ * may be copied, distributed, and modified under those terms.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
  */
 
 #include <linux/debugfs.h>
@@ -107,15 +116,17 @@ static void sync_print_fence(struct seq_file *s,
 static void sync_print_obj(struct seq_file *s, struct sync_timeline *obj)
 {
 	struct list_head *pos;
+	unsigned long flags;
 
 	seq_printf(s, "%s: %d\n", obj->name, obj->value);
 
-	spin_lock_irq(&obj->lock);
-	list_for_each(pos, &obj->pt_list) {
-		struct sync_pt *pt = container_of(pos, struct sync_pt, link);
+	spin_lock_irqsave(&obj->child_list_lock, flags);
+	list_for_each(pos, &obj->child_list_head) {
+		struct sync_pt *pt =
+			container_of(pos, struct sync_pt, child_list);
 		sync_print_fence(s, &pt->base, false);
 	}
-	spin_unlock_irq(&obj->lock);
+	spin_unlock_irqrestore(&obj->child_list_lock, flags);
 }
 
 static void sync_print_sync_file(struct seq_file *s,
@@ -138,13 +149,14 @@ static void sync_print_sync_file(struct seq_file *s,
 	}
 }
 
-static int sync_info_debugfs_show(struct seq_file *s, void *unused)
+static int sync_debugfs_show(struct seq_file *s, void *unused)
 {
+	unsigned long flags;
 	struct list_head *pos;
 
 	seq_puts(s, "objs:\n--------------\n");
 
-	spin_lock_irq(&sync_timeline_list_lock);
+	spin_lock_irqsave(&sync_timeline_list_lock, flags);
 	list_for_each(pos, &sync_timeline_list_head) {
 		struct sync_timeline *obj =
 			container_of(pos, struct sync_timeline,
@@ -153,11 +165,11 @@ static int sync_info_debugfs_show(struct seq_file *s, void *unused)
 		sync_print_obj(s, obj);
 		seq_putc(s, '\n');
 	}
-	spin_unlock_irq(&sync_timeline_list_lock);
+	spin_unlock_irqrestore(&sync_timeline_list_lock, flags);
 
 	seq_puts(s, "fences:\n--------------\n");
 
-	spin_lock_irq(&sync_file_list_lock);
+	spin_lock_irqsave(&sync_file_list_lock, flags);
 	list_for_each(pos, &sync_file_list_head) {
 		struct sync_file *sync_file =
 			container_of(pos, struct sync_file, sync_file_list);
@@ -165,11 +177,21 @@ static int sync_info_debugfs_show(struct seq_file *s, void *unused)
 		sync_print_sync_file(s, sync_file);
 		seq_putc(s, '\n');
 	}
-	spin_unlock_irq(&sync_file_list_lock);
+	spin_unlock_irqrestore(&sync_file_list_lock, flags);
 	return 0;
 }
 
-DEFINE_SHOW_ATTRIBUTE(sync_info_debugfs);
+static int sync_info_debugfs_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, sync_debugfs_show, inode->i_private);
+}
+
+static const struct file_operations sync_info_debugfs_fops = {
+	.open           = sync_info_debugfs_open,
+	.read           = seq_read,
+	.llseek         = seq_lseek,
+	.release        = single_release,
+};
 
 static __init int sync_debugfs_init(void)
 {
@@ -199,7 +221,7 @@ void sync_dump(void)
 	};
 	int i;
 
-	sync_info_debugfs_show(&s, NULL);
+	sync_debugfs_show(&s, NULL);
 
 	for (i = 0; i < s.count; i += DUMP_CHUNK) {
 		if ((s.count - i) > DUMP_CHUNK) {

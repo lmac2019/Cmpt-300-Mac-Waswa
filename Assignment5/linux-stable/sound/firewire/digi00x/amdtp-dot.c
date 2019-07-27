@@ -1,10 +1,11 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * amdtp-dot.c - a part of driver for Digidesign Digi 002/003 family
  *
  * Copyright (c) 2014-2015 Takashi Sakamoto
  * Copyright (C) 2012 Robin Gareus <robin@gareus.org>
  * Copyright (C) 2012 Damien Zammit <damien@zamaudio.com>
+ *
+ * Licensed under the terms of the GNU General Public License, version 2.
  */
 
 #include <sound/pcm.h>
@@ -326,7 +327,7 @@ void amdtp_dot_midi_trigger(struct amdtp_stream *s, unsigned int port,
 	struct amdtp_dot *p = s->protocol;
 
 	if (port < MAX_MIDI_PORTS)
-		WRITE_ONCE(p->midi[port], midi);
+		ACCESS_ONCE(p->midi[port]) = midi;
 }
 
 static unsigned int process_tx_data_blocks(struct amdtp_stream *s,
@@ -337,7 +338,7 @@ static unsigned int process_tx_data_blocks(struct amdtp_stream *s,
 	struct snd_pcm_substream *pcm;
 	unsigned int pcm_frames;
 
-	pcm = READ_ONCE(s->pcm);
+	pcm = ACCESS_ONCE(s->pcm);
 	if (pcm) {
 		read_pcm_s32(s, pcm, buffer, data_blocks);
 		pcm_frames = data_blocks;
@@ -358,7 +359,7 @@ static unsigned int process_rx_data_blocks(struct amdtp_stream *s,
 	struct snd_pcm_substream *pcm;
 	unsigned int pcm_frames;
 
-	pcm = READ_ONCE(s->pcm);
+	pcm = ACCESS_ONCE(s->pcm);
 	if (pcm) {
 		write_pcm_s32(s, pcm, buffer, data_blocks);
 		pcm_frames = data_blocks;

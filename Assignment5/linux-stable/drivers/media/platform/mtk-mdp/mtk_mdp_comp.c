@@ -1,7 +1,15 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2016 MediaTek Inc.
  * Author: Ming Hsiu Tsai <minghsiu.tsai@mediatek.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  */
 
 #include <linux/clk.h>
@@ -67,7 +75,7 @@ void mtk_mdp_comp_clock_on(struct device *dev, struct mtk_mdp_comp *comp)
 	}
 
 	for (i = 0; i < ARRAY_SIZE(comp->clk); i++) {
-		if (IS_ERR(comp->clk[i]))
+		if (!comp->clk[i])
 			continue;
 		err = clk_prepare_enable(comp->clk[i]);
 		if (err)
@@ -82,7 +90,7 @@ void mtk_mdp_comp_clock_off(struct device *dev, struct mtk_mdp_comp *comp)
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(comp->clk); i++) {
-		if (IS_ERR(comp->clk[i]))
+		if (!comp->clk[i])
 			continue;
 		clk_disable_unprepare(comp->clk[i]);
 	}
@@ -126,13 +134,15 @@ int mtk_mdp_comp_init(struct device *dev, struct device_node *node,
 	larb_node = of_parse_phandle(node, "mediatek,larb", 0);
 	if (!larb_node) {
 		dev_err(dev,
-			"Missing mediadek,larb phandle in %pOF node\n", node);
+			"Missing mediadek,larb phandle in %s node\n",
+			node->full_name);
 		return -EINVAL;
 	}
 
 	larb_pdev = of_find_device_by_node(larb_node);
 	if (!larb_pdev) {
-		dev_warn(dev, "Waiting for larb device %pOF\n", larb_node);
+		dev_warn(dev, "Waiting for larb device %s\n",
+			 larb_node->full_name);
 		of_node_put(larb_node);
 		return -EPROBE_DEFER;
 	}

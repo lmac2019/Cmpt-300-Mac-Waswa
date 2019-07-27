@@ -1,6 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * crc4.c - simple crc-4 calculations.
+ *
+ * This source code is licensed under the GNU General Public License, Version
+ * 2. See the file COPYING for more details.
  */
 
 #include <linux/crc4.h>
@@ -13,7 +15,7 @@ static const uint8_t crc4_tab[] = {
 
 /**
  * crc4 - calculate the 4-bit crc of a value.
- * @c:    starting crc4
+ * @crc:  starting crc4
  * @x:    value to checksum
  * @bits: number of bits in @x to checksum
  *

@@ -1,4 +1,3 @@
-# SPDX-License-Identifier: GPL-2.0-only
 config CB710_CORE
 	tristate "ENE CB710/720 Flash memory card reader support"
 	depends on PCI

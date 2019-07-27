@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /* Hisilicon Hibmc SoC drm driver
  *
  * Based on the bochs drm driver.
@@ -9,11 +8,17 @@
  *	Rongrong Zou <zourongrong@huawei.com>
  *	Rongrong Zou <zourongrong@gmail.com>
  *	Jianhua Li <lijianhua@huawei.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
  */
 
 #include <drm/drm_crtc.h>
+#include <drm/drm_crtc_helper.h>
 #include <drm/drm_fb_helper.h>
-#include <drm/drm_probe_helper.h>
 
 #include "hibmc_drm_drv.h"
 
@@ -66,6 +71,7 @@ static int hibmc_drm_fb_create(struct drm_fb_helper *helper,
 	DRM_DEBUG_DRIVER("surface width(%d), height(%d) and bpp(%d)\n",
 			 sizes->surface_width, sizes->surface_height,
 			 sizes->surface_bpp);
+	sizes->surface_depth = 32;
 
 	bytes_per_pixel = DIV_ROUND_UP(sizes->surface_bpp, 8);
 
@@ -111,10 +117,11 @@ static int hibmc_drm_fb_create(struct drm_fb_helper *helper,
 		goto out_release_fbi;
 	}
 
+	info->par = hi_fbdev;
+
 	hi_fbdev->fb = hibmc_framebuffer_init(priv->dev, &mode_cmd, gobj);
 	if (IS_ERR(hi_fbdev->fb)) {
 		ret = PTR_ERR(hi_fbdev->fb);
-		hi_fbdev->fb = NULL;
 		DRM_ERROR("failed to initialize framebuffer: %d\n", ret);
 		goto out_release_fbi;
 	}
@@ -122,9 +129,15 @@ static int hibmc_drm_fb_create(struct drm_fb_helper *helper,
 	priv->fbdev->size = size;
 	hi_fbdev->helper.fb = &hi_fbdev->fb->fb;
 
+	strcpy(info->fix.id, "hibmcdrmfb");
+
+	info->flags = FBINFO_DEFAULT;
 	info->fbops = &hibmc_drm_fb_ops;
 
-	drm_fb_helper_fill_info(info, &priv->fbdev->helper, sizes);
+	drm_fb_helper_fill_fix(info, hi_fbdev->fb->fb.pitches[0],
+			       hi_fbdev->fb->fb.format->depth);
+	drm_fb_helper_fill_var(info, &priv->fbdev->helper, sizes->fb_width,
+			       sizes->fb_height);
 
 	info->screen_base = bo->kmap.virtual;
 	info->screen_size = size;
@@ -145,7 +158,7 @@ out_unpin_bo:
 out_unreserve_ttm_bo:
 	ttm_bo_unreserve(&bo->bo);
 out_unref_gem:
-	drm_gem_object_put_unlocked(gobj);
+	drm_gem_object_unreference_unlocked(gobj);
 
 	return ret;
 }
@@ -160,7 +173,7 @@ static void hibmc_fbdev_destroy(struct hibmc_fbdev *fbdev)
 	drm_fb_helper_fini(fbh);
 
 	if (gfb)
-		drm_framebuffer_put(&gfb->fb);
+		drm_framebuffer_unreference(&gfb->fb);
 }
 
 static const struct drm_fb_helper_funcs hibmc_fbdev_helper_funcs = {

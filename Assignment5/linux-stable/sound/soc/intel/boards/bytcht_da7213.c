@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  *  bytcht-da7213.c - ASoc Machine driver for Intel Baytrail and
  *             Cherrytrail-based platforms, with Dialog DA7213 codec
@@ -7,6 +6,15 @@
  *  Author: Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
  *
  *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; version 2 of the License.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  General Public License for more details.
  *
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
@@ -19,9 +27,9 @@
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
-#include <sound/soc-acpi.h>
 #include "../../codecs/da7213.h"
 #include "../atom/sst-atom-controls.h"
+#include "../common/sst-acpi.h"
 
 static const struct snd_kcontrol_new controls[] = {
 	SOC_DAPM_PIN_SWITCH("Headphone Jack"),
@@ -177,11 +185,19 @@ static struct snd_soc_dai_link dailink[] = {
 		.dpcm_playback = 1,
 		.ops = &aif1_ops,
 	},
+	[MERR_DPCM_COMPR] = {
+		.name = "Compressed Port",
+		.stream_name = "Compress",
+		.cpu_dai_name = "compress-cpu-dai",
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.codec_name = "snd-soc-dummy",
+		.platform_name = "sst-mfld-platform",
+	},
 	/* CODEC<->CODEC link */
 	/* back ends */
 	{
 		.name = "SSP2-Codec",
-		.id = 0,
+		.id = 1,
 		.cpu_dai_name = "ssp2-port",
 		.platform_name = "sst-mfld-platform",
 		.no_pcm = 1,
@@ -211,23 +227,23 @@ static struct snd_soc_card bytcht_da7213_card = {
 	.num_dapm_routes = ARRAY_SIZE(audio_map),
 };
 
-static char codec_name[SND_ACPI_I2C_ID_LEN];
+static char codec_name[16]; /* i2c-<HID>:00 with HID being 8 chars */
 
 static int bytcht_da7213_probe(struct platform_device *pdev)
 {
-	struct snd_soc_card *card;
-	struct snd_soc_acpi_mach *mach;
-	const char *platform_name;
-	struct acpi_device *adev;
-	int dai_index = 0;
 	int ret_val = 0;
 	int i;
+	struct snd_soc_card *card;
+	struct sst_acpi_mach *mach;
+	const char *i2c_name = NULL;
+	int dai_index = 0;
 
 	mach = (&pdev->dev)->platform_data;
 	card = &bytcht_da7213_card;
 	card->dev = &pdev->dev;
 
 	/* fix index of codec dai */
+	dai_index = MERR_DPCM_COMPR + 1;
 	for (i = 0; i < ARRAY_SIZE(dailink); i++) {
 		if (!strcmp(dailink[i].codec_name, "i2c-DLGS7213:00")) {
 			dai_index = i;
@@ -236,20 +252,12 @@ static int bytcht_da7213_probe(struct platform_device *pdev)
 	}
 
 	/* fixup codec name based on HID */
-	adev = acpi_dev_get_first_match_dev(mach->id, NULL, -1);
-	if (adev) {
+	i2c_name = sst_acpi_find_name_from_hid(mach->id);
+	if (i2c_name != NULL) {
 		snprintf(codec_name, sizeof(codec_name),
-			 "i2c-%s", acpi_dev_name(adev));
-		put_device(&adev->dev);
+			"%s%s", "i2c-", i2c_name);
 		dailink[dai_index].codec_name = codec_name;
 	}
-
-	/* override plaform name, if required */
-	platform_name = mach->mach_params.platform;
-
-	ret_val = snd_soc_fixup_dai_links_platform_name(card, platform_name);
-	if (ret_val)
-		return ret_val;
 
 	ret_val = devm_snd_soc_register_card(&pdev->dev, card);
 	if (ret_val) {

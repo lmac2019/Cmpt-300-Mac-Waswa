@@ -1,9 +1,12 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Generic HDLC support routines for Linux
  * Point-to-point protocol support
  *
  * Copyright (C) 1999 - 2008 Krzysztof Halasa <khc@pm.waw.pl>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of version 2 of the GNU General Public License
+ * as published by the Free Software Foundation.
  */
 
 #include <linux/errno.h>
@@ -555,9 +558,9 @@ out:
 	return NET_RX_DROP;
 }
 
-static void ppp_timer(struct timer_list *t)
+static void ppp_timer(unsigned long arg)
 {
-	struct proto *proto = from_timer(proto, t, timer);
+	struct proto *proto = (struct proto *)arg;
 	struct ppp *ppp = get_ppp(proto->dev);
 	unsigned long flags;
 
@@ -571,10 +574,7 @@ static void ppp_timer(struct timer_list *t)
 			ppp_cp_event(proto->dev, proto->pid, TO_GOOD, 0, 0,
 				     0, NULL);
 			proto->restart_counter--;
-		} else if (netif_carrier_ok(proto->dev))
-			ppp_cp_event(proto->dev, proto->pid, TO_GOOD, 0, 0,
-				     0, NULL);
-		else
+		} else
 			ppp_cp_event(proto->dev, proto->pid, TO_BAD, 0, 0,
 				     0, NULL);
 		break;
@@ -610,7 +610,9 @@ static void ppp_start(struct net_device *dev)
 	for (i = 0; i < IDX_COUNT; i++) {
 		struct proto *proto = &ppp->protos[i];
 		proto->dev = dev;
-		timer_setup(&proto->timer, ppp_timer, 0);
+		init_timer(&proto->timer);
+		proto->timer.function = ppp_timer;
+		proto->timer.data = (unsigned long)proto;
 		proto->state = CLOSED;
 	}
 	ppp->protos[IDX_LCP].pid = PID_LCP;

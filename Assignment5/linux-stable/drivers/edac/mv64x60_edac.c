@@ -758,7 +758,7 @@ static int mv64x60_mc_err_probe(struct platform_device *pdev)
 		/* Non-ECC RAM? */
 		printk(KERN_WARNING "%s: No ECC DIMMs discovered\n", __func__);
 		res = -ENODEV;
-		goto err;
+		goto err2;
 	}
 
 	edac_dbg(3, "init mci\n");
@@ -766,6 +766,7 @@ static int mv64x60_mc_err_probe(struct platform_device *pdev)
 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_SECDED;
 	mci->edac_cap = EDAC_FLAG_SECDED;
 	mci->mod_name = EDAC_MOD_STR;
+	mci->mod_ver = MV64x60_REVISION;
 	mci->ctl_name = mv64x60_ctl_name;
 
 	if (edac_op_state == EDAC_OPSTATE_POLL)

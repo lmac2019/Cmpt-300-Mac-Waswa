@@ -1,4 +1,3 @@
-# SPDX-License-Identifier: GPL-2.0
 #
 # Copyright (c) 2015-2016 Quantenna Communications, Inc.
 # All rights reserved.
@@ -19,12 +18,14 @@ qtnfmac-objs += \
 
 #
 
-obj-$(CONFIG_QTNFMAC_PCIE) += qtnfmac_pcie.o
+obj-$(CONFIG_QTNFMAC_PEARL_PCIE) += qtnfmac_pearl_pcie.o
 
-qtnfmac_pcie-objs += \
+qtnfmac_pearl_pcie-objs += \
 	shm_ipc.o \
-	pcie/pcie.o \
-	pcie/pearl_pcie.o \
-	pcie/topaz_pcie.o
+	pearl/pcie.o
 
-qtnfmac_pcie-$(CONFIG_DEBUG_FS) += debug.o
+qtnfmac_pearl_pcie-$(CONFIG_DEBUG_FS) += debug.o
+
+#
+
+ccflags-y += -D__CHECK_ENDIAN

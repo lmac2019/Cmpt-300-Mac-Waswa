@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * Virtual DMA allocation
  *
@@ -15,7 +14,7 @@
 #include <linux/init.h>
 #include <linux/bitops.h>
 #include <linux/mm.h>
-#include <linux/memblock.h>
+#include <linux/bootmem.h>
 #include <linux/vmalloc.h>
 
 #include <asm/sun3x.h>

@@ -180,9 +180,11 @@ static struct region_code_mapping region_code_mapping_t[] = {
 u8 *mwifiex_11d_code_2_region(u8 code)
 {
 	u8 i;
+	u8 size = sizeof(region_code_mapping_t)/
+				sizeof(struct region_code_mapping);
 
 	/* Look for code in mapping table */
-	for (i = 0; i < ARRAY_SIZE(region_code_mapping_t); i++)
+	for (i = 0; i < size; i++)
 		if (region_code_mapping_t[i].code == code)
 			return region_code_mapping_t[i].region;
 
@@ -530,9 +532,6 @@ u8 mwifiex_adjust_data_rate(struct mwifiex_private *priv,
 	else
 		rate_index = (rx_rate > MWIFIEX_RATE_INDEX_OFDM0) ?
 			      rx_rate - 1 : rx_rate;
-
-	if (rate_index >= MWIFIEX_MAX_AC_RX_RATES)
-		rate_index = MWIFIEX_MAX_AC_RX_RATES - 1;
 
 	return rate_index;
 }

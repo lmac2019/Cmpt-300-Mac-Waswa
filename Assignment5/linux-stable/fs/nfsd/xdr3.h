@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * XDR types for NFSv3 in nfsd.
  *
@@ -41,7 +40,7 @@ struct nfsd3_writeargs {
 	__u32			count;
 	int			stable;
 	__u32			len;
-	struct kvec		first;
+	int			vlen;
 };
 
 struct nfsd3_createargs {
@@ -90,7 +89,6 @@ struct nfsd3_symlinkargs {
 	char *			tname;
 	unsigned int		tlen;
 	struct iattr		attrs;
-	struct kvec		first;
 };
 
 struct nfsd3_readdirargs {

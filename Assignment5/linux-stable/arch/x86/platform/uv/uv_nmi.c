@@ -1,6 +1,19 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * SGI NMI support routines
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  *
  *  Copyright (c) 2009-2013 Silicon Graphics, Inc.  All Rights Reserved.
  *  Copyright (c) Mike Travis
@@ -547,7 +560,7 @@ static inline void uv_clear_nmi(int cpu)
 	}
 }
 
-/* Ping non-responding CPU's attempting to force them into the NMI handler */
+/* Ping non-responding CPU's attemping to force them into the NMI handler */
 static void uv_nmi_nr_cpus_ping(void)
 {
 	int cpu;
@@ -892,7 +905,7 @@ static inline void uv_call_kgdb_kdb(int cpu, struct pt_regs *regs, int master)
 /*
  * UV NMI handler
  */
-static int uv_handle_nmi(unsigned int reason, struct pt_regs *regs)
+int uv_handle_nmi(unsigned int reason, struct pt_regs *regs)
 {
 	struct uv_hub_nmi_s *hub_nmi = uv_hub_nmi;
 	int cpu = smp_processor_id();
@@ -1000,7 +1013,7 @@ void uv_nmi_init(void)
 }
 
 /* Setup HUB NMI info */
-static void __init uv_nmi_setup_common(bool hubbed)
+void __init uv_nmi_setup_common(bool hubbed)
 {
 	int size = sizeof(void *) * (1 << NODES_SHIFT);
 	int cpu;

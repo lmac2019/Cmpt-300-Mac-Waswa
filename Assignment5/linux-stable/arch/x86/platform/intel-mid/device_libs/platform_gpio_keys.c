@@ -1,9 +1,13 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * platform_gpio_keys.c: gpio_keys platform data initialization file
  *
  * (C) Copyright 2013 Intel Corporation
  * Author: Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; version 2
+ * of the License.
  */
 
 #include <linux/input.h>
@@ -58,9 +62,10 @@ static struct platform_device pb_device = {
 static int __init pb_keys_init(void)
 {
 	struct gpio_keys_button *gb = gpio_button;
-	int i, good = 0;
+	int i, num, good = 0;
 
-	for (i = 0; i < ARRAY_SIZE(gpio_button); i++) {
+	num = sizeof(gpio_button) / sizeof(struct gpio_keys_button);
+	for (i = 0; i < num; i++) {
 		gb[i].gpio = get_gpio_by_name(gb[i].desc);
 		pr_debug("info[%2d]: name = %s, gpio = %d\n", i, gb[i].desc,
 					gb[i].gpio);

@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 #include <elf.h>
 #include <inttypes.h>
 #include <sys/ttydefaults.h>
@@ -6,7 +5,6 @@
 #include <linux/bitops.h>
 #include "../../util/util.h"
 #include "../../util/debug.h"
-#include "../../util/map.h"
 #include "../../util/symbol.h"
 #include "../browser.h"
 #include "../helpline.h"
@@ -105,7 +103,7 @@ int map__browse(struct map *map)
 {
 	struct map_browser mb = {
 		.b = {
-			.entries = &map->dso->symbols,
+			.entries = &map->dso->symbols[map->type],
 			.refresh = ui_browser__rb_tree_refresh,
 			.seek	 = ui_browser__rb_tree_seek,
 			.write	 = map_browser__write,

@@ -1,5 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2010, Code Aurora Forum. All rights reserved. */
+/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ */
 
 #include <linux/module.h>
 #include <linux/platform_device.h>
@@ -205,9 +209,12 @@ static int ci_hdrc_msm_probe(struct platform_device *pdev)
 	if (IS_ERR(clk))
 		return PTR_ERR(clk);
 
-	ci->fs_clk = clk = devm_clk_get_optional(&pdev->dev, "fs");
-	if (IS_ERR(clk))
-		return PTR_ERR(clk);
+	ci->fs_clk = clk = devm_clk_get(&pdev->dev, "fs");
+	if (IS_ERR(clk)) {
+		if (PTR_ERR(clk) == -EPROBE_DEFER)
+			return -EPROBE_DEFER;
+		ci->fs_clk = NULL;
+	}
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
 	ci->base = devm_ioremap_resource(&pdev->dev, res);
@@ -244,7 +251,7 @@ static int ci_hdrc_msm_probe(struct platform_device *pdev)
 	if (ret)
 		goto err_mux;
 
-	ulpi_node = of_get_child_by_name(pdev->dev.of_node, "ulpi");
+	ulpi_node = of_find_node_by_name(pdev->dev.of_node, "ulpi");
 	if (ulpi_node) {
 		phy_node = of_get_next_available_child(ulpi_node, NULL);
 		ci->hsic = of_device_is_compatible(phy_node, "qcom,usb-hsic-phy");

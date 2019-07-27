@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /* net/sched/sch_dsmark.c - Differentiated Services field marker */
 
 /* Written 1998-2000 by Werner Almesberger, EPFL ICA */
@@ -62,8 +61,7 @@ static inline int dsmark_valid_index(struct dsmark_qdisc_data *p, u16 index)
 /* ------------------------- Class/flow operations ------------------------- */
 
 static int dsmark_graft(struct Qdisc *sch, unsigned long arg,
-			struct Qdisc *new, struct Qdisc **old,
-			struct netlink_ext_ack *extack)
+			struct Qdisc *new, struct Qdisc **old)
 {
 	struct dsmark_qdisc_data *p = qdisc_priv(sch);
 
@@ -72,7 +70,7 @@ static int dsmark_graft(struct Qdisc *sch, unsigned long arg,
 
 	if (new == NULL) {
 		new = qdisc_create_dflt(sch->dev_queue, &pfifo_qdisc_ops,
-					sch->handle, NULL);
+					sch->handle);
 		if (new == NULL)
 			new = &noop_qdisc;
 	}
@@ -87,21 +85,21 @@ static struct Qdisc *dsmark_leaf(struct Qdisc *sch, unsigned long arg)
 	return p->q;
 }
 
-static unsigned long dsmark_find(struct Qdisc *sch, u32 classid)
+static unsigned long dsmark_get(struct Qdisc *sch, u32 classid)
 {
+	pr_debug("%s(sch %p,[qdisc %p],classid %x)\n",
+		 __func__, sch, qdisc_priv(sch), classid);
+
 	return TC_H_MIN(classid) + 1;
 }
 
 static unsigned long dsmark_bind_filter(struct Qdisc *sch,
 					unsigned long parent, u32 classid)
 {
-	pr_debug("%s(sch %p,[qdisc %p],classid %x)\n",
-		 __func__, sch, qdisc_priv(sch), classid);
-
-	return dsmark_find(sch, classid);
+	return dsmark_get(sch, classid);
 }
 
-static void dsmark_unbind_filter(struct Qdisc *sch, unsigned long cl)
+static void dsmark_put(struct Qdisc *sch, unsigned long cl)
 {
 }
 
@@ -114,8 +112,7 @@ static const struct nla_policy dsmark_policy[TCA_DSMARK_MAX + 1] = {
 };
 
 static int dsmark_change(struct Qdisc *sch, u32 classid, u32 parent,
-			 struct nlattr **tca, unsigned long *arg,
-			 struct netlink_ext_ack *extack)
+			 struct nlattr **tca, unsigned long *arg)
 {
 	struct dsmark_qdisc_data *p = qdisc_priv(sch);
 	struct nlattr *opt = tca[TCA_OPTIONS];
@@ -133,8 +130,7 @@ static int dsmark_change(struct Qdisc *sch, u32 classid, u32 parent,
 	if (!opt)
 		goto errout;
 
-	err = nla_parse_nested_deprecated(tb, TCA_DSMARK_MAX, opt,
-					  dsmark_policy, NULL);
+	err = nla_parse_nested(tb, TCA_DSMARK_MAX, opt, dsmark_policy, NULL);
 	if (err < 0)
 		goto errout;
 
@@ -188,8 +184,7 @@ ignore:
 	}
 }
 
-static struct tcf_block *dsmark_tcf_block(struct Qdisc *sch, unsigned long cl,
-					  struct netlink_ext_ack *extack)
+static struct tcf_block *dsmark_tcf_block(struct Qdisc *sch, unsigned long cl)
 {
 	struct dsmark_qdisc_data *p = qdisc_priv(sch);
 
@@ -201,7 +196,6 @@ static struct tcf_block *dsmark_tcf_block(struct Qdisc *sch, unsigned long cl,
 static int dsmark_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 			  struct sk_buff **to_free)
 {
-	unsigned int len = qdisc_pkt_len(skb);
 	struct dsmark_qdisc_data *p = qdisc_priv(sch);
 	int err;
 
@@ -274,7 +268,7 @@ static int dsmark_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 		return err;
 	}
 
-	sch->qstats.backlog += len;
+	qdisc_qstats_backlog_inc(sch, skb);
 	sch->q.qlen++;
 
 	return NET_XMIT_SUCCESS;
@@ -336,8 +330,7 @@ static struct sk_buff *dsmark_peek(struct Qdisc *sch)
 	return p->q->ops->peek(p->q);
 }
 
-static int dsmark_init(struct Qdisc *sch, struct nlattr *opt,
-		       struct netlink_ext_ack *extack)
+static int dsmark_init(struct Qdisc *sch, struct nlattr *opt)
 {
 	struct dsmark_qdisc_data *p = qdisc_priv(sch);
 	struct nlattr *tb[TCA_DSMARK_MAX + 1];
@@ -351,12 +344,11 @@ static int dsmark_init(struct Qdisc *sch, struct nlattr *opt,
 	if (!opt)
 		goto errout;
 
-	err = tcf_block_get(&p->block, &p->filter_list, sch, extack);
+	err = tcf_block_get(&p->block, &p->filter_list);
 	if (err)
 		return err;
 
-	err = nla_parse_nested_deprecated(tb, TCA_DSMARK_MAX, opt,
-					  dsmark_policy, NULL);
+	err = nla_parse_nested(tb, TCA_DSMARK_MAX, opt, dsmark_policy, NULL);
 	if (err < 0)
 		goto errout;
 
@@ -385,8 +377,7 @@ static int dsmark_init(struct Qdisc *sch, struct nlattr *opt,
 	p->default_index = default_index;
 	p->set_tc_index = nla_get_flag(tb[TCA_DSMARK_SET_TC_INDEX]);
 
-	p->q = qdisc_create_dflt(sch->dev_queue, &pfifo_qdisc_ops, sch->handle,
-				 NULL);
+	p->q = qdisc_create_dflt(sch->dev_queue, &pfifo_qdisc_ops, sch->handle);
 	if (p->q == NULL)
 		p->q = &noop_qdisc;
 	else
@@ -416,7 +407,7 @@ static void dsmark_destroy(struct Qdisc *sch)
 	pr_debug("%s(sch %p,[qdisc %p])\n", __func__, sch, p);
 
 	tcf_block_put(p->block);
-	qdisc_put(p->q);
+	qdisc_destroy(p->q);
 	if (p->mv != p->embedded)
 		kfree(p->mv);
 }
@@ -435,7 +426,7 @@ static int dsmark_dump_class(struct Qdisc *sch, unsigned long cl,
 	tcm->tcm_handle = TC_H_MAKE(TC_H_MAJ(sch->handle), cl - 1);
 	tcm->tcm_info = p->q->handle;
 
-	opts = nla_nest_start_noflag(skb, TCA_OPTIONS);
+	opts = nla_nest_start(skb, TCA_OPTIONS);
 	if (opts == NULL)
 		goto nla_put_failure;
 	if (nla_put_u8(skb, TCA_DSMARK_MASK, p->mv[cl - 1].mask) ||
@@ -454,7 +445,7 @@ static int dsmark_dump(struct Qdisc *sch, struct sk_buff *skb)
 	struct dsmark_qdisc_data *p = qdisc_priv(sch);
 	struct nlattr *opts = NULL;
 
-	opts = nla_nest_start_noflag(skb, TCA_OPTIONS);
+	opts = nla_nest_start(skb, TCA_OPTIONS);
 	if (opts == NULL)
 		goto nla_put_failure;
 	if (nla_put_u16(skb, TCA_DSMARK_INDICES, p->indices))
@@ -478,13 +469,14 @@ nla_put_failure:
 static const struct Qdisc_class_ops dsmark_class_ops = {
 	.graft		=	dsmark_graft,
 	.leaf		=	dsmark_leaf,
-	.find		=	dsmark_find,
+	.get		=	dsmark_get,
+	.put		=	dsmark_put,
 	.change		=	dsmark_change,
 	.delete		=	dsmark_delete,
 	.walk		=	dsmark_walk,
 	.tcf_block	=	dsmark_tcf_block,
 	.bind_tcf	=	dsmark_bind_filter,
-	.unbind_tcf	=	dsmark_unbind_filter,
+	.unbind_tcf	=	dsmark_put,
 	.dump		=	dsmark_dump_class,
 };
 

@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  *  linux/fs/isofs/inode.c
  *
@@ -25,7 +24,6 @@
 #include <linux/mpage.h>
 #include <linux/user_namespace.h>
 #include <linux/seq_file.h>
-#include <linux/blkdev.h>
 
 #include "isofs.h"
 #include "zisofs.h"
@@ -73,9 +71,15 @@ static struct inode *isofs_alloc_inode(struct super_block *sb)
 	return &ei->vfs_inode;
 }
 
-static void isofs_free_inode(struct inode *inode)
+static void isofs_i_callback(struct rcu_head *head)
 {
+	struct inode *inode = container_of(head, struct inode, i_rcu);
 	kmem_cache_free(isofs_inode_cachep, ISOFS_I(inode));
+}
+
+static void isofs_destroy_inode(struct inode *inode)
+{
+	call_rcu(&inode->i_rcu, isofs_i_callback);
 }
 
 static void init_once(void *foo)
@@ -92,7 +96,7 @@ static int __init init_inodecache(void)
 					0, (SLAB_RECLAIM_ACCOUNT|
 					SLAB_MEM_SPREAD|SLAB_ACCOUNT),
 					init_once);
-	if (!isofs_inode_cachep)
+	if (isofs_inode_cachep == NULL)
 		return -ENOMEM;
 	return 0;
 }
@@ -110,14 +114,14 @@ static void destroy_inodecache(void)
 static int isofs_remount(struct super_block *sb, int *flags, char *data)
 {
 	sync_filesystem(sb);
-	if (!(*flags & SB_RDONLY))
+	if (!(*flags & MS_RDONLY))
 		return -EROFS;
 	return 0;
 }
 
 static const struct super_operations isofs_sops = {
 	.alloc_inode	= isofs_alloc_inode,
-	.free_inode	= isofs_free_inode,
+	.destroy_inode	= isofs_destroy_inode,
 	.put_super	= isofs_put_super,
 	.statfs		= isofs_statfs,
 	.remount_fs	= isofs_remount,
@@ -390,10 +394,7 @@ static int parse_options(char *options, struct iso9660_options *popt)
 			break;
 #ifdef CONFIG_JOLIET
 		case Opt_iocharset:
-			kfree(popt->iocharset);
 			popt->iocharset = match_strdup(&args[0]);
-			if (!popt->iocharset)
-				return 0;
 			break;
 #endif
 		case Opt_map_a:
@@ -513,11 +514,9 @@ static int isofs_show_options(struct seq_file *m, struct dentry *root)
 	if (sbi->s_fmode != ISOFS_INVALID_MODE)
 		seq_printf(m, ",fmode=%o", sbi->s_fmode);
 
-#ifdef CONFIG_JOLIET
 	if (sbi->s_nls_iocharset &&
 	    strcmp(sbi->s_nls_iocharset->charset, CONFIG_NLS_DEFAULT) != 0)
 		seq_printf(m, ",iocharset=%s", sbi->s_nls_iocharset->charset);
-#endif
 	return 0;
 }
 
@@ -649,12 +648,6 @@ static int isofs_fill_super(struct super_block *s, void *data, int silent)
 	/*
 	 * What if bugger tells us to go beyond page size?
 	 */
-	if (bdev_logical_block_size(s->s_bdev) > 2048) {
-		printk(KERN_WARNING
-		       "ISOFS: unsupported/invalid hardware sector size %d\n",
-			bdev_logical_block_size(s->s_bdev));
-		goto out_freesbi;
-	}
 	opt.blocksize = sb_min_blocksize(s, opt.blocksize);
 
 	sbi->s_high_sierra = 0; /* default is iso9660 */
@@ -685,7 +678,7 @@ static int isofs_fill_super(struct super_block *s, void *data, int silent)
 			if (isonum_711(vdp->type) == ISO_VD_END)
 				break;
 			if (isonum_711(vdp->type) == ISO_VD_PRIMARY) {
-				if (!pri) {
+				if (pri == NULL) {
 					pri = (struct iso_primary_descriptor *)vdp;
 					/* Save the buffer in case we need it ... */
 					pri_bh = bh;
@@ -744,12 +737,12 @@ static int isofs_fill_super(struct super_block *s, void *data, int silent)
 
 root_found:
 	/* We don't support read-write mounts */
-	if (!sb_rdonly(s)) {
+	if (!(s->s_flags & MS_RDONLY)) {
 		error = -EACCES;
 		goto out_freebh;
 	}
 
-	if (joliet_level && (!pri || !opt.rock)) {
+	if (joliet_level && (pri == NULL || !opt.rock)) {
 		/* This is the case of Joliet with the norock mount flag.
 		 * A disc with both Joliet and Rock Ridge is handled later
 		 */
@@ -1305,7 +1298,7 @@ static int isofs_read_inode(struct inode *inode, int relocated)
 	unsigned long bufsize = ISOFS_BUFFER_SIZE(inode);
 	unsigned long block;
 	int high_sierra = sbi->s_high_sierra;
-	struct buffer_head *bh;
+	struct buffer_head *bh = NULL;
 	struct iso_directory_record *de;
 	struct iso_directory_record *tmpde = NULL;
 	unsigned int de_len;
@@ -1327,7 +1320,8 @@ static int isofs_read_inode(struct inode *inode, int relocated)
 		int frag1 = bufsize - offset;
 
 		tmpde = kmalloc(de_len, GFP_KERNEL);
-		if (!tmpde) {
+		if (tmpde == NULL) {
+			printk(KERN_INFO "%s: out of memory\n", __func__);
 			ret = -ENOMEM;
 			goto fail;
 		}

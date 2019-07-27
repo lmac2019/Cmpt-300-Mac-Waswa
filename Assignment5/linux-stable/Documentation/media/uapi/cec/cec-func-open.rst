@@ -1,11 +1,4 @@
-.. Permission is granted to copy, distribute and/or modify this
-.. document under the terms of the GNU Free Documentation License,
-.. Version 1.1 or any later version published by the Free Software
-.. Foundation, with no Invariant Sections, no Front-Cover Texts
-.. and no Back-Cover Texts. A copy of the license is included at
-.. Documentation/media/uapi/fdl-appendix.rst.
-..
-.. TODO: replace it to GFDL-1.1-or-later WITH no-invariant-sections
+.. -*- coding: utf-8; mode: rst -*-
 
 .. _cec-func-open:
 
@@ -53,7 +46,7 @@ Arguments
 Description
 ===========
 
-To open a cec device applications call :c:func:`open() <cec-open>` with the
+To open a cec device applications call :c:func:`open()` with the
 desired device name. The function has no side effects; the device
 configuration remain unchanged.
 
@@ -65,7 +58,7 @@ EBADF.
 Return Value
 ============
 
-:c:func:`open() <cec-open>` returns the new file descriptor on success. On error,
+:c:func:`open()` returns the new file descriptor on success. On error,
 -1 is returned, and ``errno`` is set appropriately. Possible error codes
 include:
 

@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef __PSTORE_INTERNAL_H__
 #define __PSTORE_INTERNAL_H__
 
@@ -36,9 +35,5 @@ extern int	pstore_mkfile(struct dentry *root,
 extern bool	pstore_is_mounted(void);
 extern void	pstore_record_init(struct pstore_record *record,
 				   struct pstore_info *psi);
-
-/* Called during pstore init/exit. */
-int __init	pstore_init_fs(void);
-void __exit	pstore_exit_fs(void);
 
 #endif

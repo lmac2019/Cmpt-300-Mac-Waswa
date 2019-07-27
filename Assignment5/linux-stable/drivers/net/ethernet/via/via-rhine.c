@@ -571,6 +571,7 @@ static void rhine_ack_events(struct rhine_private *rp, u32 mask)
 	if (rp->quirks & rqStatusWBRace)
 		iowrite8(mask >> 16, ioaddr + IntrStatus2);
 	iowrite16(mask, ioaddr + IntrStatus);
+	mmiowb();
 }
 
 /*
@@ -862,6 +863,7 @@ static int rhine_napipoll(struct napi_struct *napi, int budget)
 	if (work_done < budget) {
 		napi_complete_done(napi, work_done);
 		iowrite16(enable_mask, ioaddr + IntrEnable);
+		mmiowb();
 	}
 	return work_done;
 }
@@ -993,8 +995,8 @@ static int rhine_init_one_common(struct device *hwdev, u32 quirks,
 	else
 		name = "Rhine III";
 
-	netdev_info(dev, "VIA %s at %p, %pM, IRQ %d\n",
-		    name, ioaddr, dev->dev_addr, rp->irq);
+	netdev_info(dev, "VIA %s at 0x%lx, %pM, IRQ %d\n",
+		    name, (long)ioaddr, dev->dev_addr, rp->irq);
 
 	dev_set_drvdata(hwdev, dev);
 
@@ -1891,6 +1893,7 @@ static netdev_tx_t rhine_start_tx(struct sk_buff *skb,
 static void rhine_irq_disable(struct rhine_private *rp)
 {
 	iowrite16(0x0000, rp->base + IntrEnable);
+	mmiowb();
 }
 
 /* The interrupt handler does all of the Rx thread work and cleans up
@@ -2595,7 +2598,7 @@ static struct platform_driver rhine_driver_platform = {
 	}
 };
 
-static const struct dmi_system_id rhine_dmi_table[] __initconst = {
+static struct dmi_system_id rhine_dmi_table[] __initdata = {
 	{
 		.ident = "EPIA-M",
 		.matches = {

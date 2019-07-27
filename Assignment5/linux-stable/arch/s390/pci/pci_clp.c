@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright IBM Corp. 2012
  *
@@ -19,18 +18,11 @@
 #include <linux/uaccess.h>
 #include <asm/pci_debug.h>
 #include <asm/pci_clp.h>
+#include <asm/compat.h>
 #include <asm/clp.h>
 #include <uapi/asm/clp.h>
 
 bool zpci_unique_uid;
-
-static void update_uid_checking(bool new)
-{
-	if (zpci_unique_uid != new)
-		zpci_dbg(1, "uid checking:%d\n", new);
-
-	zpci_unique_uid = new;
-}
 
 static inline void zpci_err_clp(unsigned int rsp, int rc)
 {
@@ -163,14 +155,7 @@ static int clp_store_query_pci_fn(struct zpci_dev *zdev,
 		memcpy(zdev->util_str, response->util_str,
 		       sizeof(zdev->util_str));
 	}
-	zdev->mio_capable = response->mio_addr_avail;
-	for (i = 0; i < PCI_BAR_COUNT; i++) {
-		if (!(response->mio.valid & (1 << (PCI_BAR_COUNT - i - 1))))
-			continue;
 
-		zdev->bars[i].mio_wb = (void __iomem *) response->mio.addr[i].wb;
-		zdev->bars[i].mio_wt = (void __iomem *) response->mio.addr[i].wt;
-	}
 	return 0;
 }
 
@@ -286,18 +271,11 @@ int clp_enable_fh(struct zpci_dev *zdev, u8 nr_dma_as)
 	int rc;
 
 	rc = clp_set_pci_fn(&fh, nr_dma_as, CLP_SET_ENABLE_PCI_FN);
-	zpci_dbg(3, "ena fid:%x, fh:%x, rc:%d\n", zdev->fid, fh, rc);
-	if (rc)
-		goto out;
+	if (!rc)
+		/* Success -> store enabled handle in zdev */
+		zdev->fh = fh;
 
-	zdev->fh = fh;
-	if (zdev->mio_capable) {
-		rc = clp_set_pci_fn(&fh, nr_dma_as, CLP_SET_ENABLE_MIO);
-		zpci_dbg(3, "ena mio fid:%x, fh:%x, rc:%d\n", zdev->fid, fh, rc);
-		if (rc)
-			clp_disable_fh(zdev);
-	}
-out:
+	zpci_dbg(3, "ena fid:%x, fh:%x, rc:%d\n", zdev->fid, zdev->fh, rc);
 	return rc;
 }
 
@@ -310,10 +288,11 @@ int clp_disable_fh(struct zpci_dev *zdev)
 		return 0;
 
 	rc = clp_set_pci_fn(&fh, 0, CLP_SET_DISABLE_PCI_FN);
-	zpci_dbg(3, "dis fid:%x, fh:%x, rc:%d\n", zdev->fid, fh, rc);
 	if (!rc)
+		/* Success -> store disabled handle in zdev */
 		zdev->fh = fh;
 
+	zpci_dbg(3, "dis fid:%x, fh:%x, rc:%d\n", zdev->fid, zdev->fh, rc);
 	return rc;
 }
 
@@ -340,7 +319,7 @@ static int clp_list_pci(struct clp_req_rsp_list_pci *rrb, void *data,
 			goto out;
 		}
 
-		update_uid_checking(rrb->response.uid_checking);
+		zpci_unique_uid = rrb->response.uid_checking;
 		WARN_ON_ONCE(rrb->response.entry_size !=
 			sizeof(struct clp_fh_list_entry));
 
@@ -449,7 +428,7 @@ int clp_get_state(u32 fid, enum zpci_state *state)
 	struct clp_state_data sd = {fid, ZPCI_FN_STATE_RESERVED};
 	int rc;
 
-	rrb = clp_alloc_block(GFP_ATOMIC);
+	rrb = clp_alloc_block(GFP_KERNEL);
 	if (!rrb)
 		return -ENOMEM;
 

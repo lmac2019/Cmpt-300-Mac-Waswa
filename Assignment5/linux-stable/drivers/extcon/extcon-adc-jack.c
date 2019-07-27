@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * drivers/extcon/extcon-adc-jack.c
  *
@@ -11,6 +10,11 @@
  * MyungJoo Ham <myungjoo.ham@samsung.com>
  *
  * Modified for calling to IIO to get adc by <anish.singh@samsung.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
  */
 
 #include <linux/module.h>
@@ -22,7 +26,7 @@
 #include <linux/workqueue.h>
 #include <linux/iio/consumer.h>
 #include <linux/extcon/extcon-adc-jack.h>
-#include <linux/extcon-provider.h>
+#include <linux/extcon.h>
 
 /**
  * struct adc_jack_data - internal data for adc_jack device driver
@@ -140,7 +144,7 @@ static int adc_jack_probe(struct platform_device *pdev)
 		return err;
 
 	data->irq = platform_get_irq(pdev, 0);
-	if (data->irq < 0) {
+	if (!data->irq) {
 		dev_err(&pdev->dev, "platform_get_irq failed\n");
 		return -ENODEV;
 	}

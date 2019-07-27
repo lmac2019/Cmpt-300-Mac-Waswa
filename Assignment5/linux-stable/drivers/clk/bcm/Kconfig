@@ -1,4 +1,3 @@
-# SPDX-License-Identifier: GPL-2.0-only
 config CLK_BCM_63XX
 	bool "Broadcom BCM63xx clock support"
 	depends on ARCH_BCM_63XX || COMPILE_TEST
@@ -30,15 +29,6 @@ config CLK_BCM_CYGNUS
 	default ARCH_BCM_CYGNUS
 	help
 	  Enable common clock framework support for the Broadcom Cygnus SoC
-
-config CLK_BCM_HR2
-	bool "Broadcom Hurricane 2 clock support"
-	depends on ARCH_BCM_HR2 || COMPILE_TEST
-	select COMMON_CLK_IPROC
-	default ARCH_BCM_HR2
-	help
-	  Enable common clock framework support for the Broadcom Hurricane 2
-	  SoC
 
 config CLK_BCM_NSP
 	bool "Broadcom Northstar/Northstar Plus clock support"

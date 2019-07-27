@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  *  cht-bsw-rt5645.c - ASoc Machine driver for Intel Cherryview-based platforms
  *                     Cherrytrail and Braswell, with RT5645 codec.
@@ -9,23 +8,33 @@
  *  This file is modified from cht_bsw_rt5672.c
  *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; version 2 of the License.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  General Public License for more details.
+ *
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
 #include <linux/module.h>
-#include <linux/platform_device.h>
 #include <linux/acpi.h>
-#include <linux/clk.h>
+#include <linux/platform_device.h>
 #include <linux/dmi.h>
 #include <linux/slab.h>
 #include <asm/cpu_device_id.h>
+#include <asm/platform_sst_audio.h>
+#include <linux/clk.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
 #include <sound/jack.h>
-#include <sound/soc-acpi.h>
 #include "../../codecs/rt5645.h"
 #include "../atom/sst-atom-controls.h"
+#include "../common/sst-acpi.h"
 
 #define CHT_PLAT_CLK_3_HZ	19200000
 #define CHT_CODEC_DAI1	"rt5645-aif1"
@@ -40,11 +49,11 @@ struct cht_acpi_card {
 struct cht_mc_private {
 	struct snd_soc_jack jack;
 	struct cht_acpi_card *acpi_card;
-	char codec_name[SND_ACPI_I2C_ID_LEN];
+	char codec_name[16];
 	struct clk *mclk;
 };
 
-#define CHT_RT5645_MAP(quirk)	((quirk) & GENMASK(7, 0))
+#define CHT_RT5645_MAP(quirk)	((quirk) & 0xff)
 #define CHT_RT5645_SSP2_AIF2     BIT(16) /* default is using AIF1  */
 #define CHT_RT5645_SSP0_AIF1     BIT(17)
 #define CHT_RT5645_SSP0_AIF2     BIT(18)
@@ -61,6 +70,21 @@ static void log_quirks(struct device *dev)
 		dev_info(dev, "quirk SSP0_AIF2 enabled");
 }
 
+static inline struct snd_soc_dai *cht_get_codec_dai(struct snd_soc_card *card)
+{
+	struct snd_soc_pcm_runtime *rtd;
+
+	list_for_each_entry(rtd, &card->rtd_list, list) {
+		if (!strncmp(rtd->codec_dai->name, CHT_CODEC_DAI1,
+			     strlen(CHT_CODEC_DAI1)))
+			return rtd->codec_dai;
+		if (!strncmp(rtd->codec_dai->name, CHT_CODEC_DAI2,
+			     strlen(CHT_CODEC_DAI2)))
+			return rtd->codec_dai;
+	}
+	return NULL;
+}
+
 static int platform_clock_control(struct snd_soc_dapm_widget *w,
 		struct snd_kcontrol *k, int  event)
 {
@@ -70,21 +94,20 @@ static int platform_clock_control(struct snd_soc_dapm_widget *w,
 	struct cht_mc_private *ctx = snd_soc_card_get_drvdata(card);
 	int ret;
 
-	codec_dai = snd_soc_card_get_codec_dai(card, CHT_CODEC_DAI1);
-	if (!codec_dai)
-		codec_dai = snd_soc_card_get_codec_dai(card, CHT_CODEC_DAI2);
-
+	codec_dai = cht_get_codec_dai(card);
 	if (!codec_dai) {
 		dev_err(card->dev, "Codec dai not found; Unable to set platform clock\n");
 		return -EIO;
 	}
 
 	if (SND_SOC_DAPM_EVENT_ON(event)) {
-		ret = clk_prepare_enable(ctx->mclk);
-		if (ret < 0) {
-			dev_err(card->dev,
-				"could not configure MCLK state");
-			return ret;
+		if (ctx->mclk) {
+			ret = clk_prepare_enable(ctx->mclk);
+			if (ret < 0) {
+				dev_err(card->dev,
+					"could not configure MCLK state");
+				return ret;
+			}
 		}
 	} else {
 		/* Set codec sysclk source to its internal clock because codec PLL will
@@ -99,7 +122,8 @@ static int platform_clock_control(struct snd_soc_dapm_widget *w,
 			return ret;
 		}
 
-		clk_disable_unprepare(ctx->mclk);
+		if (ctx->mclk)
+			clk_disable_unprepare(ctx->mclk);
 	}
 
 	return 0;
@@ -109,7 +133,6 @@ static const struct snd_soc_dapm_widget cht_dapm_widgets[] = {
 	SND_SOC_DAPM_HP("Headphone", NULL),
 	SND_SOC_DAPM_MIC("Headset Mic", NULL),
 	SND_SOC_DAPM_MIC("Int Mic", NULL),
-	SND_SOC_DAPM_MIC("Int Analog Mic", NULL),
 	SND_SOC_DAPM_SPK("Ext Spk", NULL),
 	SND_SOC_DAPM_SUPPLY("Platform Clock", SND_SOC_NOPM, 0, 0,
 			platform_clock_control, SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
@@ -120,8 +143,6 @@ static const struct snd_soc_dapm_route cht_rt5645_audio_map[] = {
 	{"IN1N", NULL, "Headset Mic"},
 	{"DMIC L1", NULL, "Int Mic"},
 	{"DMIC R1", NULL, "Int Mic"},
-	{"IN2P", NULL, "Int Analog Mic"},
-	{"IN2N", NULL, "Int Analog Mic"},
 	{"Headphone", NULL, "HPOL"},
 	{"Headphone", NULL, "HPOR"},
 	{"Ext Spk", NULL, "SPOL"},
@@ -129,9 +150,6 @@ static const struct snd_soc_dapm_route cht_rt5645_audio_map[] = {
 	{"Headphone", NULL, "Platform Clock"},
 	{"Headset Mic", NULL, "Platform Clock"},
 	{"Int Mic", NULL, "Platform Clock"},
-	{"Int Analog Mic", NULL, "Platform Clock"},
-	{"Int Analog Mic", NULL, "micbias1"},
-	{"Int Analog Mic", NULL, "micbias2"},
 	{"Ext Spk", NULL, "Platform Clock"},
 };
 
@@ -186,7 +204,6 @@ static const struct snd_kcontrol_new cht_mc_controls[] = {
 	SOC_DAPM_PIN_SWITCH("Headphone"),
 	SOC_DAPM_PIN_SWITCH("Headset Mic"),
 	SOC_DAPM_PIN_SWITCH("Int Mic"),
-	SOC_DAPM_PIN_SWITCH("Int Analog Mic"),
 	SOC_DAPM_PIN_SWITCH("Ext Spk"),
 };
 
@@ -241,16 +258,16 @@ static const struct dmi_system_id cht_rt5645_quirk_table[] = {
 
 static int cht_codec_init(struct snd_soc_pcm_runtime *runtime)
 {
+	int ret;
+	int jack_type;
+	struct snd_soc_codec *codec = runtime->codec;
 	struct snd_soc_card *card = runtime->card;
 	struct cht_mc_private *ctx = snd_soc_card_get_drvdata(runtime->card);
-	struct snd_soc_component *component = runtime->codec_dai->component;
-	int jack_type;
-	int ret;
 
 	if ((cht_rt5645_quirk & CHT_RT5645_SSP2_AIF2) ||
 	    (cht_rt5645_quirk & CHT_RT5645_SSP0_AIF2)) {
 		/* Select clk_i2s2_asrc as ASRC clock source */
-		rt5645_sel_asrc_clk_src(component,
+		rt5645_sel_asrc_clk_src(codec,
 					RT5645_DA_STEREO_FILTER |
 					RT5645_DA_MONO_L_FILTER |
 					RT5645_DA_MONO_R_FILTER |
@@ -258,7 +275,7 @@ static int cht_codec_init(struct snd_soc_pcm_runtime *runtime)
 					RT5645_CLK_SEL_I2S2_ASRC);
 	} else {
 		/* Select clk_i2s1_asrc as ASRC clock source */
-		rt5645_sel_asrc_clk_src(component,
+		rt5645_sel_asrc_clk_src(codec,
 					RT5645_DA_STEREO_FILTER |
 					RT5645_DA_MONO_L_FILTER |
 					RT5645_DA_MONO_R_FILTER |
@@ -301,28 +318,28 @@ static int cht_codec_init(struct snd_soc_pcm_runtime *runtime)
 		return ret;
 	}
 
-	rt5645_set_jack_detect(component, &ctx->jack, &ctx->jack, &ctx->jack);
+	rt5645_set_jack_detect(codec, &ctx->jack, &ctx->jack, &ctx->jack);
 
+	if (ctx->mclk) {
+		/*
+		 * The firmware might enable the clock at
+		 * boot (this information may or may not
+		 * be reflected in the enable clock register).
+		 * To change the rate we must disable the clock
+		 * first to cover these cases. Due to common
+		 * clock framework restrictions that do not allow
+		 * to disable a clock that has not been enabled,
+		 * we need to enable the clock first.
+		 */
+		ret = clk_prepare_enable(ctx->mclk);
+		if (!ret)
+			clk_disable_unprepare(ctx->mclk);
 
-	/*
-	 * The firmware might enable the clock at
-	 * boot (this information may or may not
-	 * be reflected in the enable clock register).
-	 * To change the rate we must disable the clock
-	 * first to cover these cases. Due to common
-	 * clock framework restrictions that do not allow
-	 * to disable a clock that has not been enabled,
-	 * we need to enable the clock first.
-	 */
-	ret = clk_prepare_enable(ctx->mclk);
-	if (!ret)
-		clk_disable_unprepare(ctx->mclk);
+		ret = clk_set_rate(ctx->mclk, CHT_PLAT_CLK_3_HZ);
 
-	ret = clk_set_rate(ctx->mclk, CHT_PLAT_CLK_3_HZ);
-
-	if (ret)
-		dev_err(runtime->dev, "unable to set MCLK rate\n");
-
+		if (ret)
+			dev_err(runtime->dev, "unable to set MCLK rate\n");
+	}
 	return ret;
 }
 
@@ -443,11 +460,19 @@ static struct snd_soc_dai_link cht_dailink[] = {
 		.dpcm_playback = 1,
 		.ops = &cht_aif1_ops,
 	},
+	[MERR_DPCM_COMPR] = {
+		.name = "Compressed Port",
+		.stream_name = "Compress",
+		.cpu_dai_name = "compress-cpu-dai",
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.codec_name = "snd-soc-dummy",
+		.platform_name = "sst-mfld-platform",
+	},
 	/* CODEC<->CODEC link */
 	/* back ends */
 	{
 		.name = "SSP2-Codec",
-		.id = 0,
+		.id = 1,
 		.cpu_dai_name = "ssp2-port",
 		.platform_name = "sst-mfld-platform",
 		.no_pcm = 1,
@@ -497,7 +522,7 @@ static struct cht_acpi_card snd_soc_cards[] = {
 	{"10EC5650", CODEC_TYPE_RT5650, &snd_soc_card_chtrt5650},
 };
 
-static char cht_rt5645_codec_name[SND_ACPI_I2C_ID_LEN];
+static char cht_rt5645_codec_name[16]; /* i2c-<HID>:00 with HID being 8 chars */
 static char cht_rt5645_codec_aif_name[12]; /*  = "rt5645-aif[1|2]" */
 static char cht_rt5645_cpu_dai_name[10]; /*  = "ssp[0|2]-port" */
 
@@ -520,18 +545,17 @@ struct acpi_chan_package {   /* ACPICA seems to require 64 bit integers */
 
 static int snd_cht_mc_probe(struct platform_device *pdev)
 {
-	struct snd_soc_card *card = snd_soc_cards[0].soc_card;
-	struct snd_soc_acpi_mach *mach;
-	const char *platform_name;
-	struct cht_mc_private *drv;
-	struct acpi_device *adev;
-	bool found = false;
-	bool is_bytcr = false;
-	int dai_index = 0;
 	int ret_val = 0;
 	int i;
+	struct cht_mc_private *drv;
+	struct snd_soc_card *card = snd_soc_cards[0].soc_card;
+	struct sst_acpi_mach *mach;
+	const char *i2c_name = NULL;
+	int dai_index = 0;
+	bool found = false;
+	bool is_bytcr = false;
 
-	drv = devm_kzalloc(&pdev->dev, sizeof(*drv), GFP_KERNEL);
+	drv = devm_kzalloc(&pdev->dev, sizeof(*drv), GFP_ATOMIC);
 	if (!drv)
 		return -ENOMEM;
 
@@ -565,11 +589,10 @@ static int snd_cht_mc_probe(struct platform_device *pdev)
 		}
 
 	/* fixup codec name based on HID */
-	adev = acpi_dev_get_first_match_dev(mach->id, NULL, -1);
-	if (adev) {
+	i2c_name = sst_acpi_find_name_from_hid(mach->id);
+	if (i2c_name != NULL) {
 		snprintf(cht_rt5645_codec_name, sizeof(cht_rt5645_codec_name),
-			 "i2c-%s", acpi_dev_name(adev));
-		put_device(&adev->dev);
+			"%s%s", "i2c-", i2c_name);
 		cht_dailink[dai_index].codec_name = cht_rt5645_codec_name;
 	}
 
@@ -578,7 +601,10 @@ static int snd_cht_mc_probe(struct platform_device *pdev)
 	 * (will be overridden if DMI quirk is detected)
 	 */
 	if (is_valleyview()) {
-		if (mach->mach_params.acpi_ipc_irq_index == 0)
+		struct sst_platform_info *p_info = mach->pdata;
+		const struct sst_res_info *res_info = p_info->res_info;
+
+		if (res_info->acpi_ipc_irq_index == 0)
 			is_bytcr = true;
 	}
 
@@ -596,7 +622,7 @@ static int snd_cht_mc_probe(struct platform_device *pdev)
 		/* format specified: 2 64-bit integers */
 		struct acpi_buffer format = {sizeof("NN"), "NN"};
 		struct acpi_buffer state = {0, NULL};
-		struct snd_soc_acpi_package_context pkg_ctx;
+		struct sst_acpi_package_context pkg_ctx;
 		bool pkg_found = false;
 
 		state.length = sizeof(chan_package);
@@ -608,8 +634,7 @@ static int snd_cht_mc_probe(struct platform_device *pdev)
 		pkg_ctx.state = &state;
 		pkg_ctx.data_valid = false;
 
-		pkg_found = snd_soc_acpi_find_package_from_hid(mach->id,
-							       &pkg_ctx);
+		pkg_found = sst_acpi_find_package_from_hid(mach->id, &pkg_ctx);
 		if (pkg_found) {
 			if (chan_package.aif_value == 1) {
 				dev_info(&pdev->dev, "BIOS Routing: AIF1 connected\n");
@@ -657,20 +682,14 @@ static int snd_cht_mc_probe(struct platform_device *pdev)
 			cht_rt5645_cpu_dai_name;
 	}
 
-	/* override plaform name, if required */
-	platform_name = mach->mach_params.platform;
-
-	ret_val = snd_soc_fixup_dai_links_platform_name(card,
-							platform_name);
-	if (ret_val)
-		return ret_val;
-
-	drv->mclk = devm_clk_get(&pdev->dev, "pmc_plt_clk_3");
-	if (IS_ERR(drv->mclk)) {
-		dev_err(&pdev->dev,
-			"Failed to get MCLK from pmc_plt_clk_3: %ld\n",
-			PTR_ERR(drv->mclk));
-		return PTR_ERR(drv->mclk);
+	if (is_valleyview()) {
+		drv->mclk = devm_clk_get(&pdev->dev, "pmc_plt_clk_3");
+		if (IS_ERR(drv->mclk)) {
+			dev_err(&pdev->dev,
+				"Failed to get MCLK from pmc_plt_clk_3: %ld\n",
+				PTR_ERR(drv->mclk));
+			return PTR_ERR(drv->mclk);
+		}
 	}
 
 	snd_soc_card_set_drvdata(card, drv);

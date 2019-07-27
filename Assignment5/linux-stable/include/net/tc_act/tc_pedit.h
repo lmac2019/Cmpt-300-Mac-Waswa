@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef __NET_TC_PED_H
 #define __NET_TC_PED_H
 
@@ -17,13 +16,12 @@ struct tcf_pedit {
 	struct tc_pedit_key	*tcfp_keys;
 	struct tcf_pedit_key_ex	*tcfp_keys_ex;
 };
-
 #define to_pedit(a) ((struct tcf_pedit *)a)
 
 static inline bool is_tcf_pedit(const struct tc_action *a)
 {
 #ifdef CONFIG_NET_CLS_ACT
-	if (a->ops && a->ops->id == TCA_ID_PEDIT)
+	if (a->ops && a->ops->type == TCA_ACT_PEDIT)
 		return true;
 #endif
 	return false;

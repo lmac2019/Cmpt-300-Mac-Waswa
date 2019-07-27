@@ -1,8 +1,11 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  *  inode.c - securityfs
  *
  *  Copyright (C) 2005 Greg Kroah-Hartman <gregkh@suse.de>
+ *
+ *	This program is free software; you can redistribute it and/or
+ *	modify it under the terms of the GNU General Public License version
+ *	2 as published by the Free Software Foundation.
  *
  *  Based on fs/debugfs/inode.c which had the following copyright notice:
  *    Copyright (C) 2004 Greg Kroah-Hartman <greg@kroah.com>
@@ -10,8 +13,7 @@
  */
 
 /* #define DEBUG */
-#include <linux/sysfs.h>
-#include <linux/kobject.h>
+#include <linux/module.h>
 #include <linux/fs.h>
 #include <linux/mount.h>
 #include <linux/pagemap.h>
@@ -24,16 +26,17 @@
 static struct vfsmount *mount;
 static int mount_count;
 
-static void securityfs_free_inode(struct inode *inode)
+static void securityfs_evict_inode(struct inode *inode)
 {
+	truncate_inode_pages_final(&inode->i_data);
+	clear_inode(inode);
 	if (S_ISLNK(inode->i_mode))
 		kfree(inode->i_link);
-	free_inode_nonrcu(inode);
 }
 
 static const struct super_operations securityfs_super_operations = {
 	.statfs		= simple_statfs,
-	.free_inode	= securityfs_free_inode,
+	.evict_inode	= securityfs_evict_inode,
 };
 
 static int fill_super(struct super_block *sb, void *data, int silent)
@@ -338,4 +341,7 @@ static int __init securityfs_init(void)
 #endif
 	return 0;
 }
+
 core_initcall(securityfs_init);
+MODULE_LICENSE("GPL");
+

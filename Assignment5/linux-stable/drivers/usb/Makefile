@@ -1,4 +1,3 @@
-# SPDX-License-Identifier: GPL-2.0
 #
 # Makefile for the kernel USB device drivers.
 #
@@ -65,5 +64,3 @@ obj-$(CONFIG_USB_COMMON)	+= common/
 obj-$(CONFIG_USBIP_CORE)	+= usbip/
 
 obj-$(CONFIG_TYPEC)		+= typec/
-
-obj-$(CONFIG_USB_ROLE_SWITCH)	+= roles/

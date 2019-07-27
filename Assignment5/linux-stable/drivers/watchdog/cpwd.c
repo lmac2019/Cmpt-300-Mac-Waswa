@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /* cpwd.c - driver implementation for hardware watchdog
  * timers found on Sun Microsystems CP1400 and CP1500 boards.
  *
@@ -231,9 +230,9 @@ static void cpwd_resetbrokentimer(struct cpwd *p, int index)
  * interrupts within the PLD so me must continually
  * reset the timers ad infinitum.
  */
-static void cpwd_brokentimer(struct timer_list *unused)
+static void cpwd_brokentimer(unsigned long data)
 {
-	struct cpwd *p = cpwd_device;
+	struct cpwd *p = (struct cpwd *) data;
 	int id, tripped = 0;
 
 	/* kill a running timer instance, in case we
@@ -276,7 +275,7 @@ static void cpwd_stoptimer(struct cpwd *p, int index)
 
 		if (p->broken) {
 			p->devs[index].runstatus |= WD_STAT_BSTOP;
-			cpwd_brokentimer(NULL);
+			cpwd_brokentimer((unsigned long) p);
 		}
 	}
 }
@@ -395,7 +394,7 @@ static int cpwd_open(struct inode *inode, struct file *f)
 
 	mutex_unlock(&cpwd_mutex);
 
-	return stream_open(inode, f);
+	return nonseekable_open(inode, f);
 }
 
 static int cpwd_release(struct inode *inode, struct file *file)
@@ -571,8 +570,6 @@ static int cpwd_probe(struct platform_device *op)
 	if (str_prop)
 		p->timeout = simple_strtoul(str_prop, NULL, 10);
 
-	of_node_put(options);
-
 	/* CP1400s seem to have broken PLD implementations-- the
 	 * interrupt_mask register cannot be written, so no timer
 	 * interrupts can be masked within the PLD.
@@ -611,7 +608,7 @@ static int cpwd_probe(struct platform_device *op)
 	}
 
 	if (p->broken) {
-		timer_setup(&cpwd_timer, cpwd_brokentimer, 0);
+		setup_timer(&cpwd_timer, cpwd_brokentimer, (unsigned long)p);
 		cpwd_timer.expires	= WD_BTIMEOUT;
 
 		pr_info("PLD defect workaround enabled for model %s\n",

@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  *  Copyright 2007, Google Inc.
  *  Copyright 2012, Intel Inc.
@@ -8,6 +7,10 @@
  *  Written by Tuukka Tikkanen and Juha Yrjölä <juha.yrjola@nokia.com>
  *  Misc hacks here and there by Tony Lindgren <tony@atomide.com>
  *  Other hacks (DMA, SD, etc) by David Brownell
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  */
 
 #include <linux/module.h>
@@ -39,11 +42,13 @@
 #include <linux/spinlock.h>
 #include <linux/timer.h>
 #include <linux/clk.h>
+#include <linux/scatterlist.h>
 
 #include <asm/io.h>
 #include <asm/irq.h>
 
 #include <asm/types.h>
+#include <asm/io.h>
 #include <linux/uaccess.h>
 
 #define DRIVER_NAME "goldfish_mmc"
@@ -214,8 +219,8 @@ static void goldfish_mmc_xfer_done(struct goldfish_mmc_host *host,
 			 * We don't really have DMA, so we need
 			 * to copy from our platform driver buffer
 			 */
-			sg_copy_from_buffer(data->sg, 1, host->virt_base,
-					data->sg->length);
+			uint8_t *dest = (uint8_t *)sg_virt(data->sg);
+			memcpy(dest, host->virt_base, data->sg->length);
 		}
 		host->data->bytes_xfered += data->sg->length;
 		dma_unmap_sg(mmc_dev(host->mmc), data->sg, host->sg_len,
@@ -285,6 +290,7 @@ static irqreturn_t goldfish_mmc_irq(int irq, void *dev_id)
 	u16 status;
 	int end_command = 0;
 	int end_transfer = 0;
+	int transfer_error = 0;
 	int state_changed = 0;
 	int cmd_timeout = 0;
 
@@ -316,7 +322,9 @@ static irqreturn_t goldfish_mmc_irq(int irq, void *dev_id)
 	if (end_command)
 		goldfish_mmc_cmd_done(host, host->cmd);
 
-	if (end_transfer) {
+	if (transfer_error)
+		goldfish_mmc_xfer_done(host, host->data);
+	else if (end_transfer) {
 		host->dma_done = 1;
 		goldfish_mmc_end_of_data(host, host->data);
 	} else if (host->data != NULL) {
@@ -339,7 +347,8 @@ static irqreturn_t goldfish_mmc_irq(int irq, void *dev_id)
 		mmc_detect_change(host->mmc, 0);
 	}
 
-	if (!end_command && !end_transfer && !state_changed && !cmd_timeout) {
+	if (!end_command && !end_transfer &&
+	    !transfer_error && !state_changed && !cmd_timeout) {
 		status = GOLDFISH_MMC_READ(host, MMC_INT_STATUS);
 		dev_info(mmc_dev(host->mmc),"spurious irq 0x%04x\n", status);
 		if (status != 0) {
@@ -390,8 +399,8 @@ static void goldfish_mmc_prepare_data(struct goldfish_mmc_host *host,
 		 * We don't really have DMA, so we need to copy to our
 		 * platform driver buffer
 		 */
-		sg_copy_to_buffer(data->sg, 1, host->virt_base,
-				data->sg->length);
+		const uint8_t *src = (uint8_t *)sg_virt(data->sg);
+		memcpy(host->virt_base, src, data->sg->length);
 	}
 }
 

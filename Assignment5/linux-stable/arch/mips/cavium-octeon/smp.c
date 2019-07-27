@@ -15,7 +15,6 @@
 #include <linux/sched/task_stack.h>
 #include <linux/init.h>
 #include <linux/export.h>
-#include <linux/kexec.h>
 
 #include <asm/mmu_context.h>
 #include <asm/time.h>
@@ -206,7 +205,7 @@ int plat_post_relocation(long offset)
  * Firmware CPU startup hook
  *
  */
-static int octeon_boot_secondary(int cpu, struct task_struct *idle)
+static void octeon_boot_secondary(int cpu, struct task_struct *idle)
 {
 	int count;
 
@@ -224,12 +223,8 @@ static int octeon_boot_secondary(int cpu, struct task_struct *idle)
 		udelay(1);
 		count--;
 	}
-	if (count == 0) {
+	if (count == 0)
 		pr_err("Secondary boot timeout\n");
-		return -ETIMEDOUT;
-	}
-
-	return 0;
 }
 
 /**
@@ -284,7 +279,7 @@ static void octeon_smp_finish(void)
 #ifdef CONFIG_HOTPLUG_CPU
 
 /* State of each CPU. */
-static DEFINE_PER_CPU(int, cpu_state);
+DEFINE_PER_CPU(int, cpu_state);
 
 static int octeon_cpu_disable(void)
 {
@@ -413,7 +408,7 @@ late_initcall(register_cavium_notifier);
 
 #endif	/* CONFIG_HOTPLUG_CPU */
 
-static const struct plat_smp_ops octeon_smp_ops = {
+struct plat_smp_ops octeon_smp_ops = {
 	.send_ipi_single	= octeon_send_ipi_single,
 	.send_ipi_mask		= octeon_send_ipi_mask,
 	.init_secondary		= octeon_init_secondary,
@@ -424,9 +419,6 @@ static const struct plat_smp_ops octeon_smp_ops = {
 #ifdef CONFIG_HOTPLUG_CPU
 	.cpu_disable		= octeon_cpu_disable,
 	.cpu_die		= octeon_cpu_die,
-#endif
-#ifdef CONFIG_KEXEC
-	.kexec_nonboot_cpu	= kexec_nonboot_cpu_jump,
 #endif
 };
 
@@ -493,7 +485,7 @@ static void octeon_78xx_send_ipi_mask(const struct cpumask *mask,
 		octeon_78xx_send_ipi_single(cpu, action);
 }
 
-static const struct plat_smp_ops octeon_78xx_smp_ops = {
+static struct plat_smp_ops octeon_78xx_smp_ops = {
 	.send_ipi_single	= octeon_78xx_send_ipi_single,
 	.send_ipi_mask		= octeon_78xx_send_ipi_mask,
 	.init_secondary		= octeon_init_secondary,
@@ -505,14 +497,11 @@ static const struct plat_smp_ops octeon_78xx_smp_ops = {
 	.cpu_disable		= octeon_cpu_disable,
 	.cpu_die		= octeon_cpu_die,
 #endif
-#ifdef CONFIG_KEXEC
-	.kexec_nonboot_cpu	= kexec_nonboot_cpu_jump,
-#endif
 };
 
 void __init octeon_setup_smp(void)
 {
-	const struct plat_smp_ops *ops;
+	struct plat_smp_ops *ops;
 
 	if (octeon_has_feature(OCTEON_FEATURE_CIU3))
 		ops = &octeon_78xx_smp_ops;

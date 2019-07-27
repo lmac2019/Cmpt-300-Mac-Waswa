@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /*
  *  Copyright (C) 1991, 1992  Linus Torvalds
  *  Copyright (C) 2000, 2001, 2002 Andi Kleen, SuSE Labs
@@ -9,8 +8,6 @@
 
 #include <linux/uaccess.h>
 #include <linux/ptrace.h>
-
-#include <asm/cpu_entry_area.h>
 #include <asm/switch_to.h>
 
 enum stack_type {
@@ -18,7 +15,6 @@ enum stack_type {
 	STACK_TYPE_TASK,
 	STACK_TYPE_IRQ,
 	STACK_TYPE_SOFTIRQ,
-	STACK_TYPE_ENTRY,
 	STACK_TYPE_EXCEPTION,
 	STACK_TYPE_EXCEPTION_LAST = STACK_TYPE_EXCEPTION + N_EXCEPTION_STACKS-1,
 };
@@ -30,8 +26,6 @@ struct stack_info {
 
 bool in_task_stack(unsigned long *stack, struct task_struct *task,
 		   struct stack_info *info);
-
-bool in_entry_stack(unsigned long *stack, struct stack_info *info);
 
 int get_stack_info(unsigned long *stack, struct task_struct *task,
 		   struct stack_info *info, unsigned long *visit_mask);
@@ -89,6 +83,8 @@ get_stack_pointer(struct task_struct *task, struct pt_regs *regs)
 void show_trace_log_lvl(struct task_struct *task, struct pt_regs *regs,
 			unsigned long *stack, char *log_lvl);
 
+extern unsigned int code_bytes;
+
 /* The form of the top of the frame on the stack */
 struct stack_frame {
 	struct stack_frame *next_frame;
@@ -100,6 +96,17 @@ struct stack_frame_ia32 {
     u32 return_address;
 };
 
-void show_opcodes(struct pt_regs *regs, const char *loglvl);
-void show_ip(struct pt_regs *regs, const char *loglvl);
+static inline unsigned long caller_frame_pointer(void)
+{
+	struct stack_frame *frame;
+
+	frame = __builtin_frame_address(0);
+
+#ifdef CONFIG_FRAME_POINTER
+	frame = frame->next_frame;
+#endif
+
+	return (unsigned long)frame;
+}
+
 #endif /* _ASM_X86_STACKTRACE_H */

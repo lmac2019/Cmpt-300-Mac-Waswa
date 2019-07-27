@@ -1,9 +1,19 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * STM32 ALSA SoC Digital Audio Interface (SPDIF-rx) driver.
  *
  * Copyright (C) 2017, STMicroelectronics - All Rights Reserved
  * Author(s): Olivier Moysan <olivier.moysan@st.com> for STMicroelectronics.
+ *
+ * License terms: GPL V2.0.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published by
+ * the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * details.
  */
 
 #include <linux/clk.h>
@@ -11,7 +21,6 @@
 #include <linux/delay.h>
 #include <linux/module.h>
 #include <linux/of_platform.h>
-#include <linux/pinctrl/consumer.h>
 #include <linux/regmap.h>
 #include <linux/reset.h>
 
@@ -383,12 +392,6 @@ static int stm32_spdifrx_dma_ctrl_register(struct device *dev,
 {
 	int ret;
 
-	spdifrx->ctrl_chan = dma_request_chan(dev, "rx-ctrl");
-	if (IS_ERR(spdifrx->ctrl_chan)) {
-		dev_err(dev, "dma_request_slave_channel failed\n");
-		return PTR_ERR(spdifrx->ctrl_chan);
-	}
-
 	spdifrx->dmab = devm_kzalloc(dev, sizeof(struct snd_dma_buffer),
 				     GFP_KERNEL);
 	if (!spdifrx->dmab)
@@ -403,6 +406,12 @@ static int stm32_spdifrx_dma_ctrl_register(struct device *dev,
 		return ret;
 	}
 
+	spdifrx->ctrl_chan = dma_request_chan(dev, "rx-ctrl");
+	if (!spdifrx->ctrl_chan) {
+		dev_err(dev, "dma_request_slave_channel failed\n");
+		return -EINVAL;
+	}
+
 	spdifrx->slave_config.direction = DMA_DEV_TO_MEM;
 	spdifrx->slave_config.src_addr = (dma_addr_t)(spdifrx->phys_addr +
 					 STM32_SPDIFRX_CSR);
@@ -414,6 +423,7 @@ static int stm32_spdifrx_dma_ctrl_register(struct device *dev,
 				     &spdifrx->slave_config);
 	if (ret < 0) {
 		dev_err(dev, "dmaengine_slave_config returned error %d\n", ret);
+		dma_release_channel(spdifrx->ctrl_chan);
 		spdifrx->ctrl_chan = NULL;
 	}
 
@@ -462,8 +472,6 @@ static int stm32_spdifrx_get_ctrl_data(struct stm32_spdifrx_data *spdifrx)
 	memset(spdifrx->cs, 0, SPDIFRX_CS_BYTES_NB);
 	memset(spdifrx->ub, 0, SPDIFRX_UB_BYTES_NB);
 
-	pinctrl_pm_select_default_state(&spdifrx->pdev->dev);
-
 	ret = stm32_spdifrx_dma_ctrl_start(spdifrx);
 	if (ret < 0)
 		return ret;
@@ -486,7 +494,7 @@ static int stm32_spdifrx_get_ctrl_data(struct stm32_spdifrx_data *spdifrx)
 	if (wait_for_completion_interruptible_timeout(&spdifrx->cs_completion,
 						      msecs_to_jiffies(100))
 						      <= 0) {
-		dev_dbg(&spdifrx->pdev->dev, "Failed to get control data\n");
+		dev_err(&spdifrx->pdev->dev, "Failed to get control data\n");
 		ret = -EAGAIN;
 	}
 
@@ -495,7 +503,6 @@ static int stm32_spdifrx_get_ctrl_data(struct stm32_spdifrx_data *spdifrx)
 
 end:
 	clk_disable_unprepare(spdifrx->kclk);
-	pinctrl_pm_select_sleep_state(&spdifrx->pdev->dev);
 
 	return ret;
 }
@@ -605,15 +612,10 @@ static bool stm32_spdifrx_readable_reg(struct device *dev, unsigned int reg)
 
 static bool stm32_spdifrx_volatile_reg(struct device *dev, unsigned int reg)
 {
-	switch (reg) {
-	case STM32_SPDIFRX_DR:
-	case STM32_SPDIFRX_CSR:
-	case STM32_SPDIFRX_SR:
-	case STM32_SPDIFRX_DIR:
+	if (reg == STM32_SPDIFRX_DR)
 		return true;
-	default:
-		return false;
-	}
+
+	return false;
 }
 
 static bool stm32_spdifrx_writeable_reg(struct device *dev, unsigned int reg)
@@ -637,7 +639,6 @@ static const struct regmap_config stm32_h7_spdifrx_regmap_conf = {
 	.volatile_reg = stm32_spdifrx_volatile_reg,
 	.writeable_reg = stm32_spdifrx_writeable_reg,
 	.fast_io = true,
-	.cache_type = REGCACHE_FLAT,
 };
 
 static irqreturn_t stm32_spdifrx_isr(int irq, void *devid)
@@ -749,21 +750,17 @@ static int stm32_spdifrx_hw_params(struct snd_pcm_substream *substream,
 	switch (data_size) {
 	case 16:
 		fmt = SPDIFRX_DRFMT_PACKED;
+		spdifrx->dma_params.addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
 		break;
 	case 32:
 		fmt = SPDIFRX_DRFMT_LEFT;
+		spdifrx->dma_params.addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
 		break;
 	default:
 		dev_err(&spdifrx->pdev->dev, "Unexpected data format\n");
 		return -EINVAL;
 	}
 
-	/*
-	 * Set buswidth to 4 bytes for all data formats.
-	 * Packed format: transfer 2 x 2 bytes samples
-	 * Left format: transfer 1 x 3 bytes samples + 1 dummy byte
-	 */
-	spdifrx->dma_params.addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
 	snd_soc_dai_init_dma_data(cpu_dai, NULL, &spdifrx->dma_params);
 
 	return regmap_update_bits(spdifrx->regmap, STM32_SPDIFRX_CR,
@@ -819,6 +816,7 @@ static const struct snd_soc_dai_ops stm32_spdifrx_pcm_dai_ops = {
 
 static struct snd_soc_dai_driver stm32_spdifrx_dai[] = {
 	{
+		.name = "spdifrx-capture-cpu-dai",
 		.probe = stm32_spdifrx_dai_probe,
 		.capture = {
 			.stream_name = "CPU-Capture",
@@ -835,8 +833,7 @@ static struct snd_soc_dai_driver stm32_spdifrx_dai[] = {
 static const struct snd_pcm_hardware stm32_spdifrx_pcm_hw = {
 	.info = SNDRV_PCM_INFO_INTERLEAVED | SNDRV_PCM_INFO_MMAP,
 	.buffer_bytes_max = 8 * PAGE_SIZE,
-	.period_bytes_min = 1024,
-	.period_bytes_max = 4 * PAGE_SIZE,
+	.period_bytes_max = 2048, /* MDMA constraint */
 	.periods_min = 2,
 	.periods_max = 8,
 };
@@ -858,8 +855,8 @@ static const struct of_device_id stm32_spdifrx_ids[] = {
 	{}
 };
 
-static int stm32_spdifrx_parse_of(struct platform_device *pdev,
-				  struct stm32_spdifrx_data *spdifrx)
+static int stm_spdifrx_parse_of(struct platform_device *pdev,
+				struct stm32_spdifrx_data *spdifrx)
 {
 	struct device_node *np = pdev->dev.of_node;
 	const struct of_device_id *of_id;
@@ -914,7 +911,7 @@ static int stm32_spdifrx_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, spdifrx);
 
-	ret = stm32_spdifrx_parse_of(pdev, spdifrx);
+	ret = stm_spdifrx_parse_of(pdev, spdifrx);
 	if (ret)
 		return ret;
 
@@ -933,7 +930,7 @@ static int stm32_spdifrx_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	rst = devm_reset_control_get_exclusive(&pdev->dev, NULL);
+	rst = devm_reset_control_get(&pdev->dev, NULL);
 	if (!IS_ERR(rst)) {
 		reset_control_assert(rst);
 		udelay(2);
@@ -961,7 +958,7 @@ static int stm32_spdifrx_probe(struct platform_device *pdev)
 	return 0;
 
 error:
-	if (!IS_ERR(spdifrx->ctrl_chan))
+	if (spdifrx->ctrl_chan)
 		dma_release_channel(spdifrx->ctrl_chan);
 	if (spdifrx->dmab)
 		snd_dma_free_pages(spdifrx->dmab);
@@ -984,36 +981,10 @@ static int stm32_spdifrx_remove(struct platform_device *pdev)
 
 MODULE_DEVICE_TABLE(of, stm32_spdifrx_ids);
 
-#ifdef CONFIG_PM_SLEEP
-static int stm32_spdifrx_suspend(struct device *dev)
-{
-	struct stm32_spdifrx_data *spdifrx = dev_get_drvdata(dev);
-
-	regcache_cache_only(spdifrx->regmap, true);
-	regcache_mark_dirty(spdifrx->regmap);
-
-	return 0;
-}
-
-static int stm32_spdifrx_resume(struct device *dev)
-{
-	struct stm32_spdifrx_data *spdifrx = dev_get_drvdata(dev);
-
-	regcache_cache_only(spdifrx->regmap, false);
-
-	return regcache_sync(spdifrx->regmap);
-}
-#endif /* CONFIG_PM_SLEEP */
-
-static const struct dev_pm_ops stm32_spdifrx_pm_ops = {
-	SET_SYSTEM_SLEEP_PM_OPS(stm32_spdifrx_suspend, stm32_spdifrx_resume)
-};
-
 static struct platform_driver stm32_spdifrx_driver = {
 	.driver = {
 		.name = "st,stm32-spdifrx",
 		.of_match_table = stm32_spdifrx_ids,
-		.pm = &stm32_spdifrx_pm_ops,
 	},
 	.probe = stm32_spdifrx_probe,
 	.remove = stm32_spdifrx_remove,

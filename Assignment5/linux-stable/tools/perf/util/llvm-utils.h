@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (C) 2015, Wang Nan <wangnan0@huawei.com>
  * Copyright (C) 2015, Huawei Inc.
@@ -11,8 +10,6 @@
 struct llvm_param {
 	/* Path of clang executable */
 	const char *clang_path;
-	/* Path of llc executable */
-	const char *llc_path;
 	/*
 	 * Template of clang bpf compiling. 5 env variables
 	 * can be used:
@@ -25,13 +22,6 @@ struct llvm_param {
 	const char *clang_bpf_cmd_template;
 	/* Will be filled in $CLANG_OPTIONS */
 	const char *clang_opt;
-	/*
-	 * If present it'll add -emit-llvm to $CLANG_OPTIONS to pipe
-	 * the clang output to llc, useful for new llvm options not
-	 * yet selectable via 'clang -mllvm option', such as -mattr=dwarfris
-	 * in clang 6.0/llvm 7
-	 */
-	const char *opts;
 	/* Where to find kbuild system */
 	const char *kbuild_dir;
 	/*

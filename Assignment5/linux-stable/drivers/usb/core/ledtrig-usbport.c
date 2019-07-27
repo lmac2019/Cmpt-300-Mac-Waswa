@@ -1,8 +1,11 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * USB port LED trigger
  *
  * Copyright (C) 2016 Rafał Miłecki <rafal@milecki.pl>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  */
 
 #include <linux/device.h>
@@ -113,7 +116,6 @@ static ssize_t usbport_trig_port_store(struct device *dev,
 static struct attribute *ports_attrs[] = {
 	NULL,
 };
-
 static const struct attribute_group ports_group = {
 	.name = "ports",
 	.attrs = ports_attrs,
@@ -138,23 +140,17 @@ static bool usbport_trig_port_observed(struct usbport_trig_data *usbport_data,
 	if (!led_np)
 		return false;
 
-	/*
-	 * Get node of port being added
-	 *
-	 * FIXME: This is really the device node of the connected device
-	 */
-	port_np = usb_of_get_device_node(usb_dev, port1);
+	/* Get node of port being added */
+	port_np = usb_of_get_child_node(usb_dev->dev.of_node, port1);
 	if (!port_np)
 		return false;
-
-	of_node_put(port_np);
 
 	/* Amount of trigger sources for this LED */
 	count = of_count_phandle_with_args(led_np, "trigger-sources",
 					   "#trigger-source-cells");
 	if (count < 0) {
-		dev_warn(dev, "Failed to get trigger sources for %pOF\n",
-			 led_np);
+		dev_warn(dev, "Failed to get trigger sources for %s\n",
+			 led_np->full_name);
 		return false;
 	}
 
@@ -209,7 +205,6 @@ static int usbport_trig_add_port(struct usbport_trig_data *usbport_data,
 	}
 	snprintf(port->port_name, len, "%s-port%d", hub_name, portnum);
 
-	sysfs_attr_init(&port->attr.attr);
 	port->attr.attr.name = port->port_name;
 	port->attr.attr.mode = S_IRUSR | S_IWUSR;
 	port->attr.show = usbport_trig_port_show;
@@ -299,14 +294,14 @@ static int usbport_trig_notify(struct notifier_block *nb, unsigned long action,
 	return NOTIFY_DONE;
 }
 
-static int usbport_trig_activate(struct led_classdev *led_cdev)
+static void usbport_trig_activate(struct led_classdev *led_cdev)
 {
 	struct usbport_trig_data *usbport_data;
 	int err;
 
 	usbport_data = kzalloc(sizeof(*usbport_data), GFP_KERNEL);
 	if (!usbport_data)
-		return -ENOMEM;
+		return;
 	usbport_data->led_cdev = led_cdev;
 
 	/* List of ports */
@@ -318,30 +313,36 @@ static int usbport_trig_activate(struct led_classdev *led_cdev)
 	usbport_trig_update_count(usbport_data);
 
 	/* Notifications */
-	usbport_data->nb.notifier_call = usbport_trig_notify;
-	led_set_trigger_data(led_cdev, usbport_data);
+	usbport_data->nb.notifier_call = usbport_trig_notify,
+	led_cdev->trigger_data = usbport_data;
 	usb_register_notify(&usbport_data->nb);
-	return 0;
+
+	led_cdev->activated = true;
+	return;
 
 err_free:
 	kfree(usbport_data);
-	return err;
 }
 
 static void usbport_trig_deactivate(struct led_classdev *led_cdev)
 {
-	struct usbport_trig_data *usbport_data = led_get_trigger_data(led_cdev);
+	struct usbport_trig_data *usbport_data = led_cdev->trigger_data;
 	struct usbport_trig_port *port, *tmp;
+
+	if (!led_cdev->activated)
+		return;
 
 	list_for_each_entry_safe(port, tmp, &usbport_data->ports, list) {
 		usbport_trig_remove_port(usbport_data, port);
 	}
 
-	sysfs_remove_group(&led_cdev->dev->kobj, &ports_group);
-
 	usb_unregister_notify(&usbport_data->nb);
 
+	sysfs_remove_group(&led_cdev->dev->kobj, &ports_group);
+
 	kfree(usbport_data);
+
+	led_cdev->activated = false;
 }
 
 static struct led_trigger usbport_led_trigger = {

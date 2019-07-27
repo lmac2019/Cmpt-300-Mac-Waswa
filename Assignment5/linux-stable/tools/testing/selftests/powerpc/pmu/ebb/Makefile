@@ -1,12 +1,8 @@
-# SPDX-License-Identifier: GPL-2.0
 noarg:
 	$(MAKE) -C ../../
 
 # The EBB handler is 64-bit code and everything links against it
 CFLAGS += -m64
-
-# Toolchains may build PIE by default which breaks the assembly
-LDFLAGS += -no-pie
 
 TEST_GEN_PROGS := reg_access_test event_attributes_test cycles_test	\
 	 cycles_with_freeze_test pmc56_overflow_test		\
@@ -20,7 +16,6 @@ TEST_GEN_PROGS := reg_access_test event_attributes_test cycles_test	\
 	 lost_exception_test no_handler_test			\
 	 cycles_with_mmcr2_test
 
-top_srcdir = ../../../../../..
 include ../../../lib.mk
 
 $(TEST_GEN_PROGS): ../../harness.c ../../utils.c ../event.c ../lib.c \

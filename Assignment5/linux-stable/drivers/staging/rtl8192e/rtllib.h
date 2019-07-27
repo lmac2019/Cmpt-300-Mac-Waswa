@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Merged with mainline rtllib.h in Aug 2004.  Original ieee802_11
  * remains copyright by the original authors
@@ -16,6 +15,11 @@
  *
  * Modified for Realtek's wi-fi cards by Andrea Merello
  * <andrea.merello@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation. See README and COPYING for
+ * more details.
  */
 #ifndef RTLLIB_H
 #define RTLLIB_H
@@ -1556,11 +1560,11 @@ struct rtllib_device {
 	u16 scan_watch_dog;
 
 	/* map of allowed channels. 0 is dummy */
-	void *dot11d_info;
-	bool global_domain;
+	void *pDot11dInfo;
+	bool bGlobalDomain;
 	u8 active_channel_map[MAX_CHANNEL_NUMBER+1];
 
-	u8   bss_start_channel;
+	u8   IbssStartChnl;
 	u8   ibss_maxjoin_chal;
 
 	int rate;       /* current rate */
@@ -2109,9 +2113,9 @@ void TsInitAddBA(struct rtllib_device *ieee, struct tx_ts_record *pTS,
 void TsInitDelBA(struct rtllib_device *ieee,
 		 struct ts_common_info *pTsCommonInfo,
 		 enum tr_select TxRxSelect);
-void BaSetupTimeOut(struct timer_list *t);
-void TxBaInactTimeout(struct timer_list *t);
-void RxBaInactTimeout(struct timer_list *t);
+void BaSetupTimeOut(unsigned long data);
+void TxBaInactTimeout(unsigned long data);
+void RxBaInactTimeout(unsigned long data);
 void ResetBaEntry(struct ba_record *pBA);
 bool GetTs(struct rtllib_device *ieee, struct ts_common_info **ppTS, u8 *Addr,
 	   u8 TID, enum tr_select TxRxSelect, bool bAddNewTs);

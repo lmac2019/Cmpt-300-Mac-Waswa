@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * hfc_usb.c
  *
@@ -12,7 +11,22 @@
  *           based on the first hfc_usb driver of
  *           Werner Cornelius (werner@isdn-development.de)
  *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
  * See Version Histroy at the bottom of this file
+ *
  */
 
 #include <linux/types.h>
@@ -51,7 +65,7 @@ typedef struct {
 } hfcsusb_vdata;
 
 /* VID/PID device list */
-static const struct usb_device_id hfcusb_idtab[] = {
+static struct usb_device_id hfcusb_idtab[] = {
 	{
 		USB_DEVICE(0x0959, 0x2bd0),
 		.driver_info = (unsigned long) &((hfcsusb_vdata)
@@ -329,9 +343,8 @@ handle_led(hfcusb_data *hfc, int event)
 
 /* ISDN l1 timer T3 expires */
 static void
-l1_timer_expire_t3(struct timer_list *t)
+l1_timer_expire_t3(hfcusb_data *hfc)
 {
-	hfcusb_data *hfc = from_timer(hfc, t, t3_timer);
 	hfc->d_if.ifc.l1l2(&hfc->d_if.ifc, PH_DEACTIVATE | INDICATION,
 			   NULL);
 
@@ -347,9 +360,8 @@ l1_timer_expire_t3(struct timer_list *t)
 
 /* ISDN l1 timer T4 expires */
 static void
-l1_timer_expire_t4(struct timer_list *t)
+l1_timer_expire_t4(hfcusb_data *hfc)
 {
-	hfcusb_data *hfc = from_timer(hfc, t, t4_timer);
 	hfc->d_if.ifc.l1l2(&hfc->d_if.ifc, PH_DEACTIVATE | INDICATION,
 			   NULL);
 
@@ -418,12 +430,16 @@ fill_isoc_urb(struct urb *urb, struct usb_device *dev, unsigned int pipe,
 {
 	int k;
 
-	usb_fill_int_urb(urb, dev, pipe, buf, packet_size * num_packets,
-			 complete, context, interval);
-
+	urb->dev = dev;
+	urb->pipe = pipe;
+	urb->complete = complete;
 	urb->number_of_packets = num_packets;
+	urb->transfer_buffer_length = packet_size * num_packets;
+	urb->context = context;
+	urb->transfer_buffer = buf;
 	urb->transfer_flags = URB_ISO_ASAP;
 	urb->actual_length = 0;
+	urb->interval = interval;
 	for (k = 0; k < num_packets; k++) {
 		urb->iso_frame_desc[k].offset = packet_size * k;
 		urb->iso_frame_desc[k].length = packet_size;
@@ -1149,10 +1165,10 @@ hfc_usb_init(hfcusb_data *hfc)
 	hfc->old_led_state = 0;
 
 	/* init the t3 timer */
-	timer_setup(&hfc->t3_timer, l1_timer_expire_t3, 0);
+	setup_timer(&hfc->t3_timer, (void *)l1_timer_expire_t3, (long)hfc);
 
 	/* init the t4 timer */
-	timer_setup(&hfc->t4_timer, l1_timer_expire_t4, 0);
+	setup_timer(&hfc->t4_timer, (void *)l1_timer_expire_t4, (long)hfc);
 
 	/* init the background machinery for control requests */
 	hfc->ctrl_read.bRequestType = 0xc0;

@@ -1,4 +1,3 @@
-# SPDX-License-Identifier: GPL-2.0-only
 #
 # Makefile for sensors seen through the ChromeOS EC sensor hub.
 #

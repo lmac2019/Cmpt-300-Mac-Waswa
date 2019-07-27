@@ -1,9 +1,12 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Samsung EXYNOS FIMC-LITE (camera host interface) driver
 *
  * Copyright (C) 2012 - 2013 Samsung Electronics Co., Ltd.
  * Author: Sylwester Nawrocki <s.nawrocki@samsung.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  */
 #define pr_fmt(fmt) "%s:%d " fmt, __func__, __LINE__
 
@@ -651,8 +654,8 @@ static int fimc_lite_querycap(struct file *file, void *priv,
 {
 	struct fimc_lite *fimc = video_drvdata(file);
 
-	strscpy(cap->driver, FIMC_LITE_DRV_NAME, sizeof(cap->driver));
-	strscpy(cap->card, FIMC_LITE_DRV_NAME, sizeof(cap->card));
+	strlcpy(cap->driver, FIMC_LITE_DRV_NAME, sizeof(cap->driver));
+	strlcpy(cap->card, FIMC_LITE_DRV_NAME, sizeof(cap->card));
 	snprintf(cap->bus_info, sizeof(cap->bus_info), "platform:%s",
 					dev_name(&fimc->pdev->dev));
 
@@ -670,7 +673,7 @@ static int fimc_lite_enum_fmt_mplane(struct file *file, void *priv,
 		return -EINVAL;
 
 	fmt = &fimc_lite_formats[f->index];
-	strscpy(f->description, fmt->name, sizeof(f->description));
+	strlcpy(f->description, fmt->name, sizeof(f->description));
 	f->pixelformat = fmt->fourcc;
 
 	return 0;
@@ -1358,7 +1361,7 @@ static const struct v4l2_subdev_core_ops fimc_lite_core_ops = {
 	.log_status = fimc_lite_log_status,
 };
 
-static const struct v4l2_subdev_ops fimc_lite_subdev_ops = {
+static struct v4l2_subdev_ops fimc_lite_subdev_ops = {
 	.core = &fimc_lite_core_ops,
 	.video = &fimc_lite_subdev_video_ops,
 	.pad = &fimc_lite_subdev_pad_ops,
@@ -1459,7 +1462,10 @@ static void fimc_lite_clk_put(struct fimc_lite *fimc)
 static int fimc_lite_clk_get(struct fimc_lite *fimc)
 {
 	fimc->clock = clk_get(&fimc->pdev->dev, FLITE_CLK_NAME);
-	return PTR_ERR_OR_ZERO(fimc->clock);
+	if (IS_ERR(fimc->clock))
+		return PTR_ERR(fimc->clock);
+
+	return 0;
 }
 
 static const struct of_device_id flite_of_match[];
@@ -1487,7 +1493,8 @@ static int fimc_lite_probe(struct platform_device *pdev)
 
 	if (!drv_data || fimc->index >= drv_data->num_instances ||
 						fimc->index < 0) {
-		dev_err(dev, "Wrong %pOF node alias\n", dev->of_node);
+		dev_err(dev, "Wrong %s node alias\n",
+					dev->of_node->full_name);
 		return -EINVAL;
 	}
 
@@ -1640,7 +1647,7 @@ static const struct dev_pm_ops fimc_lite_pm_ops = {
 			   NULL)
 };
 
-/* EXYNOS4412 */
+/* EXYNOS4212, EXYNOS4412 */
 static struct flite_drvdata fimc_lite_drvdata_exynos4 = {
 	.max_width		= 8192,
 	.max_height		= 8192,

@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Monitoring code for network dropped packet alerts
  *
@@ -145,9 +144,9 @@ static void send_dm_alert(struct work_struct *work)
  * in the event that more drops will arrive during the
  * hysteresis period.
  */
-static void sched_send_work(struct timer_list *t)
+static void sched_send_work(unsigned long _data)
 {
-	struct per_cpu_dm_data *data = from_timer(data, t, send_timer);
+	struct per_cpu_dm_data *data = (struct per_cpu_dm_data *)_data;
 
 	schedule_work(&data->dm_alert_work);
 }
@@ -356,17 +355,14 @@ out:
 static const struct genl_ops dropmon_ops[] = {
 	{
 		.cmd = NET_DM_CMD_CONFIG,
-		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
 		.doit = net_dm_cmd_config,
 	},
 	{
 		.cmd = NET_DM_CMD_START,
-		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
 		.doit = net_dm_cmd_trace,
 	},
 	{
 		.cmd = NET_DM_CMD_STOP,
-		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
 		.doit = net_dm_cmd_trace,
 	},
 };
@@ -416,7 +412,8 @@ static int __init init_net_drop_monitor(void)
 	for_each_possible_cpu(cpu) {
 		data = &per_cpu(dm_cpu_data, cpu);
 		INIT_WORK(&data->dm_alert_work, send_dm_alert);
-		timer_setup(&data->send_timer, sched_send_work, 0);
+		setup_timer(&data->send_timer, sched_send_work,
+			    (unsigned long)data);
 		spin_lock_init(&data->lock);
 		reset_per_cpu_data(data);
 	}

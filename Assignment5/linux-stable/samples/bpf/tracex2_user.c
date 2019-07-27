@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -7,7 +6,7 @@
 #include <string.h>
 #include <sys/resource.h>
 
-#include <bpf/bpf.h>
+#include "libbpf.h"
 #include "bpf_load.h"
 #include "bpf_util.h"
 
@@ -131,7 +130,7 @@ int main(int ac, char **argv)
 	signal(SIGTERM, int_exit);
 
 	/* start 'ping' in the background to have some kfree_skb events */
-	f = popen("ping -4 -c5 localhost", "r");
+	f = popen("ping -c5 localhost", "r");
 	(void) f;
 
 	/* start 'dd' in the background to have plenty of 'write' syscalls */

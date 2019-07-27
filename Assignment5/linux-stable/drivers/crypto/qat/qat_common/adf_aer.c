@@ -163,7 +163,7 @@ static int adf_dev_aer_schedule_reset(struct adf_accel_dev *accel_dev,
 		return 0;
 
 	set_bit(ADF_STATUS_RESTARTING, &accel_dev->status);
-	reset_data = kzalloc(sizeof(*reset_data), GFP_KERNEL);
+	reset_data = kzalloc(sizeof(*reset_data), GFP_ATOMIC);
 	if (!reset_data)
 		return -ENOMEM;
 	reset_data->accel_dev = accel_dev;
@@ -198,6 +198,7 @@ static pci_ers_result_t adf_slot_reset(struct pci_dev *pdev)
 		pr_err("QAT: Can't find acceleration device\n");
 		return PCI_ERS_RESULT_DISCONNECT;
 	}
+	pci_cleanup_aer_uncorrect_error_status(pdev);
 	if (adf_dev_aer_schedule_reset(accel_dev, ADF_DEV_RESET_SYNC))
 		return PCI_ERS_RESULT_DISCONNECT;
 
@@ -207,7 +208,7 @@ static pci_ers_result_t adf_slot_reset(struct pci_dev *pdev)
 static void adf_resume(struct pci_dev *pdev)
 {
 	dev_info(&pdev->dev, "Acceleration driver reset completed\n");
-	dev_info(&pdev->dev, "Device is up and running\n");
+	dev_info(&pdev->dev, "Device is up and runnig\n");
 }
 
 static const struct pci_error_handlers adf_err_handler = {

@@ -53,23 +53,12 @@
 
 	aliases {
 		serial0 = &uart0;
-		ethernet0 = &emac;
+		/* ethernet0 is the H3 emac, defined in sun8i-h3.dtsi */
 		ethernet1 = &sdiowifi;
 	};
 
 	chosen {
 		stdout-path = "serial0:115200n8";
-	};
-
-	connector {
-		compatible = "hdmi-connector";
-		type = "a";
-
-		port {
-			hdmi_con_in: endpoint {
-				remote-endpoint = <&hdmi_out_con>;
-			};
-		};
 	};
 
 	leds {
@@ -111,49 +100,29 @@
 	};
 };
 
-&de {
-	status = "okay";
-};
-
-&ehci0 {
-	status = "okay";
-};
-
 &ehci1 {
 	status = "okay";
 };
 
-&emac {
-	phy-handle = <&int_mii_phy>;
-	phy-mode = "mii";
-	allwinner,leds-active-low;
-	status = "okay";
-};
-
-&hdmi {
-	status = "okay";
-};
-
-&hdmi_out {
-	hdmi_out_con: endpoint {
-		remote-endpoint = <&hdmi_con_in>;
-	};
-};
-
 &ir {
 	pinctrl-names = "default";
-	pinctrl-0 = <&r_ir_rx_pin>;
+	pinctrl-0 = <&ir_pins_a>;
 	status = "okay";
 };
 
 &mmc0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&mmc0_pins_a>, <&mmc0_cd_pin>;
 	vmmc-supply = <&reg_vcc3v3>;
 	bus-width = <4>;
-	cd-gpios = <&pio 5 6 GPIO_ACTIVE_LOW>; /* PF6 */
+	cd-gpios = <&pio 5 6 GPIO_ACTIVE_HIGH>; /* PF6 */
+	cd-inverted;
 	status = "okay";
 };
 
 &mmc1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&mmc1_pins_a>;
 	vmmc-supply = <&reg_vcc3v3>;
 	bus-width = <4>;
 	non-removable;
@@ -178,39 +147,23 @@
 	status = "okay";
 };
 
-&ohci0 {
-	status = "okay";
-};
-
 &ohci1 {
-	status = "okay";
-};
-
-&reg_usb0_vbus {
-	gpio = <&r_pio 0 2 GPIO_ACTIVE_HIGH>; /* PL2 */
 	status = "okay";
 };
 
 &spdif {
 	pinctrl-names = "default";
-	pinctrl-0 = <&spdif_tx_pin>;
+	pinctrl-0 = <&spdif_tx_pins_a>;
 	status = "okay";
 };
 
 &uart0 {
 	pinctrl-names = "default";
-	pinctrl-0 = <&uart0_pa_pins>;
-	status = "okay";
-};
-
-&usb_otg {
-	dr_mode = "otg";
+	pinctrl-0 = <&uart0_pins_a>;
 	status = "okay";
 };
 
 &usbphy {
-	/* USB VBUS is always on except for the OTG port */
+	/* USB VBUS is on as long as VCC-IO is on */
 	status = "okay";
-	usb0_id_det-gpios = <&pio 0 7 GPIO_ACTIVE_HIGH>; /* PA07 */
-	usb0_vbus-supply = <&reg_usb0_vbus>;
 };

@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Copyright (C) 2012 CERN (www.cern.ch)
  * Author: Alessandro Rubini <rubini@gnudd.com>
+ *
+ * Released according to the GNU GPL, version 2 or any later version.
  *
  * This work is part of the White Rabbit project, a research effort led
  * by CERN, the European Institute for Nuclear Research.
@@ -128,7 +129,8 @@ static int fc_probe(struct fmc_device *fmc)
 
 	struct fc_instance *fc;
 
-	index = fmc_validate(fmc, &fc_drv);
+	if (fmc->op->validate)
+		index = fmc->op->validate(fmc, &fc_drv);
 	if (index < 0)
 		return -EINVAL; /* not our device: invalid */
 

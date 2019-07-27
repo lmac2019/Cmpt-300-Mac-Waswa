@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  *  cx18 driver initialization and card probing
  *
@@ -6,6 +5,16 @@
  *
  *  Copyright (C) 2007  Hans Verkuil <hverkuil@xs4all.nl>
  *  Copyright (C) 2008  Andy Walls <awalls@md.metrocast.net>
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
  */
 
 #include "cx18-driver.h"
@@ -39,7 +48,7 @@ int (*cx18_ext_init)(struct cx18 *);
 EXPORT_SYMBOL(cx18_ext_init);
 
 /* add your revision and whatnot here */
-static const struct pci_device_id cx18_pci_tbl[] = {
+static struct pci_device_id cx18_pci_tbl[] = {
 	{PCI_VENDOR_ID_CX, PCI_DEVICE_ID_CX23418,
 	 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
 	{0,}
@@ -246,7 +255,7 @@ static void request_module_async(struct work_struct *work)
 	request_module("cx18-alsa");
 
 	/* Initialize cx18-alsa for this instance of the cx18 device */
-	if (cx18_ext_init)
+	if (cx18_ext_init != NULL)
 		cx18_ext_init(dev);
 }
 
@@ -282,11 +291,11 @@ int cx18_msleep_timeout(unsigned int msecs, int intr)
 /* Release ioremapped memory */
 static void cx18_iounmap(struct cx18 *cx)
 {
-	if (!cx)
+	if (cx == NULL)
 		return;
 
 	/* Release io memory */
-	if (cx->enc_mem) {
+	if (cx->enc_mem != NULL) {
 		CX18_DEBUG_INFO("releasing enc_mem\n");
 		iounmap(cx->enc_mem);
 		cx->enc_mem = NULL;
@@ -319,7 +328,7 @@ void cx18_read_eeprom(struct cx18 *cx, struct tveeprom *tv)
 	if (!c)
 		return;
 
-	strscpy(c->name, "cx18 tveeprom tmp", sizeof(c->name));
+	strlcpy(c->name, "cx18 tveeprom tmp", sizeof(c->name));
 	c->adapter = &cx->i2c_adap[0];
 	c->addr = 0xa0 >> 1;
 
@@ -640,15 +649,15 @@ static void cx18_process_options(struct cx18 *cx)
 		CX18_INFO("User specified %s card\n", cx->card->name);
 	else if (cx->options.cardtype != 0)
 		CX18_ERR("Unknown user specified type, trying to autodetect card\n");
-	if (!cx->card) {
+	if (cx->card == NULL) {
 		if (cx->pci_dev->subsystem_vendor == CX18_PCI_ID_HAUPPAUGE) {
 			cx->card = cx18_get_card(CX18_CARD_HVR_1600_ESMT);
 			CX18_INFO("Autodetected Hauppauge card\n");
 		}
 	}
-	if (!cx->card) {
+	if (cx->card == NULL) {
 		for (i = 0; (cx->card = cx18_get_card(i)); i++) {
-			if (!cx->card->pci_list)
+			if (cx->card->pci_list == NULL)
 				continue;
 			for (j = 0; cx->card->pci_list[j].device; j++) {
 				if (cx->pci_dev->device !=
@@ -667,7 +676,7 @@ static void cx18_process_options(struct cx18 *cx)
 	}
 done:
 
-	if (!cx->card) {
+	if (cx->card == NULL) {
 		cx->card = cx18_get_card(CX18_CARD_HVR_1600_ESMT);
 		CX18_ERR("Unknown card: vendor/device: [%04x:%04x]\n",
 			 cx->pci_dev->vendor, cx->pci_dev->device);
@@ -689,7 +698,7 @@ static int cx18_create_in_workq(struct cx18 *cx)
 	snprintf(cx->in_workq_name, sizeof(cx->in_workq_name), "%s-in",
 		 cx->v4l2_dev.name);
 	cx->in_work_queue = alloc_ordered_workqueue("%s", 0, cx->in_workq_name);
-	if (!cx->in_work_queue) {
+	if (cx->in_work_queue == NULL) {
 		CX18_ERR("Unable to create incoming mailbox handler thread\n");
 		return -ENOMEM;
 	}
@@ -900,10 +909,12 @@ static int cx18_probe(struct pci_dev *pci_dev,
 		return -ENOMEM;
 	}
 
-	cx = kzalloc(sizeof(*cx), GFP_ATOMIC);
-	if (!cx)
+	cx = kzalloc(sizeof(struct cx18), GFP_ATOMIC);
+	if (cx == NULL) {
+		printk(KERN_ERR "cx18: cannot manage card %d, out of memory\n",
+		       i);
 		return -ENOMEM;
-
+	}
 	cx->pci_dev = pci_dev;
 	cx->instance = i;
 
@@ -1125,6 +1136,8 @@ free_mem:
 free_workqueues:
 	destroy_workqueue(cx->in_work_queue);
 err:
+	if (retval == 0)
+		retval = -ENODEV;
 	CX18_ERR("Error %d on initialization\n", retval);
 
 	v4l2_device_unregister(&cx->v4l2_dev);
@@ -1243,7 +1256,7 @@ static void cx18_cancel_out_work_orders(struct cx18 *cx)
 {
 	int i;
 	for (i = 0; i < CX18_MAX_STREAMS; i++)
-		if (cx->streams[i].video_dev.v4l2_dev)
+		if (&cx->streams[i].video_dev != NULL)
 			cancel_work_sync(&cx->streams[i].out_work_order);
 }
 
@@ -1288,7 +1301,7 @@ static void cx18_remove(struct pci_dev *pci_dev)
 
 	pci_disable_device(cx->pci_dev);
 
-	if (cx->vbi.sliced_mpeg_data[0])
+	if (cx->vbi.sliced_mpeg_data[0] != NULL)
 		for (i = 0; i < CX18_VBI_FRAMES; i++)
 			kfree(cx->vbi.sliced_mpeg_data[i]);
 

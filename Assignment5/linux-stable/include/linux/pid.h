@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _LINUX_PID_H
 #define _LINUX_PID_H
 
@@ -7,10 +6,11 @@
 enum pid_type
 {
 	PIDTYPE_PID,
-	PIDTYPE_TGID,
 	PIDTYPE_PGID,
 	PIDTYPE_SID,
 	PIDTYPE_MAX,
+	/* only valid to __task_pid_nr_ns() */
+	__PIDTYPE_TGID
 };
 
 /*
@@ -50,8 +50,10 @@ enum pid_type
  */
 
 struct upid {
+	/* Try to keep pid_chain in the same cacheline as nr for find_vpid */
 	int nr;
 	struct pid_namespace *ns;
+	struct hlist_node pid_chain;
 };
 
 struct pid
@@ -66,7 +68,11 @@ struct pid
 
 extern struct pid init_struct_pid;
 
-extern const struct file_operations pidfd_fops;
+struct pid_link
+{
+	struct hlist_node node;
+	struct pid *pid;
+};
 
 static inline struct pid *get_pid(struct pid *pid)
 {
@@ -111,6 +117,7 @@ extern struct pid *find_vpid(int nr);
  */
 extern struct pid *find_get_pid(int nr);
 extern struct pid *find_ge_pid(int nr, struct pid_namespace *);
+int next_pidmap(struct pid_namespace *pid_ns, unsigned int last);
 
 extern struct pid *alloc_pid(struct pid_namespace *ns);
 extern void free_pid(struct pid *pid);
@@ -171,7 +178,7 @@ pid_t pid_vnr(struct pid *pid);
 	do {								\
 		if ((pid) != NULL)					\
 			hlist_for_each_entry_rcu((task),		\
-				&(pid)->tasks[type], pid_links[type]) {
+				&(pid)->tasks[type], pids[type].node) {
 
 			/*
 			 * Both old and new leaders may be attached to

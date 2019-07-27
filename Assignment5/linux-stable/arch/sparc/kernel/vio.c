@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 /* vio.c: Virtual I/O channel devices probing infrastructure.
  *
  *    Copyright (c) 2003-2005 IBM Corp.
@@ -193,7 +192,7 @@ show_pciobppath_attr(struct device *dev, struct device_attribute *attr,
 	vdev = to_vio_dev(dev);
 	dp = vdev->dp;
 
-	return snprintf (buf, PAGE_SIZE, "%pOF\n", dp);
+	return snprintf (buf, PAGE_SIZE, "%s\n", dp->full_name);
 }
 
 static DEVICE_ATTR(obppath, S_IRUSR | S_IRGRP | S_IROTH,
@@ -247,7 +246,6 @@ u64 vio_vdev_node(struct mdesc_handle *hp, struct vio_dev *vdev)
 
 	return node;
 }
-EXPORT_SYMBOL(vio_vdev_node);
 
 static void vio_fill_channel_info(struct mdesc_handle *hp, u64 mp,
 				  struct vio_dev *vdev)
@@ -366,9 +364,12 @@ static struct vio_dev *vio_create_one(struct mdesc_handle *hp, u64 mp,
 	if (parent == NULL) {
 		dp = cdev_node;
 	} else if (to_vio_dev(parent) == root_vdev) {
-		for_each_child_of_node(cdev_node, dp) {
-			if (of_node_is_type(dp, type))
+		dp = of_get_next_child(cdev_node, NULL);
+		while (dp) {
+			if (!strcmp(dp->type, type))
 				break;
+
+			dp = of_get_next_child(cdev_node, dp);
 		}
 	} else {
 		dp = to_vio_dev(parent)->dp;
@@ -400,7 +401,7 @@ static struct vio_dev *vio_create_one(struct mdesc_handle *hp, u64 mp,
 	if (err) {
 		printk(KERN_ERR "VIO: Could not register device %s, err=%d\n",
 		       dev_name(&vdev->dev), err);
-		put_device(&vdev->dev);
+		kfree(vdev);
 		return NULL;
 	}
 	if (vdev->dp)

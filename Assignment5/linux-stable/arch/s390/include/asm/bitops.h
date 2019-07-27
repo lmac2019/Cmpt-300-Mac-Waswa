@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /*
  *    Copyright IBM Corp. 1999,2013
  *
@@ -73,7 +72,7 @@ static inline void set_bit(unsigned long nr, volatile unsigned long *ptr)
 	}
 #endif
 	mask = 1UL << (nr & (BITS_PER_LONG - 1));
-	__atomic64_or(mask, (long *)addr);
+	__atomic64_or(mask, addr);
 }
 
 static inline void clear_bit(unsigned long nr, volatile unsigned long *ptr)
@@ -94,7 +93,7 @@ static inline void clear_bit(unsigned long nr, volatile unsigned long *ptr)
 	}
 #endif
 	mask = ~(1UL << (nr & (BITS_PER_LONG - 1)));
-	__atomic64_and(mask, (long *)addr);
+	__atomic64_and(mask, addr);
 }
 
 static inline void change_bit(unsigned long nr, volatile unsigned long *ptr)
@@ -115,7 +114,7 @@ static inline void change_bit(unsigned long nr, volatile unsigned long *ptr)
 	}
 #endif
 	mask = 1UL << (nr & (BITS_PER_LONG - 1));
-	__atomic64_xor(mask, (long *)addr);
+	__atomic64_xor(mask, addr);
 }
 
 static inline int
@@ -125,7 +124,7 @@ test_and_set_bit(unsigned long nr, volatile unsigned long *ptr)
 	unsigned long old, mask;
 
 	mask = 1UL << (nr & (BITS_PER_LONG - 1));
-	old = __atomic64_or_barrier(mask, (long *)addr);
+	old = __atomic64_or_barrier(mask, addr);
 	return (old & mask) != 0;
 }
 
@@ -136,7 +135,7 @@ test_and_clear_bit(unsigned long nr, volatile unsigned long *ptr)
 	unsigned long old, mask;
 
 	mask = ~(1UL << (nr & (BITS_PER_LONG - 1)));
-	old = __atomic64_and_barrier(mask, (long *)addr);
+	old = __atomic64_and_barrier(mask, addr);
 	return (old & ~mask) != 0;
 }
 
@@ -147,7 +146,7 @@ test_and_change_bit(unsigned long nr, volatile unsigned long *ptr)
 	unsigned long old, mask;
 
 	mask = 1UL << (nr & (BITS_PER_LONG - 1));
-	old = __atomic64_xor_barrier(mask, (long *)addr);
+	old = __atomic64_xor_barrier(mask, addr);
 	return (old & mask) != 0;
 }
 
@@ -259,11 +258,6 @@ static inline void set_bit_inv(unsigned long nr, volatile unsigned long *ptr)
 static inline void clear_bit_inv(unsigned long nr, volatile unsigned long *ptr)
 {
 	return clear_bit(nr ^ (BITS_PER_LONG - 1), ptr);
-}
-
-static inline int test_and_clear_bit_inv(unsigned long nr, volatile unsigned long *ptr)
-{
-	return test_and_clear_bit(nr ^ (BITS_PER_LONG - 1), ptr);
 }
 
 static inline void __set_bit_inv(unsigned long nr, volatile unsigned long *ptr)
@@ -397,9 +391,9 @@ static inline int fls64(unsigned long word)
  * This is defined the same way as ffs.
  * Note fls(0) = 0, fls(1) = 1, fls(0x80000000) = 32.
  */
-static inline int fls(unsigned int word)
+static inline int fls(int word)
 {
-	return fls64(word);
+	return fls64((unsigned int)word);
 }
 
 #else /* CONFIG_HAVE_MARCH_Z9_109_FEATURES */

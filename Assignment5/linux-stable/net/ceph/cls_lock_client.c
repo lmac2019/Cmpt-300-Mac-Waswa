@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 #include <linux/ceph/ceph_debug.h>
 
 #include <linux/types.h>
@@ -32,7 +31,7 @@ int ceph_cls_lock(struct ceph_osd_client *osdc,
 	int desc_len = strlen(desc);
 	void *p, *end;
 	struct page *lock_op_page;
-	struct timespec64 mtime;
+	struct timespec mtime;
 	int ret;
 
 	lock_op_buf_size = name_len + sizeof(__le32) +
@@ -63,7 +62,7 @@ int ceph_cls_lock(struct ceph_osd_client *osdc,
 	ceph_encode_string(&p, end, desc, desc_len);
 	/* only support infinite duration */
 	memset(&mtime, 0, sizeof(mtime));
-	ceph_encode_timespec64(p, &mtime);
+	ceph_encode_timespec(p, &mtime);
 	p += sizeof(struct ceph_timespec);
 	ceph_encode_8(&p, flags);
 
@@ -271,7 +270,7 @@ static int decode_locker(void **p, void *end, struct ceph_locker *locker)
 
 	dout("%s %s%llu cookie %s addr %s\n", __func__,
 	     ENTITY_NAME(locker->id.name), locker->id.cookie,
-	     ceph_pr_addr(&locker->info.addr));
+	     ceph_pr_addr(&locker->info.addr.in_addr));
 	return 0;
 }
 

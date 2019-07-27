@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /*
  *  IBM System z Huge TLB Page Support for Kernel.
  *
@@ -37,10 +36,7 @@ static inline int prepare_hugepage_range(struct file *file,
 	return 0;
 }
 
-static inline void arch_clear_hugepage_flags(struct page *page)
-{
-	clear_bit(PG_arch_1, &page->flags);
-}
+#define arch_clear_hugepage_flags(page)		do { } while (0)
 
 static inline void huge_pte_clear(struct mm_struct *mm, unsigned long addr,
 				  pte_t *ptep, unsigned long sz)
@@ -116,9 +112,7 @@ static inline pte_t huge_pte_modify(pte_t pte, pgprot_t newprot)
 	return pte_modify(pte, newprot);
 }
 
-static inline bool gigantic_page_runtime_supported(void)
-{
-	return true;
-}
-
+#ifdef CONFIG_ARCH_HAS_GIGANTIC_PAGE
+static inline bool gigantic_page_supported(void) { return true; }
+#endif
 #endif /* _ASM_S390_HUGETLB_H */

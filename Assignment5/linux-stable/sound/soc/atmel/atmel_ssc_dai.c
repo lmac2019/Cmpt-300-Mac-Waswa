@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * atmel_ssc_dai.c  --  ALSA SoC ATMEL SSC Audio Layer Platform driver
  *
@@ -12,6 +11,20 @@
  * Frank Mandarino <fmandarino@endrelia.com>
  * Based on pxa2xx Platform drivers by
  * Liam Girdwood <lrg@slimlogic.co.uk>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
 #include <linux/init.h>
@@ -807,7 +820,7 @@ static int atmel_ssc_hw_params(struct snd_pcm_substream *substream,
 		if (ret < 0) {
 			printk(KERN_WARNING
 					"atmel_ssc_dai: request_irq failure\n");
-			pr_debug("Atmel_ssc_dai: Stopping clock\n");
+			pr_debug("Atmel_ssc_dai: Stoping clock\n");
 			clk_disable(ssc_p->ssc->clk);
 			return ret;
 		}
@@ -989,14 +1002,15 @@ static const struct snd_soc_component_driver atmel_ssc_component = {
 
 static int asoc_ssc_init(struct device *dev)
 {
-	struct ssc_device *ssc = dev_get_drvdata(dev);
+	struct platform_device *pdev = to_platform_device(dev);
+	struct ssc_device *ssc = platform_get_drvdata(pdev);
 	int ret;
 
-	ret = devm_snd_soc_register_component(dev, &atmel_ssc_component,
+	ret = snd_soc_register_component(dev, &atmel_ssc_component,
 					 &atmel_ssc_dai, 1);
 	if (ret) {
 		dev_err(dev, "Could not register DAI: %d\n", ret);
-		return ret;
+		goto err;
 	}
 
 	if (ssc->pdata->use_dma)
@@ -1006,20 +1020,28 @@ static int asoc_ssc_init(struct device *dev)
 
 	if (ret) {
 		dev_err(dev, "Could not register PCM: %d\n", ret);
-		return ret;
+		goto err_unregister_dai;
 	}
 
 	return 0;
+
+err_unregister_dai:
+	snd_soc_unregister_component(dev);
+err:
+	return ret;
 }
 
 static void asoc_ssc_exit(struct device *dev)
 {
-	struct ssc_device *ssc = dev_get_drvdata(dev);
+	struct platform_device *pdev = to_platform_device(dev);
+	struct ssc_device *ssc = platform_get_drvdata(pdev);
 
 	if (ssc->pdata->use_dma)
 		atmel_pcm_dma_platform_unregister(dev);
 	else
 		atmel_pcm_pdc_platform_unregister(dev);
+
+	snd_soc_unregister_component(dev);
 }
 
 /**

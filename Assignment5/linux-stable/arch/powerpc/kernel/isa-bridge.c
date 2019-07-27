@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Routines for tracking a legacy ISA bridge
  *
@@ -7,6 +6,11 @@
  * Some bits and pieces moved over from pci_64.c
  *
  * Copyrigh 2003 Anton Blanchard <anton@au.ibm.com>, IBM Corp.
+ *
+ *      This program is free software; you can redistribute it and/or
+ *      modify it under the terms of the GNU General Public License
+ *      as published by the Free Software Foundation; either version
+ *      2 of the License, or (at your option) any later version.
  */
 
 #define DEBUG
@@ -106,14 +110,14 @@ static void pci_process_ISA_OF_ranges(struct device_node *isa_node,
 		size = 0x10000;
 
 	__ioremap_at(phb_io_base_phys, (void *)ISA_IO_BASE,
-		     size, pgprot_noncached(PAGE_KERNEL));
+		     size, pgprot_val(pgprot_noncached(__pgprot(0))));
 	return;
 
 inval_range:
 	printk(KERN_ERR "no ISA IO ranges or unexpected isa range, "
 	       "mapping 64k\n");
 	__ioremap_at(phb_io_base_phys, (void *)ISA_IO_BASE,
-		     0x10000, pgprot_noncached(PAGE_KERNEL));
+		     0x10000, pgprot_val(pgprot_noncached(__pgprot(0))));
 }
 
 
@@ -160,7 +164,7 @@ void __init isa_bridge_find_early(struct pci_controller *hose)
 	/* Set the global ISA io base to indicate we have an ISA bridge */
 	isa_io_base = ISA_IO_BASE;
 
-	pr_debug("ISA bridge (early) is %pOF\n", np);
+	pr_debug("ISA bridge (early) is %s\n", np->full_name);
 }
 
 /**
@@ -183,15 +187,15 @@ void __init isa_bridge_init_non_pci(struct device_node *np)
 	pna = of_n_addr_cells(np);
 	if (of_property_read_u32(np, "#address-cells", &na) ||
 	    of_property_read_u32(np, "#size-cells", &ns)) {
-		pr_warn("ISA: Non-PCI bridge %pOF is missing address format\n",
-			np);
+		pr_warn("ISA: Non-PCI bridge %s is missing address format\n",
+			np->full_name);
 		return;
 	}
 
 	/* Check it's a supported address format */
 	if (na != 2 || ns != 1) {
-		pr_warn("ISA: Non-PCI bridge %pOF has unsupported address format\n",
-			np);
+		pr_warn("ISA: Non-PCI bridge %s has unsupported address format\n",
+			np->full_name);
 		return;
 	}
 	rs = na + ns + pna;
@@ -199,8 +203,8 @@ void __init isa_bridge_init_non_pci(struct device_node *np)
 	/* Grab the ranges property */
 	ranges = of_get_property(np, "ranges", &rlen);
 	if (ranges == NULL || rlen < rs) {
-		pr_warn("ISA: Non-PCI bridge %pOF has absent or invalid ranges\n",
-			np);
+		pr_warn("ISA: Non-PCI bridge %s has absent or invalid ranges\n",
+			np->full_name);
 		return;
 	}
 
@@ -216,8 +220,8 @@ void __init isa_bridge_init_non_pci(struct device_node *np)
 
 	/* Got something ? */
 	if (!size || !pbasep) {
-		pr_warn("ISA: Non-PCI bridge %pOF has no usable IO range\n",
-			np);
+		pr_warn("ISA: Non-PCI bridge %s has no usable IO range\n",
+			np->full_name);
 		return;
 	}
 
@@ -229,15 +233,15 @@ void __init isa_bridge_init_non_pci(struct device_node *np)
 	/* Map pbase */
 	pbase = of_translate_address(np, pbasep);
 	if (pbase == OF_BAD_ADDR) {
-		pr_warn("ISA: Non-PCI bridge %pOF failed to translate IO base\n",
-			np);
+		pr_warn("ISA: Non-PCI bridge %s failed to translate IO base\n",
+			np->full_name);
 		return;
 	}
 
 	/* We need page alignment */
 	if ((cbase & ~PAGE_MASK) || (pbase & ~PAGE_MASK)) {
-		pr_warn("ISA: Non-PCI bridge %pOF has non aligned IO range\n",
-			np);
+		pr_warn("ISA: Non-PCI bridge %s has non aligned IO range\n",
+			np->full_name);
 		return;
 	}
 
@@ -249,9 +253,9 @@ void __init isa_bridge_init_non_pci(struct device_node *np)
 	 */
 	isa_io_base = ISA_IO_BASE;
 	__ioremap_at(pbase, (void *)ISA_IO_BASE,
-		     size, pgprot_noncached(PAGE_KERNEL));
+		     size, pgprot_val(pgprot_noncached(__pgprot(0))));
 
-	pr_debug("ISA: Non-PCI bridge is %pOF\n", np);
+	pr_debug("ISA: Non-PCI bridge is %s\n", np->full_name);
 }
 
 /**
@@ -273,8 +277,8 @@ static void isa_bridge_find_late(struct pci_dev *pdev,
 	/* Set the global ISA io base to indicate we have an ISA bridge */
 	isa_io_base = ISA_IO_BASE;
 
-	pr_debug("ISA bridge (late) is %pOF on %s\n",
-		 devnode, pci_name(pdev));
+	pr_debug("ISA bridge (late) is %s on %s\n",
+		 devnode->full_name, pci_name(pdev));
 }
 
 /**
@@ -323,7 +327,8 @@ static int isa_bridge_notify(struct notifier_block *nb, unsigned long action,
 		/* Check if we have no ISA device, and this happens to be one,
 		 * register it as such if it has an OF device
 		 */
-		if (!isa_bridge_devnode && of_node_is_type(devnode, "isa"))
+		if (!isa_bridge_devnode && devnode && devnode->type &&
+		    !strcmp(devnode->type, "isa"))
 			isa_bridge_find_late(pdev, devnode);
 
 		return 0;

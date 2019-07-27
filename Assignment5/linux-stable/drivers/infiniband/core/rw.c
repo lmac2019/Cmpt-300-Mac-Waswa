@@ -1,10 +1,17 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2016 HGST, a Western Digital Company.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
  */
 #include <linux/moduleparam.h>
 #include <linux/slab.h>
-#include <linux/pci-p2pdma.h>
 #include <rdma/mr_pool.h>
 #include <rdma/rw.h>
 
@@ -80,7 +87,7 @@ static int rdma_rw_init_one_mr(struct ib_qp *qp, u8 port_num,
 	}
 
 	ret = ib_map_mr_sg(reg->mr, sg, nents, &offset, PAGE_SIZE);
-	if (ret < 0 || ret < nents) {
+	if (ret < nents) {
 		ib_mr_pool_put(qp, &qp->rdma_mrs, reg->mr);
 		return -EINVAL;
 	}
@@ -171,6 +178,7 @@ static int rdma_rw_init_map_wrs(struct rdma_rw_ctx *ctx, struct ib_qp *qp,
 		struct scatterlist *sg, u32 sg_cnt, u32 offset,
 		u64 remote_addr, u32 rkey, enum dma_data_direction dir)
 {
+	struct ib_device *dev = qp->pd->device;
 	u32 max_sge = dir == DMA_TO_DEVICE ? qp->max_write_sge :
 		      qp->max_read_sge;
 	struct ib_sge *sge;
@@ -200,8 +208,8 @@ static int rdma_rw_init_map_wrs(struct rdma_rw_ctx *ctx, struct ib_qp *qp,
 		rdma_wr->wr.sg_list = sge;
 
 		for (j = 0; j < nr_sge; j++, sg = sg_next(sg)) {
-			sge->addr = sg_dma_address(sg) + offset;
-			sge->length = sg_dma_len(sg) - offset;
+			sge->addr = ib_sg_dma_address(dev, sg) + offset;
+			sge->length = ib_sg_dma_len(dev, sg) - offset;
 			sge->lkey = qp->pd->local_dma_lkey;
 
 			total_len += sge->length;
@@ -227,13 +235,14 @@ static int rdma_rw_init_single_wr(struct rdma_rw_ctx *ctx, struct ib_qp *qp,
 		struct scatterlist *sg, u32 offset, u64 remote_addr, u32 rkey,
 		enum dma_data_direction dir)
 {
+	struct ib_device *dev = qp->pd->device;
 	struct ib_rdma_wr *rdma_wr = &ctx->single.wr;
 
 	ctx->nr_ops = 1;
 
 	ctx->single.sge.lkey = qp->pd->local_dma_lkey;
-	ctx->single.sge.addr = sg_dma_address(sg) + offset;
-	ctx->single.sge.length = sg_dma_len(sg) - offset;
+	ctx->single.sge.addr = ib_sg_dma_address(dev, sg) + offset;
+	ctx->single.sge.length = ib_sg_dma_len(dev, sg) - offset;
 
 	memset(rdma_wr, 0, sizeof(*rdma_wr));
 	if (dir == DMA_TO_DEVICE)
@@ -271,11 +280,7 @@ int rdma_rw_ctx_init(struct rdma_rw_ctx *ctx, struct ib_qp *qp, u8 port_num,
 	struct ib_device *dev = qp->pd->device;
 	int ret;
 
-	if (is_pci_p2pdma_page(sg_page(sg)))
-		ret = pci_p2pdma_map_sg(dev->dma_device, sg, sg_cnt, dir);
-	else
-		ret = ib_dma_map_sg(dev, sg, sg_cnt, dir);
-
+	ret = ib_dma_map_sg(dev, sg, sg_cnt, dir);
 	if (!ret)
 		return -ENOMEM;
 	sg_cnt = ret;
@@ -284,7 +289,7 @@ int rdma_rw_ctx_init(struct rdma_rw_ctx *ctx, struct ib_qp *qp, u8 port_num,
 	 * Skip to the S/G entry that sg_offset falls into:
 	 */
 	for (;;) {
-		u32 len = sg_dma_len(sg);
+		u32 len = ib_sg_dma_len(dev, sg);
 
 		if (sg_offset < len)
 			break;
@@ -320,7 +325,7 @@ out_unmap_sg:
 EXPORT_SYMBOL(rdma_rw_ctx_init);
 
 /**
- * rdma_rw_ctx_signature_init - initialize a RW context with signature offload
+ * rdma_rw_ctx_signature init - initialize a RW context with signature offload
  * @ctx:	context to initialize
  * @qp:		queue pair to operate on
  * @port_num:	port num to which the connection is bound
@@ -379,17 +384,21 @@ int rdma_rw_ctx_signature_init(struct rdma_rw_ctx *ctx, struct ib_qp *qp,
 	count += ret;
 	prev_wr = &ctx->sig->data.reg_wr.wr;
 
-	ret = rdma_rw_init_one_mr(qp, port_num, &ctx->sig->prot,
-				  prot_sg, prot_sg_cnt, 0);
-	if (ret < 0)
-		goto out_destroy_data_mr;
-	count += ret;
+	if (prot_sg_cnt) {
+		ret = rdma_rw_init_one_mr(qp, port_num, &ctx->sig->prot,
+				prot_sg, prot_sg_cnt, 0);
+		if (ret < 0)
+			goto out_destroy_data_mr;
+		count += ret;
 
-	if (ctx->sig->prot.inv_wr.next)
-		prev_wr->next = &ctx->sig->prot.inv_wr;
-	else
-		prev_wr->next = &ctx->sig->prot.reg_wr.wr;
-	prev_wr = &ctx->sig->prot.reg_wr.wr;
+		if (ctx->sig->prot.inv_wr.next)
+			prev_wr->next = &ctx->sig->prot.inv_wr;
+		else
+			prev_wr->next = &ctx->sig->prot.reg_wr.wr;
+		prev_wr = &ctx->sig->prot.reg_wr.wr;
+	} else {
+		ctx->sig->prot.mr = NULL;
+	}
 
 	ctx->sig->sig_mr = ib_mr_pool_get(qp, &qp->sig_mrs);
 	if (!ctx->sig->sig_mr) {
@@ -559,10 +568,10 @@ EXPORT_SYMBOL(rdma_rw_ctx_wrs);
 int rdma_rw_ctx_post(struct rdma_rw_ctx *ctx, struct ib_qp *qp, u8 port_num,
 		struct ib_cqe *cqe, struct ib_send_wr *chain_wr)
 {
-	struct ib_send_wr *first_wr;
+	struct ib_send_wr *first_wr, *bad_wr;
 
 	first_wr = rdma_rw_ctx_wrs(ctx, qp, port_num, cqe, chain_wr);
-	return ib_post_send(qp, first_wr, NULL);
+	return ib_post_send(qp, first_wr, &bad_wr);
 }
 EXPORT_SYMBOL(rdma_rw_ctx_post);
 
@@ -597,9 +606,7 @@ void rdma_rw_ctx_destroy(struct rdma_rw_ctx *ctx, struct ib_qp *qp, u8 port_num,
 		break;
 	}
 
-	/* P2PDMA contexts do not need to be unmapped */
-	if (!is_pci_p2pdma_page(sg_page(sg)))
-		ib_dma_unmap_sg(qp->pd->device, sg, sg_cnt, dir);
+	ib_dma_unmap_sg(qp->pd->device, sg, sg_cnt, dir);
 }
 EXPORT_SYMBOL(rdma_rw_ctx_destroy);
 
@@ -635,30 +642,6 @@ void rdma_rw_ctx_destroy_signature(struct rdma_rw_ctx *ctx, struct ib_qp *qp,
 	kfree(ctx->sig);
 }
 EXPORT_SYMBOL(rdma_rw_ctx_destroy_signature);
-
-/**
- * rdma_rw_mr_factor - return number of MRs required for a payload
- * @device:	device handling the connection
- * @port_num:	port num to which the connection is bound
- * @maxpages:	maximum payload pages per rdma_rw_ctx
- *
- * Returns the number of MRs the device requires to move @maxpayload
- * bytes. The returned value is used during transport creation to
- * compute max_rdma_ctxts and the size of the transport's Send and
- * Send Completion Queues.
- */
-unsigned int rdma_rw_mr_factor(struct ib_device *device, u8 port_num,
-			       unsigned int maxpages)
-{
-	unsigned int mr_pages;
-
-	if (rdma_rw_can_use_mr(device, port_num))
-		mr_pages = rdma_rw_fr_page_list_len(device);
-	else
-		mr_pages = device->attrs.max_sge_rd;
-	return DIV_ROUND_UP(maxpages, mr_pages);
-}
-EXPORT_SYMBOL(rdma_rw_mr_factor);
 
 void rdma_rw_init_qp(struct ib_device *dev, struct ib_qp_init_attr *attr)
 {

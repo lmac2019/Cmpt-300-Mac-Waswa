@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Exynos specific definitions for Samsung pinctrl and gpiolib driver.
  *
@@ -11,6 +10,11 @@
  * pinctrl/gpiolib interface drivers.
  *
  * Author: Thomas Abraham <thomas.ab@samsung.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  */
 
 #ifndef __PINCTRL_SAMSUNG_EXYNOS_H
@@ -28,6 +32,7 @@
 #define EXYNOS7_WKUP_EMASK_OFFSET	0x900
 #define EXYNOS7_WKUP_EPEND_OFFSET	0xA00
 #define EXYNOS_SVC_OFFSET		0xB08
+#define EXYNOS_EINT_FUNC		0xF
 
 /* helpers to access interrupt service register */
 #define EXYNOS_SVC_GROUP_SHIFT		3
@@ -99,7 +104,7 @@
 
 #define EXYNOS5433_PIN_BANK_EINTW_EXT(pins, reg, id, offs, pctl_idx) \
 	{							\
-		.type           = &exynos5433_bank_type_off,	\
+		.type           = &exynos5433_bank_type_alive,	\
 		.pctl_offset    = reg,				\
 		.nr_pins        = pins,				\
 		.eint_type      = EINT_TYPE_WKUP,		\

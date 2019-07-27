@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _LINUX_DS620_H
 #define _LINUX_DS620_H
 
@@ -14,7 +13,7 @@ struct ds620_platform_data {
 	 *  1 = PO_LOW
 	 *  2 = PO_HIGH
 	 *
-	 * (see Documentation/hwmon/ds620.rst)
+	 * (see Documentation/hwmon/ds620)
 	 */
 	int pomode;
 };

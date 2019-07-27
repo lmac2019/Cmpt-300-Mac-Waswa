@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Kernel-based Virtual Machine -- Performance Monitoring Unit support
  *
@@ -8,6 +7,10 @@
  *   Avi Kivity   <avi@redhat.com>
  *   Gleb Natapov <gleb@redhat.com>
  *   Wei Huang    <wei@redhat.com>
+ *
+ * This work is licensed under the terms of the GNU GPL, version 2.  See
+ * the COPYING file in the top-level directory.
+ *
  */
 
 #include <linux/types.h>
@@ -241,58 +244,21 @@ int kvm_pmu_is_valid_msr_idx(struct kvm_vcpu *vcpu, unsigned idx)
 	return kvm_x86_ops->pmu_ops->is_valid_msr_idx(vcpu, idx);
 }
 
-bool is_vmware_backdoor_pmc(u32 pmc_idx)
-{
-	switch (pmc_idx) {
-	case VMWARE_BACKDOOR_PMC_HOST_TSC:
-	case VMWARE_BACKDOOR_PMC_REAL_TIME:
-	case VMWARE_BACKDOOR_PMC_APPARENT_TIME:
-		return true;
-	}
-	return false;
-}
-
-static int kvm_pmu_rdpmc_vmware(struct kvm_vcpu *vcpu, unsigned idx, u64 *data)
-{
-	u64 ctr_val;
-
-	switch (idx) {
-	case VMWARE_BACKDOOR_PMC_HOST_TSC:
-		ctr_val = rdtsc();
-		break;
-	case VMWARE_BACKDOOR_PMC_REAL_TIME:
-		ctr_val = ktime_get_boot_ns();
-		break;
-	case VMWARE_BACKDOOR_PMC_APPARENT_TIME:
-		ctr_val = ktime_get_boot_ns() +
-			vcpu->kvm->arch.kvmclock_offset;
-		break;
-	default:
-		return 1;
-	}
-
-	*data = ctr_val;
-	return 0;
-}
-
 int kvm_pmu_rdpmc(struct kvm_vcpu *vcpu, unsigned idx, u64 *data)
 {
 	bool fast_mode = idx & (1u << 31);
-	struct kvm_pmu *pmu = vcpu_to_pmu(vcpu);
 	struct kvm_pmc *pmc;
-	u64 mask = fast_mode ? ~0u : ~0ull;
+	u64 ctr_val;
 
-	if (!pmu->version)
-		return 1;
-
-	if (is_vmware_backdoor_pmc(idx))
-		return kvm_pmu_rdpmc_vmware(vcpu, idx, data);
-
-	pmc = kvm_x86_ops->pmu_ops->msr_idx_to_pmc(vcpu, idx, &mask);
+	pmc = kvm_x86_ops->pmu_ops->msr_idx_to_pmc(vcpu, idx);
 	if (!pmc)
 		return 1;
 
-	*data = pmc_read_counter(pmc) & mask;
+	ctr_val = pmc_read_counter(pmc);
+	if (fast_mode)
+		ctr_val = (u32)ctr_val;
+
+	*data = ctr_val;
 	return 0;
 }
 

@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 #include <linux/kernel.h>
 #include <linux/types.h>
 #include <linux/mutex.h>
@@ -8,6 +7,8 @@
 #include <linux/memory.h>
 
 #include <asm/cacheflush.h>
+
+#ifdef HAVE_JUMP_LABEL
 
 void arch_jump_label_transform(struct jump_entry *entry,
 			       enum jump_label_type type)
@@ -45,3 +46,5 @@ void arch_jump_label_transform(struct jump_entry *entry,
 	flushi(insn);
 	mutex_unlock(&text_mutex);
 }
+
+#endif

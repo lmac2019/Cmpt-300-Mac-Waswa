@@ -1,5 +1,4 @@
 #!/bin/bash
-# SPDX-License-Identifier: GPL-2.0
 
 source cpu.sh
 source cpufreq.sh
@@ -12,9 +11,6 @@ OUTFILE=cpufreq_selftest
 SYSFS=
 CPUROOT=
 CPUFREQROOT=
-
-# Kselftest framework requirement - SKIP code is 4.
-ksft_skip=4
 
 helpme()
 {
@@ -41,7 +37,7 @@ prerequisite()
 
 	if [ $UID != 0 ]; then
 		echo $msg must be run as root >&2
-		exit $ksft_skip
+		exit 2
 	fi
 
 	taskset -p 01 $$

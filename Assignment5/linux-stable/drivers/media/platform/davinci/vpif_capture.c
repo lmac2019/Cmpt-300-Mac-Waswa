@@ -1,7 +1,16 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Copyright (C) 2009 Texas Instruments Inc
  * Copyright (C) 2014 Lad, Prabhakar <prabhakar.csengg@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
  * TODO : add support for VBI & HBI data service
  *	  add static buffer allocation
@@ -100,7 +109,7 @@ static int vpif_buffer_prepare(struct vb2_buffer *vb)
  * @vq: vb2_queue ptr
  * @nbuffers: ptr to number of buffers requested by application
  * @nplanes:: contains number of distinct video planes needed to hold a frame
- * @sizes: contains the size (in bytes) of each plane.
+ * @sizes[]: contains the size (in bytes) of each plane.
  * @alloc_devs: ptr to allocation context
  *
  * This callback function is called when reqbuf() is called to adjust
@@ -158,7 +167,7 @@ static void vpif_buffer_queue(struct vb2_buffer *vb)
 
 /**
  * vpif_start_streaming : Starts the DMA engine for streaming
- * @vq: ptr to vb2_buffer
+ * @vb: ptr to vb2_buffer
  * @count: number of buffers
  */
 static int vpif_start_streaming(struct vb2_queue *vq, unsigned int count)
@@ -303,7 +312,7 @@ static void vpif_stop_streaming(struct vb2_queue *vq)
 	spin_unlock_irqrestore(&common->irqlock, flags);
 }
 
-static const struct vb2_ops video_qops = {
+static struct vb2_ops video_qops = {
 	.queue_setup		= vpif_buffer_queue_setup,
 	.buf_prepare		= vpif_buffer_prepare,
 	.start_streaming	= vpif_start_streaming,
@@ -620,7 +629,7 @@ static void vpif_calculate_offsets(struct channel_obj *ch)
 
 /**
  * vpif_get_default_field() - Get default field type based on interface
- * @iface: ptr to vpif interface
+ * @vpif_params - ptr to vpif params
  */
 static inline enum v4l2_field vpif_get_default_field(
 				struct vpif_interface *iface)
@@ -631,8 +640,8 @@ static inline enum v4l2_field vpif_get_default_field(
 
 /**
  * vpif_config_addr() - function to configure buffer address in vpif
- * @ch: channel ptr
- * @muxmode: channel mux mode
+ * @ch - channel ptr
+ * @muxmode - channel mux mode
  */
 static void vpif_config_addr(struct channel_obj *ch, int muxmode)
 {
@@ -652,9 +661,9 @@ static void vpif_config_addr(struct channel_obj *ch, int muxmode)
 
 /**
  * vpif_input_to_subdev() - Maps input to sub device
- * @vpif_cfg: global config ptr
- * @chan_cfg: channel config ptr
- * @input_index: Given input index from application
+ * @vpif_cfg - global config ptr
+ * @chan_cfg - channel config ptr
+ * @input_index - Given input index from application
  *
  * lookup the sub device information for a given input index.
  * we report all the inputs to application. inputs table also
@@ -690,9 +699,9 @@ static int vpif_input_to_subdev(
 
 /**
  * vpif_set_input() - Select an input
- * @vpif_cfg: global config ptr
- * @ch: channel
- * @index: Given input index from application
+ * @vpif_cfg - global config ptr
+ * @ch - channel
+ * @_index - Given input index from application
  *
  * Select the given input.
  */
@@ -783,7 +792,7 @@ static int vpif_querystd(struct file *file, void *priv, v4l2_std_id *std_id)
  * vpif_g_std() - get STD handler
  * @file: file ptr
  * @priv: file handle
- * @std: ptr to std id
+ * @std_id: ptr to std id
  */
 static int vpif_g_std(struct file *file, void *priv, v4l2_std_id *std)
 {
@@ -924,7 +933,7 @@ static int vpif_s_input(struct file *file, void *priv, unsigned int index)
  * vpif_enum_fmt_vid_cap() - ENUM_FMT handler
  * @file: file ptr
  * @priv: file handle
- * @fmt: ptr to V4L2 format descriptor
+ * @index: input index
  */
 static int vpif_enum_fmt_vid_cap(struct file *file, void  *priv,
 					struct v4l2_fmtdesc *fmt)
@@ -940,13 +949,11 @@ static int vpif_enum_fmt_vid_cap(struct file *file, void  *priv,
 	/* Fill in the information about format */
 	if (ch->vpifparams.iface.if_type == VPIF_IF_RAW_BAYER) {
 		fmt->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-		strscpy(fmt->description, "Raw Mode -Bayer Pattern GrRBGb",
-			sizeof(fmt->description));
+		strcpy(fmt->description, "Raw Mode -Bayer Pattern GrRBGb");
 		fmt->pixelformat = V4L2_PIX_FMT_SBGGR8;
 	} else {
 		fmt->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-		strscpy(fmt->description, "YCbCr4:2:2 Semi-Planar",
-			sizeof(fmt->description));
+		strcpy(fmt->description, "YCbCr4:2:2 Semi-Planar");
 		fmt->pixelformat = V4L2_PIX_FMT_NV16;
 	}
 	return 0;
@@ -1087,10 +1094,10 @@ static int vpif_querycap(struct file *file, void  *priv,
 
 	cap->device_caps = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING;
 	cap->capabilities = cap->device_caps | V4L2_CAP_DEVICE_CAPS;
-	strscpy(cap->driver, VPIF_DRIVER_NAME, sizeof(cap->driver));
+	strlcpy(cap->driver, VPIF_DRIVER_NAME, sizeof(cap->driver));
 	snprintf(cap->bus_info, sizeof(cap->bus_info), "platform:%s",
 		 dev_name(vpif_dev));
-	strscpy(cap->card, config->card_name, sizeof(cap->card));
+	strlcpy(cap->card, config->card_name, sizeof(cap->card));
 
 	return 0;
 }
@@ -1245,8 +1252,7 @@ static int vpif_s_dv_timings(struct file *file, void *priv,
 	} else {
 		std_info->l5 = std_info->vsize - (bt->vfrontporch - 1);
 	}
-	strscpy(std_info->name, "Custom timings BT656/1120",
-		sizeof(std_info->name));
+	strncpy(std_info->name, "Custom timings BT656/1120", VPIF_MAX_NAME);
 	std_info->width = bt->width;
 	std_info->height = bt->height;
 	std_info->frm_fmt = bt->interlaced ? 0 : 1;
@@ -1338,7 +1344,7 @@ static const struct v4l2_ioctl_ops vpif_ioctl_ops = {
 };
 
 /* vpif file operations */
-static const struct v4l2_file_operations vpif_fops = {
+static struct v4l2_file_operations vpif_fops = {
 	.owner = THIS_MODULE,
 	.open = v4l2_fh_open,
 	.release = vb2_fop_release,
@@ -1384,7 +1390,7 @@ static int vpif_async_bound(struct v4l2_async_notifier *notifier,
 
 	for (i = 0; i < vpif_obj.config->asd_sizes[0]; i++) {
 		struct v4l2_async_subdev *_asd = vpif_obj.config->asd[i];
-		const struct fwnode_handle *fwnode = _asd->match.fwnode;
+		const struct fwnode_handle *fwnode = _asd->match.fwnode.fwnode;
 
 		if (fwnode == subdev->fwnode) {
 			vpif_obj.sd[i] = subdev;
@@ -1393,7 +1399,7 @@ static int vpif_async_bound(struct v4l2_async_notifier *notifier,
 			vpif_dbg(2, debug,
 				 "%s: setting input %d subdev_name = %s\n",
 				 __func__, i,
-				vpif_obj.config->chan_config->inputs[i].subdev_name);
+				 to_of_node(subdev->fwnode)->full_name);
 			return 0;
 		}
 	}
@@ -1457,7 +1463,7 @@ static int vpif_probe_complete(void)
 
 		/* Initialize the video_device structure */
 		vdev = &ch->video_dev;
-		strscpy(vdev->name, VPIF_DRIVER_NAME, sizeof(vdev->name));
+		strlcpy(vdev->name, VPIF_DRIVER_NAME, sizeof(vdev->name));
 		vdev->release = video_device_release_empty;
 		vdev->fops = &vpif_fops;
 		vdev->ioctl_ops = &vpif_ioctl_ops;
@@ -1494,21 +1500,15 @@ static int vpif_async_complete(struct v4l2_async_notifier *notifier)
 	return vpif_probe_complete();
 }
 
-static const struct v4l2_async_notifier_operations vpif_async_ops = {
-	.bound = vpif_async_bound,
-	.complete = vpif_async_complete,
-};
-
 static struct vpif_capture_config *
 vpif_capture_get_pdata(struct platform_device *pdev)
 {
 	struct device_node *endpoint = NULL;
+	struct v4l2_fwnode_endpoint bus_cfg;
 	struct vpif_capture_config *pdata;
 	struct vpif_subdev_info *sdinfo;
 	struct vpif_capture_chan_config *chan;
 	unsigned int i;
-
-	v4l2_async_notifier_init(&vpif_obj.notifier);
 
 	/*
 	 * DT boot: OF node from parent device contains
@@ -1523,16 +1523,13 @@ vpif_capture_get_pdata(struct platform_device *pdev)
 	if (!pdata)
 		return NULL;
 	pdata->subdev_info =
-		devm_kcalloc(&pdev->dev,
-			     VPIF_CAPTURE_NUM_CHANNELS,
-			     sizeof(*pdata->subdev_info),
-			     GFP_KERNEL);
+		devm_kzalloc(&pdev->dev, sizeof(*pdata->subdev_info) *
+			     VPIF_CAPTURE_NUM_CHANNELS, GFP_KERNEL);
 
 	if (!pdata->subdev_info)
 		return NULL;
 
 	for (i = 0; i < VPIF_CAPTURE_NUM_CHANNELS; i++) {
-		struct v4l2_fwnode_endpoint bus_cfg = { .bus_type = 0 };
 		struct device_node *rem;
 		unsigned int flags;
 		int err;
@@ -1542,25 +1539,12 @@ vpif_capture_get_pdata(struct platform_device *pdev)
 		if (!endpoint)
 			break;
 
-		rem = of_graph_get_remote_port_parent(endpoint);
-		if (!rem) {
-			dev_dbg(&pdev->dev, "Remote device at %pOF not found\n",
-				endpoint);
-			of_node_put(endpoint);
-			goto done;
-		}
-
 		sdinfo = &pdata->subdev_info[i];
 		chan = &pdata->chan_config[i];
-		chan->inputs = devm_kcalloc(&pdev->dev,
+		chan->inputs = devm_kzalloc(&pdev->dev,
+					    sizeof(*chan->inputs) *
 					    VPIF_CAPTURE_NUM_CHANNELS,
-					    sizeof(*chan->inputs),
 					    GFP_KERNEL);
-		if (!chan->inputs) {
-			of_node_put(rem);
-			of_node_put(endpoint);
-			goto err_cleanup;
-		}
 
 		chan->input_count++;
 		chan->inputs[i].input.type = V4L2_INPUT_TYPE_CAMERA;
@@ -1569,16 +1553,12 @@ vpif_capture_get_pdata(struct platform_device *pdev)
 
 		err = v4l2_fwnode_endpoint_parse(of_fwnode_handle(endpoint),
 						 &bus_cfg);
-		of_node_put(endpoint);
 		if (err) {
 			dev_err(&pdev->dev, "Could not parse the endpoint\n");
-			of_node_put(rem);
 			goto done;
 		}
-
-		dev_dbg(&pdev->dev, "Endpoint %pOF, bus_width = %d\n",
-			endpoint, bus_cfg.bus.parallel.bus_width);
-
+		dev_dbg(&pdev->dev, "Endpoint %s, bus_width = %d\n",
+			endpoint->full_name, bus_cfg.bus.parallel.bus_width);
 		flags = bus_cfg.bus.parallel.flags;
 
 		if (flags & V4L2_MBUS_HSYNC_ACTIVE_HIGH)
@@ -1587,16 +1567,29 @@ vpif_capture_get_pdata(struct platform_device *pdev)
 		if (flags & V4L2_MBUS_VSYNC_ACTIVE_HIGH)
 			chan->vpif_if.vd_pol = 1;
 
-		dev_dbg(&pdev->dev, "Remote device %pOF found\n", rem);
+		rem = of_graph_get_remote_port_parent(endpoint);
+		if (!rem) {
+			dev_dbg(&pdev->dev, "Remote device at %s not found\n",
+				endpoint->full_name);
+			goto done;
+		}
+
+		dev_dbg(&pdev->dev, "Remote device %s, %s found\n",
+			rem->name, rem->full_name);
 		sdinfo->name = rem->full_name;
 
-		pdata->asd[i] = v4l2_async_notifier_add_fwnode_subdev(
-			&vpif_obj.notifier, of_fwnode_handle(rem),
-			sizeof(struct v4l2_async_subdev));
-		if (IS_ERR(pdata->asd[i])) {
+		pdata->asd[i] = devm_kzalloc(&pdev->dev,
+					     sizeof(struct v4l2_async_subdev),
+					     GFP_KERNEL);
+		if (!pdata->asd[i]) {
 			of_node_put(rem);
-			goto err_cleanup;
+			pdata = NULL;
+			goto done;
 		}
+
+		pdata->asd[i]->match_type = V4L2_ASYNC_MATCH_FWNODE;
+		pdata->asd[i]->match.fwnode.fwnode = of_fwnode_handle(rem);
+		of_node_put(rem);
 	}
 
 done:
@@ -1605,11 +1598,6 @@ done:
 	pdata->card_name = "DA850/OMAP-L138 Video Capture";
 
 	return pdata;
-
-err_cleanup:
-	v4l2_async_notifier_cleanup(&vpif_obj.notifier);
-
-	return NULL;
 }
 
 /**
@@ -1634,18 +1622,23 @@ static __init int vpif_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
+	if (!pdev->dev.platform_data) {
+		dev_warn(&pdev->dev, "Missing platform data.  Giving up.\n");
+		return -EINVAL;
+	}
+
 	vpif_dev = &pdev->dev;
 
 	err = initialize_vpif();
 	if (err) {
 		v4l2_err(vpif_dev->driver, "Error initializing vpif\n");
-		goto cleanup;
+		return err;
 	}
 
 	err = v4l2_device_register(vpif_dev, &vpif_obj.v4l2_dev);
 	if (err) {
 		v4l2_err(vpif_dev->driver, "Error registering v4l2 device\n");
-		goto cleanup;
+		return err;
 	}
 
 	while ((res = platform_get_resource(pdev, IORESOURCE_IRQ, res_idx))) {
@@ -1694,7 +1687,10 @@ static __init int vpif_probe(struct platform_device *pdev)
 		}
 		vpif_probe_complete();
 	} else {
-		vpif_obj.notifier.ops = &vpif_async_ops;
+		vpif_obj.notifier.subdevs = vpif_obj.config->asd;
+		vpif_obj.notifier.num_subdevs = vpif_obj.config->asd_sizes[0];
+		vpif_obj.notifier.bound = vpif_async_bound;
+		vpif_obj.notifier.complete = vpif_async_complete;
 		err = v4l2_async_notifier_register(&vpif_obj.v4l2_dev,
 						   &vpif_obj.notifier);
 		if (err) {
@@ -1711,8 +1707,6 @@ probe_subdev_out:
 	kfree(vpif_obj.sd);
 vpif_unregister:
 	v4l2_device_unregister(&vpif_obj.v4l2_dev);
-cleanup:
-	v4l2_async_notifier_cleanup(&vpif_obj.notifier);
 
 	return err;
 }
@@ -1728,8 +1722,6 @@ static int vpif_remove(struct platform_device *device)
 	struct channel_obj *ch;
 	int i;
 
-	v4l2_async_notifier_unregister(&vpif_obj.notifier);
-	v4l2_async_notifier_cleanup(&vpif_obj.notifier);
 	v4l2_device_unregister(&vpif_obj.v4l2_dev);
 
 	kfree(vpif_obj.sd);
@@ -1747,7 +1739,6 @@ static int vpif_remove(struct platform_device *device)
 #ifdef CONFIG_PM_SLEEP
 /**
  * vpif_suspend: vpif device suspend
- * @dev: pointer to &struct device
  */
 static int vpif_suspend(struct device *dev)
 {

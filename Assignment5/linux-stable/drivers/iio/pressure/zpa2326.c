@@ -1,10 +1,18 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Murata ZPA2326 pressure and temperature sensor IIO driver
  *
  * Copyright (c) 2016 Parrot S.A.
  *
  * Author: Gregor Boirie <gregor.boirie@parrot.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published by
+ * the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
  */
 
 /**
@@ -133,14 +141,14 @@ struct zpa2326_private {
 	struct regulator               *vdd;
 };
 
-#define zpa2326_err(idev, fmt, ...)					\
-	dev_err(idev->dev.parent, fmt "\n", ##__VA_ARGS__)
+#define zpa2326_err(_idev, _format, _arg...) \
+	dev_err(_idev->dev.parent, _format, ##_arg)
 
-#define zpa2326_warn(idev, fmt, ...)					\
-	dev_warn(idev->dev.parent, fmt "\n", ##__VA_ARGS__)
+#define zpa2326_warn(_idev, _format, _arg...) \
+	dev_warn(_idev->dev.parent, _format, ##_arg)
 
-#define zpa2326_dbg(idev, fmt, ...)					\
-	dev_dbg(idev->dev.parent, fmt "\n", ##__VA_ARGS__)
+#define zpa2326_dbg(_idev, _format, _arg...) \
+	dev_dbg(_idev->dev.parent, _format, ##_arg)
 
 bool zpa2326_isreg_writeable(struct device *dev, unsigned int reg)
 {
@@ -857,6 +865,7 @@ complete:
 static int zpa2326_wait_oneshot_completion(const struct iio_dev   *indio_dev,
 					   struct zpa2326_private *private)
 {
+	int          ret;
 	unsigned int val;
 	long     timeout;
 
@@ -878,11 +887,14 @@ static int zpa2326_wait_oneshot_completion(const struct iio_dev   *indio_dev,
 		/* Timed out. */
 		zpa2326_warn(indio_dev, "no one shot interrupt occurred (%ld)",
 			     timeout);
-		return -ETIME;
+		ret = -ETIME;
+	} else if (timeout < 0) {
+		zpa2326_warn(indio_dev,
+			     "wait for one shot interrupt cancelled");
+		ret = -ERESTARTSYS;
 	}
 
-	zpa2326_warn(indio_dev, "wait for one shot interrupt cancelled");
-	return -ERESTARTSYS;
+	return ret;
 }
 
 static int zpa2326_init_managed_irq(struct device          *parent,
@@ -1382,6 +1394,7 @@ static int zpa2326_set_trigger_state(struct iio_trigger *trig, bool state)
 }
 
 static const struct iio_trigger_ops zpa2326_trigger_ops = {
+	.owner             = THIS_MODULE,
 	.set_trigger_state = zpa2326_set_trigger_state,
 };
 
@@ -1581,6 +1594,7 @@ static const struct iio_chan_spec zpa2326_channels[] = {
 };
 
 static const struct iio_info zpa2326_info = {
+	.driver_module = THIS_MODULE,
 	.attrs         = &zpa2326_attribute_group,
 	.read_raw      = zpa2326_read_raw,
 	.write_raw     = zpa2326_write_raw,

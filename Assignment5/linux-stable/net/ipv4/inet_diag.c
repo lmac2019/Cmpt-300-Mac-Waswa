@@ -1,8 +1,12 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * inet_diag.c	Module for monitoring INET transport protocols sockets.
  *
  * Authors:	Alexey Kuznetsov, <kuznet@ms2.inr.ac.ru>
+ *
+ *	This program is free software; you can redistribute it and/or
+ *      modify it under the terms of the GNU General Public License
+ *      as published by the Free Software Foundation; either version
+ *      2 of the License, or (at your option) any later version.
  */
 
 #include <linux/kernel.h>
@@ -49,7 +53,8 @@ static DEFINE_MUTEX(inet_diag_table_mutex);
 static const struct inet_diag_handler *inet_diag_lock_handler(int proto)
 {
 	if (!inet_diag_table[proto])
-		sock_load_diag_module(AF_INET, proto);
+		request_module("net-pf-%d-proto-%d-type-%d-%d", PF_NETLINK,
+			       NETLINK_SOCK_DIAG, AF_INET, proto);
 
 	mutex_lock(&inet_diag_table_mutex);
 	if (!inet_diag_table[proto])
@@ -88,29 +93,18 @@ void inet_diag_msg_common_fill(struct inet_diag_msg *r, struct sock *sk)
 }
 EXPORT_SYMBOL_GPL(inet_diag_msg_common_fill);
 
-static size_t inet_sk_attr_size(struct sock *sk,
-				const struct inet_diag_req_v2 *req,
-				bool net_admin)
+static size_t inet_sk_attr_size(void)
 {
-	const struct inet_diag_handler *handler;
-	size_t aux = 0;
-
-	handler = inet_diag_table[req->sdiag_protocol];
-	if (handler && handler->idiag_get_aux_size)
-		aux = handler->idiag_get_aux_size(sk, net_admin);
-
 	return	  nla_total_size(sizeof(struct tcp_info))
 		+ nla_total_size(1) /* INET_DIAG_SHUTDOWN */
 		+ nla_total_size(1) /* INET_DIAG_TOS */
 		+ nla_total_size(1) /* INET_DIAG_TCLASS */
 		+ nla_total_size(4) /* INET_DIAG_MARK */
-		+ nla_total_size(4) /* INET_DIAG_CLASS_ID */
 		+ nla_total_size(sizeof(struct inet_diag_meminfo))
 		+ nla_total_size(sizeof(struct inet_diag_msg))
 		+ nla_total_size(SK_MEMINFO_VARS * sizeof(u32))
 		+ nla_total_size(TCP_CA_NAME_MAX)
 		+ nla_total_size(sizeof(struct tcpvegas_info))
-		+ aux
 		+ 64;
 }
 
@@ -266,10 +260,6 @@ int inet_sk_diag_fill(struct sock *sk, struct inet_connection_sock *icsk,
 
 	handler->idiag_get_info(sk, r, info);
 
-	if (ext & (1 << (INET_DIAG_INFO - 1)) && handler->idiag_get_aux)
-		if (handler->idiag_get_aux(sk, net_admin, skb) < 0)
-			goto errout;
-
 	if (sk->sk_state < TCP_TIME_WAIT) {
 		union tcp_cc_info info;
 		size_t sz = 0;
@@ -281,24 +271,6 @@ int inet_sk_diag_fill(struct sock *sk, struct inet_connection_sock *icsk,
 			sz = ca_ops->get_info(sk, ext, &attr, &info);
 		rcu_read_unlock();
 		if (sz && nla_put(skb, attr, sz, &info) < 0)
-			goto errout;
-	}
-
-	if (ext & (1 << (INET_DIAG_CLASS_ID - 1)) ||
-	    ext & (1 << (INET_DIAG_TCLASS - 1))) {
-		u32 classid = 0;
-
-#ifdef CONFIG_SOCK_CGROUP_DATA
-		classid = sock_cgroup_classid(&sk->sk_cgrp_data);
-#endif
-		/* Fallback to socket priority if class id isn't set.
-		 * Classful qdiscs use it as direct reference to class.
-		 * For cgroup2 classid is always zero.
-		 */
-		if (!classid)
-			classid = sk->sk_priority;
-
-		if (nla_put_u32(skb, INET_DIAG_CLASS_ID, classid))
 			goto errout;
 	}
 
@@ -466,7 +438,6 @@ int inet_diag_dump_one_icsk(struct inet_hashinfo *hashinfo,
 			    const struct nlmsghdr *nlh,
 			    const struct inet_diag_req_v2 *req)
 {
-	bool net_admin = netlink_net_capable(in_skb, CAP_NET_ADMIN);
 	struct net *net = sock_net(in_skb->sk);
 	struct sk_buff *rep;
 	struct sock *sk;
@@ -476,7 +447,7 @@ int inet_diag_dump_one_icsk(struct inet_hashinfo *hashinfo,
 	if (IS_ERR(sk))
 		return PTR_ERR(sk);
 
-	rep = nlmsg_new(inet_sk_attr_size(sk, req, net_admin), GFP_KERNEL);
+	rep = nlmsg_new(inet_sk_attr_size(), GFP_KERNEL);
 	if (!rep) {
 		err = -ENOMEM;
 		goto out;
@@ -485,7 +456,8 @@ int inet_diag_dump_one_icsk(struct inet_hashinfo *hashinfo,
 	err = sk_diag_fill(sk, rep, req,
 			   sk_user_ns(NETLINK_CB(in_skb).sk),
 			   NETLINK_CB(in_skb).portid,
-			   nlh->nlmsg_seq, 0, nlh, net_admin);
+			   nlh->nlmsg_seq, 0, nlh,
+			   netlink_net_capable(in_skb, CAP_NET_ADMIN));
 	if (err < 0) {
 		WARN_ON(err == -EMSGSIZE);
 		nlmsg_free(rep);
@@ -567,17 +539,11 @@ static int inet_diag_bc_run(const struct nlattr *_bc,
 		case INET_DIAG_BC_JMP:
 			yes = 0;
 			break;
-		case INET_DIAG_BC_S_EQ:
-			yes = entry->sport == op[1].no;
-			break;
 		case INET_DIAG_BC_S_GE:
 			yes = entry->sport >= op[1].no;
 			break;
 		case INET_DIAG_BC_S_LE:
 			yes = entry->sport <= op[1].no;
-			break;
-		case INET_DIAG_BC_D_EQ:
-			yes = entry->dport == op[1].no;
 			break;
 		case INET_DIAG_BC_D_GE:
 			yes = entry->dport >= op[1].no;
@@ -811,10 +777,8 @@ static int inet_diag_bc_audit(const struct nlattr *attr,
 			if (!valid_devcond(bc, len, &min_len))
 				return -EINVAL;
 			break;
-		case INET_DIAG_BC_S_EQ:
 		case INET_DIAG_BC_S_GE:
 		case INET_DIAG_BC_S_LE:
-		case INET_DIAG_BC_D_EQ:
 		case INET_DIAG_BC_D_GE:
 		case INET_DIAG_BC_D_LE:
 			if (!valid_port_comparison(bc, len, &min_len))
@@ -1002,9 +966,7 @@ next_chunk:
 			if (!inet_diag_bc_sk(bc, sk))
 				goto next_normal;
 
-			if (!refcount_inc_not_zero(&sk->sk_refcnt))
-				goto next_normal;
-
+			sock_hold(sk);
 			num_arr[accum] = num;
 			sk_arr[accum] = sk;
 			if (++accum == SKARR_SZ)

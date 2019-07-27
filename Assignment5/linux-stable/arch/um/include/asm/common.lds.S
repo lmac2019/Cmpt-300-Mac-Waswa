@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #include <asm-generic/vmlinux.lds.h>
 
   .fini      : { *(.fini)    } =0x9090
@@ -52,6 +51,14 @@
   .con_initcall.init : {
 	CON_INITCALL
   }
+
+  .uml.initcall.init : {
+	__uml_initcall_start = .;
+	*(.uml.initcall.init)
+	__uml_initcall_end = .;
+  }
+
+  SECURITY_INIT
 
   .exitcall : {
 	__exitcall_begin = .;

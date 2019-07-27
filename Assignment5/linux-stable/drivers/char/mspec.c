@@ -1,7 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2001-2006 Silicon Graphics, Inc.  All rights
  * reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of version 2 of the GNU General Public License
+ * as published by the Free Software Foundation.
  */
 
 /*
@@ -188,7 +191,7 @@ mspec_close(struct vm_area_struct *vma)
  *
  * Creates a mspec page and maps it to user space.
  */
-static vm_fault_t
+static int
 mspec_fault(struct vm_fault *vmf)
 {
 	unsigned long paddr, maddr;
@@ -220,7 +223,14 @@ mspec_fault(struct vm_fault *vmf)
 
 	pfn = paddr >> PAGE_SHIFT;
 
-	return vmf_insert_pfn(vmf->vma, vmf->address, pfn);
+	/*
+	 * vm_insert_pfn can fail with -EBUSY, but in that case it will
+	 * be because another thread has installed the pte first, so it
+	 * is no problem.
+	 */
+	vm_insert_pfn(vmf->vma, vmf->address, pfn);
+
+	return VM_FAULT_NOPAGE;
 }
 
 static const struct vm_operations_struct mspec_vm_ops = {

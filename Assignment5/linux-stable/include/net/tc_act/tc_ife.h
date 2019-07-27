@@ -1,25 +1,17 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef __NET_TC_IFE_H
 #define __NET_TC_IFE_H
 
 #include <net/act_api.h>
 #include <linux/etherdevice.h>
 #include <linux/rtnetlink.h>
+#include <linux/module.h>
 
-struct module;
-
-struct tcf_ife_params {
+struct tcf_ife_info {
+	struct tc_action common;
 	u8 eth_dst[ETH_ALEN];
 	u8 eth_src[ETH_ALEN];
 	u16 eth_type;
 	u16 flags;
-
-	struct rcu_head rcu;
-};
-
-struct tcf_ife_info {
-	struct tc_action common;
-	struct tcf_ife_params __rcu *params;
 	/* list of metaids allowed */
 	struct list_head metalist;
 };
@@ -48,7 +40,7 @@ struct tcf_meta_ops {
 	struct module	*owner;
 };
 
-#define MODULE_ALIAS_IFE_META(metan)   MODULE_ALIAS("ife-meta-" metan)
+#define MODULE_ALIAS_IFE_META(metan)   MODULE_ALIAS("ifemeta" __stringify_1(metan))
 
 int ife_get_meta_u32(struct sk_buff *skb, struct tcf_meta_info *mi);
 int ife_get_meta_u16(struct sk_buff *skb, struct tcf_meta_info *mi);

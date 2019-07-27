@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef __TIMER_OF_H__
 #define __TIMER_OF_H__
 
@@ -33,7 +32,6 @@ struct of_timer_clk {
 
 struct timer_of {
 	unsigned int flags;
-	struct device_node *np;
 	struct clock_event_device clkevt;
 	struct of_timer_base of_base;
 	struct of_timer_irq  of_irq;
@@ -68,7 +66,4 @@ static inline unsigned long timer_of_period(struct timer_of *to)
 
 extern int __init timer_of_init(struct device_node *np,
 				struct timer_of *to);
-
-extern void __init timer_of_cleanup(struct timer_of *to);
-
 #endif

@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-only
 /*
  *  Copyright (c) 2008-2014 STMicroelectronics Limited
  *
@@ -7,6 +6,9 @@
  *          Lee Jones <lee.jones@linaro.org>
  *
  *  SPI master mode controller driver, used in STMicroelectronics devices.
+ *
+ *  May be copied or modified under the terms of the GNU General Public
+ *  License Version 2.0 only.  See linux/COPYING for more information.
  */
 
 #include <linux/clk.h>

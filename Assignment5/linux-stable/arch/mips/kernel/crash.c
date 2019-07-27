@@ -1,9 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0
 #include <linux/kernel.h>
 #include <linux/smp.h>
 #include <linux/reboot.h>
 #include <linux/kexec.h>
-#include <linux/memblock.h>
+#include <linux/bootmem.h>
 #include <linux/crash_dump.h>
 #include <linux/delay.h>
 #include <linux/irq.h>
@@ -36,9 +35,6 @@ static void crash_shutdown_secondary(void *passed_regs)
 	if (!cpu_online(cpu))
 		return;
 
-	/* We won't be sent IPIs any more. */
-	set_cpu_online(cpu, false);
-
 	local_irq_disable();
 	if (!cpumask_test_cpu(cpu, &cpus_in_crash))
 		crash_save_cpu(regs, cpu);
@@ -46,9 +42,7 @@ static void crash_shutdown_secondary(void *passed_regs)
 
 	while (!atomic_read(&kexec_ready_to_reboot))
 		cpu_relax();
-
-	kexec_reboot();
-
+	relocated_kexec_smp_wait(NULL);
 	/* NOTREACHED */
 }
 

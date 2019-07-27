@@ -1,10 +1,18 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * HT16K33 driver
  *
  * Author: Robin van der Gracht <robin@protonic.nl>
  *
  * Copyright: (C) 2016 Protonic Holland.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  */
 
 #include <linux/kernel.h>
@@ -223,9 +231,9 @@ static const struct backlight_ops ht16k33_bl_ops = {
 static int ht16k33_mmap(struct fb_info *info, struct vm_area_struct *vma)
 {
 	struct ht16k33_priv *priv = info->par;
-	struct page *pages = virt_to_page(priv->fbdev.buffer);
 
-	return vm_map_pages_zero(vma, &pages, 1);
+	return vm_insert_page(vma, vma->vm_start,
+			      virt_to_page(priv->fbdev.buffer));
 }
 
 static struct fb_ops ht16k33_fb_ops = {
@@ -509,7 +517,7 @@ static int ht16k33_remove(struct i2c_client *client)
 	struct ht16k33_priv *priv = i2c_get_clientdata(client);
 	struct ht16k33_fbdev *fbdev = &priv->fbdev;
 
-	cancel_delayed_work_sync(&fbdev->work);
+	cancel_delayed_work(&fbdev->work);
 	unregister_framebuffer(fbdev->info);
 	framebuffer_release(fbdev->info);
 	free_page((unsigned long) fbdev->buffer);

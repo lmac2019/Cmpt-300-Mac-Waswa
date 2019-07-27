@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * Super block/filesystem wide operations
  *
@@ -54,9 +53,15 @@ static struct inode *coda_alloc_inode(struct super_block *sb)
 	return &ei->vfs_inode;
 }
 
-static void coda_free_inode(struct inode *inode)
+static void coda_i_callback(struct rcu_head *head)
 {
+	struct inode *inode = container_of(head, struct inode, i_rcu);
 	kmem_cache_free(coda_inode_cachep, ITOC(inode));
+}
+
+static void coda_destroy_inode(struct inode *inode)
+{
+	call_rcu(&inode->i_rcu, coda_i_callback);
 }
 
 static void init_once(void *foo)
@@ -90,7 +95,7 @@ void coda_destroy_inodecache(void)
 static int coda_remount(struct super_block *sb, int *flags, char *data)
 {
 	sync_filesystem(sb);
-	*flags |= SB_NOATIME;
+	*flags |= MS_NOATIME;
 	return 0;
 }
 
@@ -98,7 +103,7 @@ static int coda_remount(struct super_block *sb, int *flags, char *data)
 static const struct super_operations coda_super_operations =
 {
 	.alloc_inode	= coda_alloc_inode,
-	.free_inode	= coda_free_inode,
+	.destroy_inode	= coda_destroy_inode,
 	.evict_inode	= coda_evict_inode,
 	.put_super	= coda_put_super,
 	.statfs		= coda_statfs,
@@ -182,7 +187,7 @@ static int coda_fill_super(struct super_block *sb, void *data, int silent)
 	mutex_unlock(&vc->vc_mutex);
 
 	sb->s_fs_info = vc;
-	sb->s_flags |= SB_NOATIME;
+	sb->s_flags |= MS_NOATIME;
 	sb->s_blocksize = 4096;	/* XXXXX  what do we put here?? */
 	sb->s_blocksize_bits = 12;
 	sb->s_magic = CODA_SUPER_MAGIC;

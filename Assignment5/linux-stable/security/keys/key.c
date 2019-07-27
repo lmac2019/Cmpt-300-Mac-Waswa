@@ -1,11 +1,15 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 /* Basic authentication token and access key management
  *
  * Copyright (C) 2004-2008 Red Hat, Inc. All Rights Reserved.
  * Written by David Howells (dhowells@redhat.com)
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version
+ * 2 of the License, or (at your option) any later version.
  */
 
-#include <linux/export.h>
+#include <linux/module.h>
 #include <linux/init.h>
 #include <linux/poison.h>
 #include <linux/sched.h>
@@ -50,10 +54,10 @@ void __key_check(const struct key *key)
 struct key_user *key_user_lookup(kuid_t uid)
 {
 	struct key_user *candidate = NULL, *user;
-	struct rb_node *parent, **p;
+	struct rb_node *parent = NULL;
+	struct rb_node **p;
 
 try_again:
-	parent = NULL;
 	p = &key_user_tree.rb_node;
 	spin_lock(&key_user_lock);
 
@@ -261,8 +265,8 @@ struct key *key_alloc(struct key_type *type, const char *desc,
 
 		spin_lock(&user->lock);
 		if (!(flags & KEY_ALLOC_QUOTA_OVERRUN)) {
-			if (user->qnkeys + 1 > maxkeys ||
-			    user->qnbytes + quotalen > maxbytes ||
+			if (user->qnkeys + 1 >= maxkeys ||
+			    user->qnbytes + quotalen >= maxbytes ||
 			    user->qnbytes + quotalen < user->qnbytes)
 				goto no_quota;
 		}
@@ -293,14 +297,11 @@ struct key *key_alloc(struct key_type *type, const char *desc,
 	key->gid = gid;
 	key->perm = perm;
 	key->restrict_link = restrict_link;
-	key->last_used_at = ktime_get_real_seconds();
 
 	if (!(flags & KEY_ALLOC_NOT_IN_QUOTA))
 		key->flags |= 1 << KEY_FLAG_IN_QUOTA;
 	if (flags & KEY_ALLOC_BUILT_IN)
 		key->flags |= 1 << KEY_FLAG_BUILTIN;
-	if (flags & KEY_ALLOC_UID_KEYRING)
-		key->flags |= 1 << KEY_FLAG_UID_KEYRING;
 
 #ifdef KEY_DEBUGGING
 	key->magic = KEY_DEBUG_MAGIC;
@@ -399,18 +400,6 @@ int key_payload_reserve(struct key *key, size_t datalen)
 EXPORT_SYMBOL(key_payload_reserve);
 
 /*
- * Change the key state to being instantiated.
- */
-static void mark_key_instantiated(struct key *key, int reject_error)
-{
-	/* Commit the payload before setting the state; barrier versus
-	 * key_read_state().
-	 */
-	smp_store_release(&key->state,
-			  (reject_error < 0) ? reject_error : KEY_IS_POSITIVE);
-}
-
-/*
  * Instantiate a key and link it into the target keyring atomically.  Must be
  * called with the target keyring's semaphore writelocked.  The target key's
  * semaphore need not be locked as instantiation is serialised by
@@ -433,14 +422,14 @@ static int __key_instantiate_and_link(struct key *key,
 	mutex_lock(&key_construction_mutex);
 
 	/* can't instantiate twice */
-	if (key->state == KEY_IS_UNINSTANTIATED) {
+	if (!test_bit(KEY_FLAG_INSTANTIATED, &key->flags)) {
 		/* instantiate the key */
 		ret = key->type->instantiate(key, prep);
 
 		if (ret == 0) {
 			/* mark the key as being instantiated */
 			atomic_inc(&key->user->nikeys);
-			mark_key_instantiated(key, 0);
+			set_bit(KEY_FLAG_INSTANTIATED, &key->flags);
 
 			if (test_and_clear_bit(KEY_FLAG_USER_CONSTRUCT, &key->flags))
 				awaken = 1;
@@ -457,7 +446,7 @@ static int __key_instantiate_and_link(struct key *key,
 			if (authkey)
 				key_revoke(authkey);
 
-			if (prep->expiry != TIME64_MAX) {
+			if (prep->expiry != TIME_T_MAX) {
 				key->expiry = prep->expiry;
 				key_schedule_gc(prep->expiry + key_gc_delay);
 			}
@@ -503,7 +492,7 @@ int key_instantiate_and_link(struct key *key,
 	prep.data = data;
 	prep.datalen = datalen;
 	prep.quotalen = key->type->def_datalen;
-	prep.expiry = TIME64_MAX;
+	prep.expiry = TIME_T_MAX;
 	if (key->type->preparse) {
 		ret = key->type->preparse(&prep);
 		if (ret < 0)
@@ -567,6 +556,7 @@ int key_reject_and_link(struct key *key,
 			struct key *authkey)
 {
 	struct assoc_array_edit *edit;
+	struct timespec now;
 	int ret, awaken, link_ret = 0;
 
 	key_check(key);
@@ -585,11 +575,15 @@ int key_reject_and_link(struct key *key,
 	mutex_lock(&key_construction_mutex);
 
 	/* can't instantiate twice */
-	if (key->state == KEY_IS_UNINSTANTIATED) {
+	if (!test_bit(KEY_FLAG_INSTANTIATED, &key->flags)) {
 		/* mark the key as being negatively instantiated */
 		atomic_inc(&key->user->nikeys);
-		mark_key_instantiated(key, -error);
-		key->expiry = ktime_get_real_seconds() + timeout;
+		key->reject_error = -error;
+		smp_wmb();
+		set_bit(KEY_FLAG_NEGATIVE, &key->flags);
+		set_bit(KEY_FLAG_INSTANTIATED, &key->flags);
+		now = current_kernel_time();
+		key->expiry = now.tv_sec + timeout;
 		key_schedule_gc(key->expiry + key_gc_delay);
 
 		if (test_and_clear_bit(KEY_FLAG_USER_CONSTRUCT, &key->flags))
@@ -705,13 +699,16 @@ found_kernel_type:
 
 void key_set_timeout(struct key *key, unsigned timeout)
 {
-	time64_t expiry = 0;
+	struct timespec now;
+	time_t expiry = 0;
 
 	/* make the changes with the locks held to prevent races */
 	down_write(&key->sem);
 
-	if (timeout > 0)
-		expiry = ktime_get_real_seconds() + timeout;
+	if (timeout > 0) {
+		now = current_kernel_time();
+		expiry = now.tv_sec + timeout;
+	}
 
 	key->expiry = expiry;
 	key_schedule_gc(key->expiry + key_gc_delay);
@@ -753,8 +750,8 @@ static inline key_ref_t __key_update(key_ref_t key_ref,
 
 	ret = key->type->update(key, prep);
 	if (ret == 0)
-		/* Updating a negative key positively instantiates it */
-		mark_key_instantiated(key, 0);
+		/* updating a negative key instantiates it */
+		clear_bit(KEY_FLAG_NEGATIVE, &key->flags);
 
 	up_write(&key->sem);
 
@@ -830,6 +827,7 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
 
 	key_check(keyring);
 
+	key_ref = ERR_PTR(-EPERM);
 	if (!(flags & KEY_ALLOC_BYPASS_RESTRICTION))
 		restrict_link = keyring->restrict_link;
 
@@ -841,7 +839,7 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
 	prep.data = payload;
 	prep.datalen = plen;
 	prep.quotalen = index_key.type->def_datalen;
-	prep.expiry = TIME64_MAX;
+	prep.expiry = TIME_T_MAX;
 	if (index_key.type->preparse) {
 		ret = index_key.type->preparse(&prep);
 		if (ret < 0) {
@@ -936,16 +934,6 @@ error:
 	 */
 	__key_link_end(keyring, &index_key, edit);
 
-	key = key_ref_to_ptr(key_ref);
-	if (test_bit(KEY_FLAG_USER_CONSTRUCT, &key->flags)) {
-		ret = wait_for_key_construction(key, true);
-		if (ret < 0) {
-			key_ref_put(key_ref);
-			key_ref = ERR_PTR(ret);
-			goto error_free_prep;
-		}
-	}
-
 	key_ref = __key_update(key_ref, &prep);
 	goto error_free_prep;
 }
@@ -985,7 +973,7 @@ int key_update(key_ref_t key_ref, const void *payload, size_t plen)
 	prep.data = payload;
 	prep.datalen = plen;
 	prep.quotalen = key->type->def_datalen;
-	prep.expiry = TIME64_MAX;
+	prep.expiry = TIME_T_MAX;
 	if (key->type->preparse) {
 		ret = key->type->preparse(&prep);
 		if (ret < 0)
@@ -996,8 +984,8 @@ int key_update(key_ref_t key_ref, const void *payload, size_t plen)
 
 	ret = key->type->update(key, &prep);
 	if (ret == 0)
-		/* Updating a negative key positively instantiates it */
-		mark_key_instantiated(key, 0);
+		/* updating a negative key instantiates it */
+		clear_bit(KEY_FLAG_NEGATIVE, &key->flags);
 
 	up_write(&key->sem);
 
@@ -1019,7 +1007,8 @@ EXPORT_SYMBOL(key_update);
  */
 void key_revoke(struct key *key)
 {
-	time64_t time;
+	struct timespec now;
+	time_t time;
 
 	key_check(key);
 
@@ -1034,7 +1023,8 @@ void key_revoke(struct key *key)
 		key->type->revoke(key);
 
 	/* set the death time to no more than the expiry time */
-	time = ktime_get_real_seconds();
+	now = current_kernel_time();
+	time = now.tv_sec;
 	if (key->revoked_at == 0 || key->revoked_at > time) {
 		key->revoked_at = time;
 		key_schedule_gc(key->revoked_at + key_gc_delay);
