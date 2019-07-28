@@ -6,21 +6,22 @@ asmlinkage long sys_array_stats (
   long size
 ) {
   long data_copy;
+  int i;
   
   struct array_stats values;
   values.min = LONG_MAX;
   values.max = LONG_MIN;
   values.sum = 0;
 
-  printk("size: %d\n", size);
+  printk("size: %ld\n", size);
 
   if (size <= 0) {
     printk("error - invalid argument: size <= 0\n");
     return -EINVAL;
   }
 
-  for (int i = 0; i < size; i++) {
-    if (_copy_from_user(&data_copy, data[i], sizeof(data[i]))) {
+  for (i = 0; i < size; i++) {
+    if (_copy_from_user(&data_copy, (voidPtr) data[i], sizeof(data[i]))) {
       printk("error - bad address in data array\n");
       return -EFAULT;
     } 

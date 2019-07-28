@@ -2,8 +2,8 @@
 #ifndef _ARRAY_STATS_H_
 #define _ARRAY_STATS_H_
 
-#include "limits.h"
-#include "errno.h"
+#include <linux/limits.h>
+#include <linux/errno.h>
 #include <linux/uaccess.h>
 #include <linux/printk.h>
 
@@ -14,6 +14,7 @@ struct array_stats {
 };
 
 #define arrayStatsPtr array_stats*
+#define voidPtr void*
 
 asmlinkage long sys_array_stats(
   struct arrayStatsPtr stats,
