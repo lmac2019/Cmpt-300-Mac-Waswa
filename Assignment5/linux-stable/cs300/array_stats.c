@@ -5,39 +5,47 @@ asmlinkage long sys_array_stats (
   long data[],
   long size
 ) {
-  long min = LONG_MAX;
-  long max = LONG_MIN;
   long data_copy;
-  long sum = 0; 
+  
   struct array_stats values;
+  values.min = LONG_MAX;
+  values.max = LONG_MIN;
+  values.sum = 0;
+
+  printk("size: %d\n", size);
 
   if (size <= 0) {
+    printk("error - invalid argument: size <= 0\n");
     return -EINVAL;
   }
 
   for (int i = 0; i < size; i++) {
-    if (copy_from_user(&data_copy, data[i], sizeof(data[i]))) {
+    if (_copy_from_user(&data_copy, data[i], sizeof(data[i]))) {
+      printk("error - bad address in data array\n");
       return -EFAULT;
     } 
 
-    if (data_copy < min) {
-      min = data_copy;
+    printk("data[%d]: %ld\n", i, data_copy);
+
+    if (data_copy < values.min) {
+      values.min = data_copy;
     }
 
-    if (data_copy > max) {
-      max = data_copy;
+    if (data_copy > values.max) {
+      values.max = data_copy;
     }
 
-    sum += data_copy;
+    values.sum += data_copy;
   }
   
-  values.min = min;
-  values.max = max;
-  values.sum = sum;
-
-  if (copy_to_user(stats, &values, sizeof(values))) {
+  if (_copy_to_user(stats, &values, sizeof(values))) {
+    printk("error - bad address in stats struct\n");
     return -EFAULT;
   }
+
+  printk("stats min: %ld\n", stats->min);
+  printk("stats max: %ld\n", stats->max);
+  printk("stats sum: %ld\n", stats->sum);
 
   return 0;
 }

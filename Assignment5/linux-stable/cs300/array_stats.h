@@ -3,6 +3,9 @@
 #define _ARRAY_STATS_H_
 
 #include "limits.h"
+#include "errno.h"
+#include <linux/uaccess.h>
+#include <linux/printk.h>
 
 struct array_stats {
   long min; 
