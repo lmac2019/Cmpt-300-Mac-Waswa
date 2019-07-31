@@ -1,3 +1,4 @@
+#include <linux/kernel.h>
 #include "array_stats.h"
 
 asmlinkage long sys_array_stats (
