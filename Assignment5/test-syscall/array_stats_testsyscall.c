@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <errno.h>
+#include <sys/syscall.h>
 #include "array_stats_testsyscall_constants.h"
 #include "array_stats_testsyscall.h"
 
@@ -14,10 +15,10 @@
  */
 void test_positive_few(void) {
 	do_syscall_working((long[]){1}, 1);
-	do_syscall_working((long[]){1, 2}, 2);
-	do_syscall_working((long[]){1, 2, 3}, 3);
-	do_syscall_working((long[]){0, 2, 4, 6}, 4);
-	do_syscall_working((long[]){5, 3, 4, 1}, 4);
+	// do_syscall_working((long[]){1, 2}, 2);
+	// do_syscall_working((long[]){1, 2, 3}, 3);
+	// do_syscall_working((long[]){0, 2, 4, 6}, 4);
+	// do_syscall_working((long[]){5, 3, 4, 1}, 4);
 }
 
 
@@ -257,11 +258,11 @@ static void test_print_summary(void) {
 void test_array_stats_syscall(void) {
   test_positive_few();
 
-	// test_negative_few();
+  // test_negative_few();
 
-	// test_many();
+  // test_many();
 
-	// test_bad_addr();
+  // test_bad_addr();
 
-	test_print_summary();
+  test_print_summary();
 }

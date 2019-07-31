@@ -1,4 +1,6 @@
 #include <linux/kernel.h>
+#include <linux/errno.h>
+#include <linux/uaccess.h>
 #include "array_stats.h"
 
 #define arrayStatsPtr array_stats*
@@ -21,7 +23,7 @@ asmlinkage long sys_array_stats (
   }
 
   for (i = 0; i < size; i++) {
-    if (_copy_from_user(&data_copy, (voidPtr) data[i], sizeof(data[i]))) {
+    if (__copy_from_user(&data_copy, (voidPtr) data[i], sizeof(data[i]))) {
       printk("error - bad address in data array\n");
       return -EFAULT;
     } 
@@ -58,7 +60,7 @@ asmlinkage long sys_array_stats (
     printk("values sum after adding %ld: %ld\n", data_copy, values.sum);
   }
   
-  if (_copy_to_user(stats, &values, sizeof(values))) {
+  if (__copy_to_user(stats, &values, sizeof(values))) {
     printk("error - bad address in stats struct\n");
     return -EFAULT;
   }
