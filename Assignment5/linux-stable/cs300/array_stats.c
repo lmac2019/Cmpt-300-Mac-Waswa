@@ -1,6 +1,9 @@
 #include <linux/kernel.h>
 #include "array_stats.h"
 
+#define arrayStatsPtr array_stats*
+#define voidPtr void*
+
 asmlinkage long sys_array_stats (
   struct arrayStatsPtr stats,
   long data[],
@@ -8,11 +11,7 @@ asmlinkage long sys_array_stats (
 ) {
   long data_copy;
   int i;
-  
   struct array_stats values;
-  values.min = LONG_MAX;
-  values.max = LONG_MIN;
-  values.sum = 0;
 
   printk("size: %ld\n", size);
 
@@ -29,15 +28,34 @@ asmlinkage long sys_array_stats (
 
     printk("data[%d]: %ld\n", i, data_copy);
 
+    if (i == 0) {
+      values.min = data_copy;
+      printk("initial values.min: %ld\n", values.min);
+
+      values.max = data_copy;
+      printk("initial values.max: %ld\n", values.max);
+      
+      values.sum = data_copy;
+      printk("initial values.sum: %ld\n", values.sum);
+      
+      continue;
+    }
+
     if (data_copy < values.min) {
+      printk("data_copy < values.min: %ld < %ld\n", data_copy, values.min);
       values.min = data_copy;
     }
 
     if (data_copy > values.max) {
+      printk("data_copy > values.max: %ld > %ld\n", data_copy, values.max);
       values.max = data_copy;
     }
 
+    printk("values sum before adding %ld: %ld\n", data_copy, values.sum);
+    
     values.sum += data_copy;
+    
+    printk("values sum after adding %ld: %ld\n", data_copy, values.sum);
   }
   
   if (_copy_to_user(stats, &values, sizeof(values))) {
