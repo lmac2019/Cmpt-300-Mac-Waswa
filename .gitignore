@@ -23,6 +23,8 @@ Assignment4/memory_list.o
 Assignment4/allocator_helpers.o
 Assignment4/fit_tests.o
 Assignment4/compact_allocation_tests.o
-Assignment5/test-syscall/cs300_testapp.o
-Assignment5/test-syscall/cs300_testapp
+Assignment5/test-syscall/cs300_testsyscall.o
+Assignment5/test-syscall/cs300_testsyscall
+Assignment5/test-syscall/main.o
+Assignment5/test-syscall/main
 Assignment5/debian_squeeze_amd64_standard.qcow2

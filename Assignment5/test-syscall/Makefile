@@ -1,5 +1,5 @@
-TARGET = cs300_testapp
-OBJS = cs300_testapp.o
+TARGET = main
+OBJS = cs300_testsyscall.o main.o
 
 CFLAGS = -g -std=c99 -D _GNU_SOURCE -static
 CC = gcc
