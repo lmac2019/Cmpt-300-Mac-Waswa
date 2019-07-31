@@ -18,7 +18,7 @@ asmlinkage long sys_array_stats (
   printk("size: %ld\n", size);
 
   if (size <= 0) {
-    printk("error - invalid argument: size <= 0\n");
+    printk("error - invalid argument: size must be <= 0\n");
     return -EINVAL;
   }
 
