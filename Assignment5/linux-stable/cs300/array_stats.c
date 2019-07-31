@@ -23,7 +23,7 @@ asmlinkage long sys_array_stats (
   }
 
   for (i = 0; i < size; i++) {
-    if (__copy_from_user(&data_copy, (voidPtr) data[i], sizeof(data[i]))) {
+    if (__copy_from_user(&data_copy, &data[i], sizeof(data[i]))) {
       printk("error - bad address in data array\n");
       return -EFAULT;
     } 
