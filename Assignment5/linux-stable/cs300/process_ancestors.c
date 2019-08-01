@@ -3,7 +3,6 @@
 #include <linux/uaccess.h>
 #include "process_ancestors.h"
 
-#define voidPtr void*
 
 asmlinkage long sys_process_ancestors(
   struct process_info info_array[],
@@ -22,6 +21,6 @@ asmlinkage long sys_process_ancestors(
 
   printk("size: %ld\n",size);
 
-
+  return 0;
 
  }
