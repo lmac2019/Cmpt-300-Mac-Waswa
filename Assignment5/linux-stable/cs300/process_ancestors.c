@@ -24,6 +24,8 @@ asmlinkage long sys_process_ancestors(
   while(cur_task != cur_task->parent){
     process.pid = cur_task->pid;
     printk("current pid: %ld\n",process.pid);
+    strcpy(process.name,cur_task->comm);
+    printk("current pid: %s\n",process.name);
     cur_task = cur_task->parent;
     i++;
   }
