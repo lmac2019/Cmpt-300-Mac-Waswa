@@ -49,7 +49,7 @@ asmlinkage long sys_process_ancestors(
     process.num_siblings = sibling_num;
     printk("current num_siblings: %ld\n",process.num_siblings);
 
-    if (__copy_to_user(&process, &info_array[i], sizeof(info_array[i]))) {
+    if (__copy_to_user(&info_array[i], &process, sizeof(info_array[i]))) {
       printk("error - bad address in data array\n");
       return -EFAULT;
     }
