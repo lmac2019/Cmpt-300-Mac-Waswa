@@ -3,7 +3,6 @@
 #define PROCESS_ANCESTORS_TESTSYSCALL_H
 
 #define ANCESTOR_NAME_LEN 16
-#define _PROCESS_ANCESTORS_ 342
 
 struct process_info {
     long pid;                     /* Process ID */

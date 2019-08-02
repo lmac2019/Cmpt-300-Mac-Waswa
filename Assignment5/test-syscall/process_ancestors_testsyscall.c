@@ -8,19 +8,17 @@
 #include <sys/syscall.h>
 #include "process_ancestors_testsyscall.h"
 
-
+#define _PROCESS_ANCESTORS_ 342
 
 void test_process_ancestors_syscall(void){
+  long size = 5;
+  long num = 0;
 
-  long size = 2;
-  long *num = 0;
+  struct process_info process[size];
 
-  struct process_info *process;
+  int result = syscall(_PROCESS_ANCESTORS_, process, size, &num);
 
-
-  int result = syscall(_PROCESS_ANCESTORS_, process, size, num);
-
-  for(int i = 0; i< size;i++){
+  for(int i = 0; i < num; i++){
     printf("pid: %ld\n",process[i].pid );
     printf("name: %s\n",process[i].name );
     printf("state: %ld\n",process[i].state );
