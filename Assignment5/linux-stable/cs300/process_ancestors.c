@@ -17,6 +17,7 @@ asmlinkage long sys_process_ancestors(
   struct list_head *head;
   long children_num = 0;
   long sibling_num = 0;
+  int i = 0;
 
   if (size <= 0) {
     printk("error - invalid argument: size must be <= 0\n");
@@ -27,7 +28,7 @@ asmlinkage long sys_process_ancestors(
     process.pid = cur_task->pid;
     printk("current pid: %ld\n",process.pid);
     strcpy(process.name,cur_task->comm);
-    printk("current pid: %s\n",process.name);
+    printk("current name: %s\n",process.name);
     process.uid = cur_task->cred->uid.val;
     printk("current uid: %ld\n",process.uid);
     process.state = cur_task->state;
@@ -47,7 +48,11 @@ asmlinkage long sys_process_ancestors(
     printk("current num_children: %ld\n",process.num_children);
     process.num_siblings = sibling_num;
     printk("current num_siblings: %ld\n",process.num_siblings);
+
+    //info_array[i] = process;
+
     cur_task = cur_task->parent;
+    i++;
   }
 
   printk("size: %ld\n",size);
