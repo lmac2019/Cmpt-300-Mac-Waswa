@@ -11,5 +11,7 @@ int main (int argc, char* argv[]) {
 
   test_process_ancestors_syscall();
 
+  test_process_ancestors_syscall_exception();
+
   return 0;
 }

@@ -16,5 +16,6 @@ struct process_info {
 };
 
 void test_process_ancestors_syscall(void);
+void test_process_ancestors_syscall_exception(void);
 
 #endif

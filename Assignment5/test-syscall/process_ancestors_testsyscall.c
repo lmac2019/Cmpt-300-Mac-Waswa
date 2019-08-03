@@ -11,13 +11,14 @@
 #define _PROCESS_ANCESTORS_ 342
 
 void test_process_ancestors_syscall(void){
+  printf("testing process ancestor syscall\n");
+
   long size = 5;
   long num = 0;
 
   struct process_info process[size];
 
   int result = syscall(_PROCESS_ANCESTORS_, process, size, &num);
-  printf("%ld\n", num);
   for(int i = 0; i < num; i++){
     printf("pid: %ld\n",process[i].pid );
     printf("name: %s\n",process[i].name );
@@ -29,5 +30,29 @@ void test_process_ancestors_syscall(void){
     printf("num_siblings: %ld\n",process[i].num_siblings );
   }
 
-  printf("..Rising to user level w/ result = %d\n", result);
+  printf("..Rising to user level w/ result = %d\n\n", result);
+}
+
+void test_process_ancestors_syscall_exception(void){
+
+  printf("testing process ancestor syscall exception\n");
+  long size = -1;
+  long num = 0;
+
+  struct process_info process[size];
+
+  int result = syscall(_PROCESS_ANCESTORS_, process, size, &num);
+
+  for(int i = 0; i < num; i++){
+    printf("pid: %ld\n",process[i].pid );
+    printf("name: %s\n",process[i].name );
+    printf("state: %ld\n",process[i].state );
+    printf("uid: %ld\n",process[i].uid );
+    printf("nvscw: %ld\n",process[i].nvcsw );
+    printf("nivcsw: %ld\n",process[i].nivcsw );
+    printf("num_children: %ld\n",process[i].num_children );
+    printf("num_siblings: %ld\n",process[i].num_siblings );
+  }
+
+  printf("..Rising to user level w/ result = %d\n\n", result);
 }
