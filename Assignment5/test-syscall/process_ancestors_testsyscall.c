@@ -17,7 +17,7 @@ void test_process_ancestors_syscall(void){
   struct process_info process[size];
 
   int result = syscall(_PROCESS_ANCESTORS_, process, size, &num);
-
+  printf("%ld\n", num);
   for(int i = 0; i < num; i++){
     printf("pid: %ld\n",process[i].pid );
     printf("name: %s\n",process[i].name );

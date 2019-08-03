@@ -16,7 +16,7 @@ asmlinkage long sys_process_ancestors(
   struct list_head *head;
   long children_num = 0;
   long sibling_num = 0;
-  int i;
+  long i;
 
   printk("size: %ld\n", size);
 
@@ -67,7 +67,7 @@ asmlinkage long sys_process_ancestors(
     }
   }
 
-
+  printk("i: %ld\n", i);
   if (__copy_to_user(num_filled, &i, sizeof(i))) {
     printk("error - bad address in num_filled\n");
     return -EFAULT;
