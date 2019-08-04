@@ -2,7 +2,7 @@
 #ifndef PROCESS_ANCESTORS_TESTSYSCALL_H
 #define PROCESS_ANCESTORS_TESTSYSCALL_H
 
-#define ANCESTOR_NAME_LEN 16
+#include "test.h"
 
 struct process_info {
   long pid;                     /* Process ID */
@@ -15,11 +15,6 @@ struct process_info {
   long num_siblings;            /* # sibling process has */
 };
 
-#define bool _Bool
-#define longPtr long*
-#define charPtr char*
-#define processInfoPtr process_info*
-
 // * Working tests
 void test_odd_size(void);
 void test_even_size(void);
@@ -28,14 +23,13 @@ void test_even_size(void);
 void test_zero_size(void);
 void test_negative_odd_size(void);
 void test_negative_even_size(void);
-void test_bad_address(void);
+void test_process_ancestors_bad_address(void);
 
 // * Helper functions
-static void do_syscall_working(long size);
-static void do_syscall_failing(struct processInfoPtr info_array, long size, longPtr num_filled, long ret_code);
-static int do_syscall(struct process_info info_array[], long size, longPtr num);
-static void test_internal(bool success, int lineNum, charPtr argStr);
-static void test_print_summary(void);
+void do_process_ancestors_syscall_working(long size);
+void do_process_ancestors_syscall_failing(struct processInfoPtr info_array, long size, longPtr num_filled, long ret_code);
+int do_process_ancestors_syscall(struct process_info info_array[], long size, longPtr num);
+void test_process_ancestors_print_summary(void);
 
 // * Test function
 void test_process_ancestors_syscall(void);

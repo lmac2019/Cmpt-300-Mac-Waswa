@@ -7,11 +7,10 @@ int main (int argc, char* argv[]) {
  test_cs300_test_syscall();
 
   // * Test for array_stats syscall
-  // test_array_stats_syscall();
+  test_array_stats_syscall();
 
+  // * Test for process_ancestors syscall
   test_process_ancestors_syscall();
-
-  test_process_ancestors_syscall_exception();
 
   return 0;
 }

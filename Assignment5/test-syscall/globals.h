@@ -8,15 +8,15 @@
 
 
 /*
- * Megabyte size
+ * process ancestors syscall number
  */
-#define MEG (1024 * 1024)
+#define _PROCESS_ANCESTORS_ 342
 
 
 /*
- * Macro to allow us to get the line number, and argument's text:
- */ 
-#define TEST(arg) test_internal((arg), __LINE__, #arg)
+ * Maximum length of the name of a process
+ */
+#define ANCESTOR_NAME_LEN 16
 
 
 /*

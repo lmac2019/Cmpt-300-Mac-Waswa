@@ -7,7 +7,6 @@
 #include <errno.h>
 #include <sys/syscall.h>
 #include "process_ancestors_testsyscall.h"
-#include "process_ancestors_testsyscall_constants.h"
 
 /*
  * Handles testing the process_ancestors syscall
@@ -15,7 +14,7 @@
  */
 void test_even_size(void) {
   for (long size = 2; size <= 12; size += 2) {
-	  do_syscall_working(size);
+	  do_process_ancestors_syscall_working(size);
   }
 }
 
@@ -26,7 +25,7 @@ void test_even_size(void) {
  */
 void test_odd_size(void) {
   for (long size = 1; size <= 11; size += 2) {
-	  do_syscall_working(size);
+	  do_process_ancestors_syscall_working(size);
   }
 }
 
@@ -39,7 +38,7 @@ void test_zero_size(void) {
   struct process_info info_array[0];
   long num_filled;
 
-  do_syscall_failing(info_array, 0, num_filled, EINVAL);
+  do_process_ancestors_syscall_failing(info_array, 0, &num_filled, EINVAL);
 }
 
 
@@ -52,7 +51,7 @@ void test_negative_even_size(void) {
     struct process_info info_array[size];
     long num_filled;
 
-    do_syscall_failing(info_array, size, num_filled, EINVAL);
+    do_process_ancestors_syscall_failing(info_array, size, &num_filled, EINVAL);
   }
 }
 
@@ -66,7 +65,7 @@ void test_negative_odd_size(void) {
     struct process_info info_array[size];
     long num_filled;
 
-    do_syscall_failing(info_array, size, num_filled, EINVAL);
+    do_process_ancestors_syscall_failing(info_array, size, &num_filled, EINVAL);
   }
 }
 
@@ -75,25 +74,25 @@ void test_negative_odd_size(void) {
  * Handles testing the process_ancestors syscall
  * with bad address inputs into the syscall
  */
-void test_bad_address(void) {
+void test_process_ancestors_bad_address(void) {
   // Bad num_filled pointers
   long size = 10;
   struct process_info info_array[size];
-	do_syscall_failing(info_array, size, NULL, EFAULT);
-	do_syscall_failing(info_array, size, (long*)1LL, EFAULT);
-	do_syscall_failing(info_array, size, (long*)123456789012345689LL, EFAULT);
+	do_process_ancestors_syscall_failing(info_array, size, NULL, EFAULT);
+	do_process_ancestors_syscall_failing(info_array, size, (long*)1LL, EFAULT);
+	do_process_ancestors_syscall_failing(info_array, size, (long*)123456789012345689LL, EFAULT);
 
 	// Bad info_array pointers, or read-only memory
   long num_filled;
-	do_syscall_failing(NULL, size, &num_filled, EFAULT);
-	do_syscall_failing((void*)1, size, &num_filled, EFAULT);
-	do_syscall_failing((void*)test_bad_address, size, &num_filled, EFAULT);
+	do_process_ancestors_syscall_failing(NULL, size, &num_filled, EFAULT);
+	do_process_ancestors_syscall_failing((void*)1, size, &num_filled, EFAULT);
+	do_process_ancestors_syscall_failing((void*)test_process_ancestors_bad_address, size, &num_filled, EFAULT);
 
   // Bad num_filled pointers
   // Bad info_array pointers, or read-only memory
-  do_syscall_failing(NULL, size, NULL, EFAULT);
-	do_syscall_failing((void*)1, size, (void*)1, EFAULT);
-	do_syscall_failing((void*)test_bad_address, size, (void*)test_bad_address, EFAULT);
+  do_process_ancestors_syscall_failing(NULL, size, NULL, EFAULT);
+	do_process_ancestors_syscall_failing((void*)1, size, (void*)1, EFAULT);
+	do_process_ancestors_syscall_failing((void*)test_process_ancestors_bad_address, size, (void*)test_process_ancestors_bad_address, EFAULT);
 }
 
 /*
@@ -102,11 +101,11 @@ void test_bad_address(void) {
  * 
  * size: length of info_array
  */
-static void do_syscall_working(long size) {
+void do_process_ancestors_syscall_working(long size) {
   struct process_info info_array[size];
   long num_filled;
 
-	int result = do_syscall(info_array, size, &num_filled);
+	int result = do_process_ancestors_syscall(info_array, size, &num_filled);
 	
   for(int i = 0; i < num_filled; i++){
     printf("pid: %ld\n",info_array[i].pid );
@@ -134,13 +133,13 @@ static void do_syscall_working(long size) {
  * in info_array
  * ret_code: the expected return code from the failed syscall
  */
-static void do_syscall_failing(
+void do_process_ancestors_syscall_failing(
   struct processInfoPtr info_array,
   long size,
   longPtr num_filled,
   long ret_code
 ) {
-  int result = do_syscall(info_array, size, num_filled);
+  int result = do_process_ancestors_syscall(info_array, size, num_filled);
 	TEST(result == ret_code);
 }
 
@@ -153,7 +152,7 @@ static void do_syscall_failing(
  * num_filled: a pointer to a variable that will contain the number of entries
  * in info_array
  */
-static int do_syscall(
+int do_process_ancestors_syscall(
   struct processInfoPtr info_array, 
   long size,
   longPtr num_filled
@@ -180,31 +179,9 @@ static int do_syscall(
 
 
 /*
- * Handles checking whether or not a test passed
- * 
- * success: a boolean indicating whether ot not a test passed
- * lineNum: an integer representing the lineNumber of the failed test
- * argStr: a pointer to a string containing a message from the failed test
- */
-static void test_internal(bool success, int lineNum, charPtr argStr) {
-  numTests++;
-
-	if (!success) {
-		if (current_syscall_test_num != last_syscall_test_num_failed) {
-			last_syscall_test_num_failed = current_syscall_test_num;
-			num_syscall_tests_failed++;
-		}
-		printf("-------> ERROR %4d: test on line %d failed: %s\n",
-				numTestPassed, lineNum, argStr);
-	} else {
-		numTestPassed++;
-	}
-}
-
-/*
  * Prints a summary of tests passed and failed
  */
-static void test_print_summary(void) {
+void test_process_ancestors_print_summary(void) {
   printf("\nExecution finished.\n");
   printf("%4d/%d tests passed.\n", numTestPassed, numTests);
   printf("%4d/%d tests FAILED.\n", numTests - numTestPassed, numTests);
@@ -215,7 +192,7 @@ static void test_print_summary(void) {
 /*
  * Test for process_ancestors syscall
  */
-void test_array_stats_syscall(void) {
+void test_process_ancestors_syscall(void) {
   test_even_size();
 
   test_odd_size();
@@ -226,7 +203,9 @@ void test_array_stats_syscall(void) {
 
   test_negative_odd_size();
 
-  test_bad_address();
+  test_process_ancestors_bad_address();
 
-  test_print_summary();
+  test_process_ancestors_print_summary();
+
+  reset();
 }
