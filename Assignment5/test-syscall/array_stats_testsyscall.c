@@ -245,10 +245,10 @@ static void test_internal(bool success, int lineNum, charPtr argStr) {
  */
 static void test_print_summary(void) {
   printf("\nExecution finished.\n");
-	printf("%4d/%d tests passed.\n", numTestPassed, numTests);
-	printf("%4d/%d tests FAILED.\n", numTests - numTestPassed, numTests);
-	printf("%4d/%d unique sys-call testing configurations FAILED.\n", 
-    num_syscall_tests_failed, current_syscall_test_num);
+  printf("%4d/%d tests passed.\n", numTestPassed, numTests);
+  printf("%4d/%d tests FAILED.\n", numTests - numTestPassed, numTests);
+  printf("%4d/%d unique sys-call testing configurations FAILED.\n", 
+  num_syscall_tests_failed, current_syscall_test_num);
 }
 
 
@@ -256,13 +256,13 @@ static void test_print_summary(void) {
  * Test for array_stats syscall
  */
 void test_array_stats_syscall(void) {
-//   test_positive_few();
+  test_positive_few();
 
-//   test_negative_few();
+  test_negative_few();
 
-//   test_many();
+  test_many();
 
-//   test_bad_addr();
+  test_bad_addr();
 
-//   test_print_summary();
+  test_print_summary();
 }

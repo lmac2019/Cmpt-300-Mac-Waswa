@@ -4,10 +4,10 @@
 
 int main (int argc, char* argv[]) {
   // * Test for cs300_test syscall
-//  test_cs300_test_syscall();
+ test_cs300_test_syscall();
 
   // * Test for array_stats syscall
-  //test_array_stats_syscall();
+  // test_array_stats_syscall();
 
   test_process_ancestors_syscall();
 
