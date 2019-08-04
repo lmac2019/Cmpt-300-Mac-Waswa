@@ -28,9 +28,11 @@ void test_even_size(void);
 void test_zero_size(void);
 void test_negative_odd_size(void);
 void test_negative_even_size(void);
+void test_bad_address(void);
 
 // * Helper functions
 static void do_syscall_working(long size);
+static void do_syscall_failing(struct processInfoPtr info_array, long size, longPtr num_filled, long ret_code);
 static int do_syscall(struct process_info info_array[], long size, longPtr num);
 static void test_internal(bool success, int lineNum, charPtr argStr);
 static void test_print_summary(void);
