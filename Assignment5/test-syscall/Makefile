@@ -1,5 +1,5 @@
 TARGET = main
-OBJS = cs300_testsyscall.o array_stats_testsyscall.o main.o
+OBJS = cs300_testsyscall.o array_stats_testsyscall.o process_ancestors_testsyscall.o main.o
 
 CFLAGS = -g -std=c99 -D _GNU_SOURCE -static
 CC = gcc
