@@ -10,7 +10,7 @@ int main (int argc, char* argv[]) {
   test_array_stats_syscall();
 
   // * Test for process_ancestors syscall
-  // test_process_ancestors_syscall();
+  test_process_ancestors_syscall();
 
   return 0;
 }
