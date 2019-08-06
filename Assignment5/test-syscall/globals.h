@@ -18,34 +18,8 @@
  */
 #define ANCESTOR_NAME_LEN 16
 
-
-/*
- * The number of the current syscall test
- */
-static int current_syscall_test_num = 0;
-
-
-/*
- * The number of tests executed
- */
-static int numTests = 0;
-
-
-/*
- * The number of executed tests that passed
- */
-static int numTestPassed = 0;
-
-
-/*
- * The number of last syscall test to fail
- */
-static int last_syscall_test_num_failed = -1;
-
-
-/*
- * The total number of syscall tests that failed
- */
-static int num_syscall_tests_failed = 0;
+#define bool _Bool
+#define charPtr char*
+#define longPtr long*
 
 #endif

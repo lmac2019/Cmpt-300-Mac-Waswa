@@ -2,7 +2,7 @@
 #ifndef PROCESS_ANCESTORS_TESTSYSCALL_H
 #define PROCESS_ANCESTORS_TESTSYSCALL_H
 
-#include "test.h"
+#include "globals.h"
 
 struct process_info {
   long pid;                     /* Process ID */
@@ -14,6 +14,8 @@ struct process_info {
   long num_children;            /* # children process has */
   long num_siblings;            /* # sibling process has */
 };
+
+#define processInfoPtr process_info*
 
 // * Working tests
 void test_odd_size(void);
@@ -30,6 +32,11 @@ void do_process_ancestors_syscall_working(long size);
 void do_process_ancestors_syscall_failing(struct processInfoPtr info_array, long size, longPtr num_filled, long ret_code);
 int do_process_ancestors_syscall(struct process_info info_array[], long size, longPtr num);
 void test_process_ancestors_print_summary(void);
+
+// * Internal testing framework
+void process_ancestors_test_internal(bool success, int lineNum, charPtr argStr);
+
+#define PROCESS_ANCESTORS_TEST(arg) process_ancestors_test_internal((arg), __LINE__, #arg)
 
 // * Test function
 void test_process_ancestors_syscall(void);

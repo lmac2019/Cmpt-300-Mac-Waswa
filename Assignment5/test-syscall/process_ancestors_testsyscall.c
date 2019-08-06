@@ -9,6 +9,36 @@
 #include "process_ancestors_testsyscall.h"
 
 /*
+ * The number of the current syscall test
+ */
+static int current_syscall_test_num = 0;
+
+
+/*
+ * The number of tests executed
+ */
+static int numTests = 0;
+
+
+/*
+ * The number of executed tests that passed
+ */
+static int numTestPassed = 0;
+
+
+/*
+ * The number of last syscall test to fail
+ */
+static int last_syscall_test_num_failed = -1;
+
+
+/*
+ * The total number of syscall tests that failed
+ */
+static int num_syscall_tests_failed = 0;
+
+
+/*
  * Handles testing the process_ancestors syscall
  * with an even (non-zero) size info_array
  */
@@ -118,7 +148,7 @@ void do_process_ancestors_syscall_working(long size) {
     printf("num_siblings: %ld\n",info_array[i].num_siblings );
   }
 
-	TEST(result == 0);
+	PROCESS_ANCESTORS_TEST(result == 0);
 	// * Add tests here to check for matching process fields
 }
 
@@ -140,7 +170,7 @@ void do_process_ancestors_syscall_failing(
   long ret_code
 ) {
   int result = do_process_ancestors_syscall(info_array, size, num_filled);
-	TEST(result == ret_code);
+	PROCESS_ANCESTORS_TEST(result == ret_code);
 }
 
 
@@ -189,6 +219,30 @@ void test_process_ancestors_print_summary(void) {
   num_syscall_tests_failed, current_syscall_test_num);
 }
 
+
+/*
+ * Handles checking whether or not a test passed
+ * 
+ * success: a boolean indicating whether ot not a test passed
+ * lineNum: an integer representing the lineNumber of the failed test
+ * argStr: a pointer to a string containing a message from the failed test
+ */
+void process_ancestors_test_internal(bool success, int lineNum, charPtr argStr) {
+  numTests++;
+
+	if (!success) {
+		if (current_syscall_test_num != last_syscall_test_num_failed) {
+			last_syscall_test_num_failed = current_syscall_test_num;
+			num_syscall_tests_failed++;
+		}
+		printf("-------> ERROR %4d: test on line %d failed: %s\n",
+				numTestPassed, lineNum, argStr);
+	} else {
+		numTestPassed++;
+	}
+}
+
+
 /*
  * Test for process_ancestors syscall
  */
@@ -206,6 +260,4 @@ void test_process_ancestors_syscall(void) {
   test_process_ancestors_bad_address();
 
   test_process_ancestors_print_summary();
-
-  reset();
 }
