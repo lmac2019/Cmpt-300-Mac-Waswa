@@ -42,6 +42,8 @@ static int num_syscall_tests_failed = 0;
  * with an array of a few positive long integers
  */
 void test_positive_few(void) {
+	  printf("\nTesting array of positive few integers...\n");
+
 	do_array_stats_syscall_working((long[]){1}, 1);
 	do_array_stats_syscall_working((long[]){1, 2}, 2);
 	do_array_stats_syscall_working((long[]){1, 2, 3}, 3);
@@ -55,7 +57,9 @@ void test_positive_few(void) {
  * with an array of a few negative long integers
  */
 void test_negative_few(void) {
-  do_array_stats_syscall_working((long[]){-1}, 1);
+	printf("\nTesting array of negative few integers...\n");
+
+  	do_array_stats_syscall_working((long[]){-1}, 1);
 	do_array_stats_syscall_working((long[]){-1, -2}, 2);
 	do_array_stats_syscall_working((long[]){-1, 2, 3}, 3);
 	do_array_stats_syscall_working((long[]){0, -2, 4, -6}, 4);
@@ -67,22 +71,28 @@ void test_negative_few(void) {
  * where invalid arguments are paseed to the syscall
  */
 void test_array_stats_bad_address(void) {
-  struct array_stats stats;
+	printf("\nTesting bad addresses...\n");
 
-	// 0 or negative sizes
+  	struct array_stats stats;
+
+	printf("\nTesting 0 or negative sizes...\n");
+
 	do_array_stats_syscall_failing(&stats, (long[]){1}, 0, EINVAL);
 	do_array_stats_syscall_failing(&stats, (long[]){1}, -1, EINVAL);
 	do_array_stats_syscall_failing(&stats, (long[]){1}, -10000, EINVAL);
 
-	// Bad data pointers
+	printf("\nTesting bad data pointers...\n");
+	
 	do_array_stats_syscall_failing(&stats, NULL, 1, EFAULT);
 	do_array_stats_syscall_failing(&stats, (long*)1LL, 1, EFAULT);
 	do_array_stats_syscall_failing(&stats, (long*)123456789012345689LL, 1, EFAULT);
 
-	// Bad size (read off end)
+	printf("\nTesting bad size (read off end)...\n");
+	
 	do_array_stats_syscall_failing(&stats, (long[]){1}, 10*1024*1024, EFAULT);
 
-	// Bad stats pointers, or read-only memory
+	printf("\nTesting bad stats pointers, or read only memory...\n");
+
 	do_array_stats_syscall_failing(NULL, (long[]){1}, 1, EFAULT);
 	do_array_stats_syscall_failing((void*)1, (long[]){1}, 1, EFAULT);
 	do_array_stats_syscall_failing((void*)test_array_stats_bad_address, (long[]){1}, 1, EFAULT);
@@ -194,7 +204,7 @@ int do_array_stats_syscall(
 	current_syscall_test_num++;
 
 	if (current_syscall_test_num == 1) {
-    	printf("Tests for array stats syscall\n");
+    	printf("\nTests for array stats syscall\n");
   	}
 
 	printf("\nTest %d: ..Diving to kernel level\n", current_syscall_test_num);
@@ -202,7 +212,7 @@ int do_array_stats_syscall(
   int result = syscall(_ARRAY_STATS_, stats, data, size);
 	int my_errno = errno;
 	
-  printf("..Rising to user level w/ result = %d", result);
+  printf("\n..Rising to user level w/ result = %d", result);
 	
   if (result < 0) {
 		printf(", errno = %d", my_errno);
@@ -223,7 +233,7 @@ void test_array_stats_print_summary(void) {
   printf("\nExecution finished.\n");
   printf("%4d/%d tests passed.\n", numTestPassed, numTests);
   printf("%4d/%d tests FAILED.\n", numTests - numTestPassed, numTests);
-  printf("%4d/%d unique sys-call testing configurations FAILED.\n\n", 
+  printf("%4d/%d unique sys-call testing configurations FAILED.\n", 
   num_syscall_tests_failed, current_syscall_test_num);
 }
 
@@ -243,7 +253,7 @@ void array_stats_test_internal(bool success, int lineNum, charPtr argStr) {
 			last_syscall_test_num_failed = current_syscall_test_num;
 			num_syscall_tests_failed++;
 		}
-		printf("-------> ERROR %4d: test on line %d failed: %s\n",
+		printf("\n-------> ERROR %4d: test on line %d failed: %s\n",
 				numTestPassed, lineNum, argStr);
 	} else {
 		numTestPassed++;

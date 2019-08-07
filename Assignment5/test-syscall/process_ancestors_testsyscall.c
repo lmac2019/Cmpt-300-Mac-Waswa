@@ -155,21 +155,23 @@ void test_mixed_sizes(void) {
 void test_process_ancestors_bad_address(void) {
   printf("\nTesting bad address...\n");
 
-  // Bad num_filled pointers
+  printf("\nTesting bad address num_filled pointers...\n");
+
   long size = 10;
   struct process_info info_array[size];
 	do_process_ancestors_syscall_failing(info_array, size, NULL, EFAULT);
 	do_process_ancestors_syscall_failing(info_array, size, (long*)1LL, EFAULT);
 	do_process_ancestors_syscall_failing(info_array, size, (long*)123456789012345689LL, EFAULT);
 
-	// Bad info_array pointers, or read-only memory
+  printf("\nTesting bad address info_array pointers, or read only memory...\n");
+
   long num_filled;
 	do_process_ancestors_syscall_failing(NULL, size, &num_filled, EFAULT);
 	do_process_ancestors_syscall_failing((void*)1, size, &num_filled, EFAULT);
 	do_process_ancestors_syscall_failing((void*)test_process_ancestors_bad_address, size, &num_filled, EFAULT);
 
-  // Bad num_filled pointers
-  // Bad info_array pointers, or read-only memory
+  printf("\nTesting bad address num_filled pointers and info_array pointers, or read only memory...\n");
+
   do_process_ancestors_syscall_failing(NULL, size, NULL, EFAULT);
 	do_process_ancestors_syscall_failing((void*)1, size, (void*)1, EFAULT);
 	do_process_ancestors_syscall_failing((void*)test_process_ancestors_bad_address, size, (void*)test_process_ancestors_bad_address, EFAULT);
