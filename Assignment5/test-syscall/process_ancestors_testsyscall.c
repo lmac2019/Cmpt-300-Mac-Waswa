@@ -202,7 +202,6 @@ void do_process_ancestors_syscall_working(long size) {
   }
 
 	PROCESS_ANCESTORS_TEST(result == 0);
-	// * Add tests here to check for matching process fields
 }
 
 
@@ -243,7 +242,7 @@ int do_process_ancestors_syscall(
 	current_syscall_test_num++;
 
   if (current_syscall_test_num == 1) {
-    printf("Tests for process ancestors syscall\n");
+    printf("\nTests for process ancestors syscall\n");
   }
 
 	printf("\nTest %d: ..Diving to kernel level\n", current_syscall_test_num);
@@ -251,7 +250,7 @@ int do_process_ancestors_syscall(
   int result = syscall(_PROCESS_ANCESTORS_, info_array, size, num_filled);
 	int my_errno = errno;
 	
-  printf("..Rising to user level w/ result = %d", result);
+  printf("\n..Rising to user level w/ result = %d", result);
 	
   if (result < 0) {
 		printf(", errno = %d", my_errno);
@@ -272,7 +271,7 @@ void test_process_ancestors_print_summary(void) {
   printf("\nExecution finished.\n");
   printf("%4d/%d tests passed.\n", numTestPassed, numTests);
   printf("%4d/%d tests FAILED.\n", numTests - numTestPassed, numTests);
-  printf("%4d/%d unique sys-call testing configurations FAILED.\n\n", 
+  printf("%4d/%d unique sys-call testing configurations FAILED.\n", 
   num_syscall_tests_failed, current_syscall_test_num);
 }
 
@@ -292,7 +291,7 @@ void process_ancestors_test_internal(bool success, int lineNum, charPtr argStr) 
 			last_syscall_test_num_failed = current_syscall_test_num;
 			num_syscall_tests_failed++;
 		}
-		printf("-------> ERROR %4d: test on line %d failed: %s\n",
+		printf("\n-------> ERROR %4d: test on line %d failed: %s\n",
 				numTestPassed, lineNum, argStr);
 	} else {
 		numTestPassed++;
