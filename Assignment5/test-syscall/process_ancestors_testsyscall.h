@@ -25,6 +25,7 @@ void test_even_size(void);
 void test_zero_size(void);
 void test_negative_odd_size(void);
 void test_negative_even_size(void);
+void test_mixed_sizes(void);
 void test_process_ancestors_bad_address(void);
 
 // * Helper functions

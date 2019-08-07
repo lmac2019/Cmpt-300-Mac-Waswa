@@ -120,6 +120,34 @@ void test_negative_odd_size(void) {
 
 /*
  * Handles testing the process_ancestors syscall
+ * with a varying size info_array
+ */
+void test_mixed_sizes(void) {
+  printf("\nTesting mixed sizes...\n");
+
+  long range = 200;
+  long size = 0;
+
+  for (int count = 0; count < range; count++) {
+    int sign = (rand() % 3) - 1;
+    size = sign * (rand() % range);
+
+    struct processInfoPtr info_array = malloc(sizeof(struct process_info) * size);
+    long num_filled;
+
+    if (sign == -1 || sign == 0) {
+      do_process_ancestors_syscall_failing(info_array, size, &num_filled, EINVAL);
+    } else {
+      do_process_ancestors_syscall_working(size);
+    }
+    
+    free(info_array);
+  }
+}
+
+
+/*
+ * Handles testing the process_ancestors syscall
  * with bad address inputs into the syscall
  */
 void test_process_ancestors_bad_address(void) {
@@ -281,6 +309,8 @@ void test_process_ancestors_syscall(void) {
   test_negative_even_size();
 
   test_negative_odd_size();
+
+  test_mixed_sizes();
 
   test_process_ancestors_bad_address();
 
