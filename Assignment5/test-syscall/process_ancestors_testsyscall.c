@@ -133,10 +133,11 @@ void test_process_ancestors_bad_address(void) {
  */
 void do_process_ancestors_syscall_working(long size) {
   struct process_info info_array[size];
+
   long num_filled;
 
 	int result = do_process_ancestors_syscall(info_array, size, &num_filled);
-	
+
   for(long i = 0; i < num_filled; i++){
     printf("pid[%ld]: %ld\n", i, info_array[i].pid);
     printf("name[%ld]: %s\n", i, info_array[i].name);

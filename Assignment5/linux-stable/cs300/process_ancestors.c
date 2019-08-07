@@ -26,7 +26,7 @@ asmlinkage long sys_process_ancestors(
   }
 
   cur_task = current;
-  for (i = 0; cur_task != cur_task->parent; i++, cur_task = cur_task->parent) {
+  for (i = 0; (cur_task != cur_task->parent) && (i != size); i++, cur_task = cur_task->parent) {
     
     process.pid = cur_task->pid;
     printk("process[%ld].pid: %ld\n", i, process.pid);    
@@ -59,8 +59,9 @@ asmlinkage long sys_process_ancestors(
     if (__copy_to_user(&info_array[i], &process, sizeof(process))) {
       printk("error - bad address in info array\n");
       return -EFAULT;
-    }
+    } 
   }
+
   if (__copy_to_user(num_filled, &i, sizeof(i))) {
     printk("error - bad address in num_filled\n");
     return -EFAULT;
