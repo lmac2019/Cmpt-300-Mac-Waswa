@@ -43,7 +43,9 @@ static int num_syscall_tests_failed = 0;
  * with an even (non-zero) size info_array
  */
 void test_even_size(void) {
-  for (long size = 2; size <= 12; size += 2) {
+  printf("\nTesting even size...\n");
+  
+  for (long size = 2; size <= 200; size += 2) {
 	  do_process_ancestors_syscall_working(size);
   }
 }
@@ -54,7 +56,9 @@ void test_even_size(void) {
  * with an odd size info_array
  */
 void test_odd_size(void) {
-  for (long size = 1; size <= 11; size += 2) {
+  printf("\nTesting odd size...\n");
+
+  for (long size = 1; size <= 201; size += 2) {
 	  do_process_ancestors_syscall_working(size);
   }
 }
@@ -65,10 +69,16 @@ void test_odd_size(void) {
  * with an zero size info_array
  */
 void test_zero_size(void) {
-  struct process_info info_array[0];
-  long num_filled;
+  printf("\nTesting zero size...\n");
 
-  do_process_ancestors_syscall_failing(info_array, 0, &num_filled, EINVAL);
+  for (long size = 0; size <= 200; size += 2) {
+    struct processInfoPtr info_array = malloc(sizeof(struct process_info) * 0);
+    long num_filled;
+
+    do_process_ancestors_syscall_failing(info_array, 0, &num_filled, EINVAL);
+    
+    free(info_array);
+  }
 }
 
 
@@ -77,11 +87,15 @@ void test_zero_size(void) {
  * with a negative even size info_array
  */
 void test_negative_even_size(void) {
-  for (long size = -2; size >= -12; size -= 2) {
-    struct process_info info_array[size];
+  printf("\nTesting negative even size...\n");
+
+  for (long size = -2; size >= -200; size -= 2) {
+    struct processInfoPtr info_array = malloc(sizeof(struct process_info) * size);
     long num_filled;
 
     do_process_ancestors_syscall_failing(info_array, size, &num_filled, EINVAL);
+
+    free(info_array);
   }
 }
 
@@ -91,11 +105,15 @@ void test_negative_even_size(void) {
  * with a negative odd size info_array
  */
 void test_negative_odd_size(void) {
-  for (long size = -1; size >= -11; size -= 2) {
-    struct process_info info_array[size];
+  printf("\nTesting negative odd size...\n");
+
+  for (long size = -1; size >= -201; size -= 2) {
+    struct processInfoPtr info_array = malloc(sizeof(struct process_info) * size);
     long num_filled;
 
     do_process_ancestors_syscall_failing(info_array, size, &num_filled, EINVAL);
+  
+    free(info_array);
   }
 }
 
@@ -105,6 +123,8 @@ void test_negative_odd_size(void) {
  * with bad address inputs into the syscall
  */
 void test_process_ancestors_bad_address(void) {
+  printf("\nTesting bad address...\n");
+
   // Bad num_filled pointers
   long size = 10;
   struct process_info info_array[size];
@@ -158,14 +178,14 @@ void do_process_ancestors_syscall_working(long size) {
  * Handles testing the process_info syscall
  * in situations where the syscall should always fail
  * 
- * info_array: a pointer to an process_info struct 
+ * info_array[]: array of process_info structs 
  * size: length of data array
  * num_filled: a pointer to a variable that will contain the number of entries
  * in info_array
  * ret_code: the expected return code from the failed syscall
  */
 void do_process_ancestors_syscall_failing(
-  struct processInfoPtr info_array,
+  struct process_info info_array[],
   long size,
   longPtr num_filled,
   long ret_code
