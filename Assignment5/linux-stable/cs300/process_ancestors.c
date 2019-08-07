@@ -11,18 +11,12 @@ asmlinkage long sys_process_ancestors(
   long size,
   long *num_filled
 ){
-  struct process_info process;
+  long i;
   struct task_struct *cur_task;
   struct list_head *head;
-  long num_children = 0;
-  long num_siblings = 0;
-  long i;
-  long pid_value;
-  char name_value[TASK_COMM_LEN];
-  long uid_value;
-  long state_value;
-  long nvcsw_value;
-  long nivcsw_value;
+  struct process_info process;
+  process.num_children = 0;
+  process.num_siblings = 0;
 
   printk("size: %ld\n", size);
 
@@ -34,43 +28,33 @@ asmlinkage long sys_process_ancestors(
   cur_task = current;
   for (i = 0; cur_task != cur_task->parent; i++, cur_task = cur_task->parent) {
     
-    pid_value = cur_task->pid;
-    printk("process[%ld].pid: %ld\n", i, pid_value);    
-    process.pid = pid_value;
+    process.pid = cur_task->pid;
+    printk("process[%ld].pid: %ld\n", i, process.pid);    
 
-    strcpy(name_value, cur_task->comm);
-    printk("process[%ld].name: %s\n", i, name_value);   
-    strcpy(process.name, name_value);
+    strcpy(process.name, cur_task->comm);
+    printk("process[%ld].name: %s\n", i, process.name);   
 
-    uid_value = (long)(cur_task->cred->uid.val);
-    printk("process[%ld].uid: %ld\n", i, uid_value);   
-    process.uid = uid_value;
+    process.uid = (long)(cur_task->cred->uid.val);
+    printk("process[%ld].uid: %ld\n", i, process.uid);   
 
-    state_value = cur_task->state;
-    printk("process[%ld].state: %ld\n", i, state_value);   
-    process.state = state_value;
+    process.state = cur_task->state;
+    printk("process[%ld].state: %ld\n", i, process.state);   
 
-    nvcsw_value = cur_task->nvcsw;
-    printk("process[%ld].nvcsw: %ld\n", i, nvcsw_value);   
-    process.nvcsw = nvcsw_value;
+    process.nvcsw = cur_task->nvcsw;
+    printk("process[%ld].nvcsw: %ld\n", i, process.nvcsw);   
 
-    nivcsw_value = cur_task->nivcsw;
-    printk("process[%ld].nivcsw: %ld\n", i, nivcsw_value);  
-    process.nivcsw = nivcsw_value;
+    process.nivcsw = cur_task->nivcsw;
+    printk("process[%ld].nivcsw: %ld\n", i, process.nivcsw);  
 
     list_for_each(head, &cur_task->children) {
-      num_children++;
+      process.num_children += 1;
     }
-
-    printk("process[%ld].num_children: %ld\n", i, num_children);  
-    process.num_children = num_children;
+    printk("process[%ld].num_children: %ld\n", i, process.num_children);  
 
     list_for_each(head, &cur_task->sibling) {
-      num_siblings++;
+      process.num_siblings += 1;
     }
-
-    printk("process[%ld].num_siblings: %ld\n", i, num_siblings);  
-    process.num_siblings = num_siblings;
+    printk("process[%ld].num_siblings: %ld\n", i, process.num_siblings);  
 
     if (__copy_to_user(&info_array[i], &process, sizeof(process))) {
       printk("error - bad address in info array\n");
