@@ -132,6 +132,8 @@ void test_mixed_sizes(void) {
     int sign = (rand() % 3) - 1;
     size = sign * (rand() % range);
 
+    printf("Testing size: %ld\n", size);
+
     struct processInfoPtr info_array = malloc(sizeof(struct process_info) * size);
     long num_filled;
 
@@ -187,6 +189,7 @@ void do_process_ancestors_syscall_working(long size) {
 	int result = do_process_ancestors_syscall(info_array, size, &num_filled);
 
   for(long i = 0; i < num_filled; i++){
+    printf("\n");
     printf("pid[%ld]: %ld\n", i, info_array[i].pid);
     printf("name[%ld]: %s\n", i, info_array[i].name);
     printf("state[%ld]: %ld\n", i, info_array[i].state);
@@ -195,6 +198,7 @@ void do_process_ancestors_syscall_working(long size) {
     printf("nivcsw[%ld]: %ld\n", i, info_array[i].nivcsw);
     printf("num_children[%ld]: %ld\n", i, info_array[i].num_children);
     printf("num_siblings[%ld]: %ld\n", i, info_array[i].num_siblings);
+    printf("\n");
   }
 
 	PROCESS_ANCESTORS_TEST(result == 0);
