@@ -339,9 +339,10 @@
 330	common	pkey_alloc		sys_pkey_alloc
 331	common	pkey_free		sys_pkey_free
 332	common	statx			sys_statx
-340 common  cs300_test      sys_cs300_test
-341 common  array_stats     sys_array_stats
-342 common  process_ancestors sys_process_ancestors
+340 common  cs300_test             sys_cs300_test
+341 common  array_stats            sys_array_stats
+342 common  process_ancestors      sys_process_ancestors
+
 #
 # x32-specific system call numbers start at 512 to avoid cache impact
 # for native 64-bit operation.

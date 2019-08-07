@@ -1,0 +1,287 @@
+From fb1178df9359963986b508a3c619661b2357ffbf Mon Sep 17 00:00:00 2001
+From: iamwaswa <olungaw@gmail.com>
+Date: Wed, 7 Aug 2019 00:50:42 -0700
+Subject: [PATCH] Add written files
+
+---
+ Makefile                               |  2 +-
+ arch/x86/entry/syscalls/syscall_64.tbl |  3 ++
+ cs300/Makefile                         |  1 +
+ cs300/array_stats.c                    | 73 ++++++++++++++++++++++++++
+ cs300/array_stats.h                    | 12 +++++
+ cs300/cs300_test.c                     | 17 ++++++
+ cs300/process_ancestors.c              | 71 +++++++++++++++++++++++++
+ cs300/process_ancestors.h              | 19 +++++++
+ 8 files changed, 197 insertions(+), 1 deletion(-)
+ create mode 100644 cs300/Makefile
+ create mode 100644 cs300/array_stats.c
+ create mode 100644 cs300/array_stats.h
+ create mode 100644 cs300/cs300_test.c
+ create mode 100644 cs300/process_ancestors.c
+ create mode 100644 cs300/process_ancestors.h
+
+diff --git a/Makefile b/Makefile
+index ed65d7278bb3..b54aeb8d6782 100644
+--- a/Makefile
++++ b/Makefile
+@@ -941,7 +941,7 @@ endif
+ 
+ 
+ ifeq ($(KBUILD_EXTMOD),)
+-core-y		+= kernel/ certs/ mm/ fs/ ipc/ security/ crypto/ block/
++core-y		+= kernel/ certs/ mm/ fs/ ipc/ security/ crypto/ block/ cs300/
+ 
+ vmlinux-dirs	:= $(patsubst %/,%,$(filter %/, $(init-y) $(init-m) \
+ 		     $(core-y) $(core-m) $(drivers-y) $(drivers-m) \
+diff --git a/arch/x86/entry/syscalls/syscall_64.tbl b/arch/x86/entry/syscalls/syscall_64.tbl
+index 5aef183e2f85..ac677b491a21 100644
+--- a/arch/x86/entry/syscalls/syscall_64.tbl
++++ b/arch/x86/entry/syscalls/syscall_64.tbl
+@@ -339,6 +339,9 @@
+ 330	common	pkey_alloc		sys_pkey_alloc
+ 331	common	pkey_free		sys_pkey_free
+ 332	common	statx			sys_statx
++340 common  cs300_test             sys_cs300_test
++341 common  array_stats            sys_array_stats
++342 common  process_ancestors      sys_process_ancestors
+ 
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+diff --git a/cs300/Makefile b/cs300/Makefile
+new file mode 100644
+index 000000000000..907f0b6239c4
+--- /dev/null
++++ b/cs300/Makefile
+@@ -0,0 +1 @@
++obj-y := cs300_test.o array_stats.o process_ancestors.o
+\ No newline at end of file
+diff --git a/cs300/array_stats.c b/cs300/array_stats.c
+new file mode 100644
+index 000000000000..d2dd4aad87f3
+--- /dev/null
++++ b/cs300/array_stats.c
+@@ -0,0 +1,73 @@
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/uaccess.h>
++#include "array_stats.h"
++
++#define arrayStatsPtr array_stats*
++#define voidPtr void*
++
++asmlinkage long sys_array_stats (
++  struct arrayStatsPtr stats,
++  long data[],
++  long size
++) {
++  long data_copy;
++  int i;
++  struct array_stats values;
++
++  printk("size: %ld\n", size);
++
++  if (size <= 0) {
++    printk("error - invalid argument: size must be > 0\n");
++    return -EINVAL;
++  }
++
++  for (i = 0; i < size; i++) {
++    if (__copy_from_user(&data_copy, &data[i], sizeof(data[i]))) {
++      printk("error - bad address in data array\n");
++      return -EFAULT;
++    } 
++
++    printk("data[%d]: %ld\n", i, data_copy);
++
++    if (i == 0) {
++      values.min = data_copy;
++      printk("initial values.min: %ld\n", values.min);
++
++      values.max = data_copy;
++      printk("initial values.max: %ld\n", values.max);
++      
++      values.sum = data_copy;
++      printk("initial values.sum: %ld\n", values.sum);
++      
++      continue;
++    }
++
++    if (data_copy < values.min) {
++      printk("data_copy < values.min: %ld < %ld\n", data_copy, values.min);
++      values.min = data_copy;
++    }
++
++    if (data_copy > values.max) {
++      printk("data_copy > values.max: %ld > %ld\n", data_copy, values.max);
++      values.max = data_copy;
++    }
++
++    printk("values sum before adding %ld: %ld\n", data_copy, values.sum);
++    
++    values.sum += data_copy;
++    
++    printk("values sum after adding %ld: %ld\n", data_copy, values.sum);
++  }
++  
++  if (__copy_to_user(stats, &values, sizeof(values))) {
++    printk("error - bad address in stats struct\n");
++    return -EFAULT;
++  }
++
++  printk("stats min: %ld\n", stats->min);
++  printk("stats max: %ld\n", stats->max);
++  printk("stats sum: %ld\n", stats->sum);
++
++  return 0;
++}
+\ No newline at end of file
+diff --git a/cs300/array_stats.h b/cs300/array_stats.h
+new file mode 100644
+index 000000000000..c414239502fa
+--- /dev/null
++++ b/cs300/array_stats.h
+@@ -0,0 +1,12 @@
++// Define the array_stats struct for the array_stats sys-call.
++
++#ifndef _ARRAY_STATS_H_
++#define _ARRAY_STATS_H_
++
++struct array_stats {
++  long min; 
++  long max;
++  long sum;
++};
++
++#endif
+\ No newline at end of file
+diff --git a/cs300/cs300_test.c b/cs300/cs300_test.c
+new file mode 100644
+index 000000000000..2f369aeddb7d
+--- /dev/null
++++ b/cs300/cs300_test.c
+@@ -0,0 +1,17 @@
++#include <linux/kernel.h>
++
++// Implement a HelloWorld system call
++// Argument is passed from call in user space.
++
++asmlinkage long sys_cs300_test(int argument) {
++  long result = 0;
++  
++  printk("Hello World!\n");
++  printk("--syscall argument %d\n", argument);
++  
++  result = argument + 1;
++  
++  printk("--returning %d + 1 = %ld\n", argument, result);
++  
++  return result;
++}
+\ No newline at end of file
+diff --git a/cs300/process_ancestors.c b/cs300/process_ancestors.c
+new file mode 100644
+index 000000000000..4d887e3289d1
+--- /dev/null
++++ b/cs300/process_ancestors.c
+@@ -0,0 +1,71 @@
++#include <asm/current.h>
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/uaccess.h>
++#include <linux/sched.h>
++#include <linux/cred.h>
++#include "process_ancestors.h"
++
++asmlinkage long sys_process_ancestors(
++  struct process_info info_array[],
++  long size,
++  long *num_filled
++){
++  long i;
++  struct task_struct *cur_task;
++  struct list_head *head;
++  struct process_info process;
++  process.num_children = 0;
++  process.num_siblings = 0;
++
++  printk("size: %ld\n", size);
++
++  if (size <= 0) {
++    printk("error - invalid argument: size must be > 0\n");
++    return -EINVAL;
++  }
++
++  cur_task = current;
++  for (i = 0; (cur_task != cur_task->parent) && (i != size); i++, cur_task = cur_task->parent) {
++    
++    process.pid = cur_task->pid;
++    printk("process[%ld].pid: %ld\n", i, process.pid);    
++
++    memcpy(process.name, cur_task->comm, TASK_COMM_LEN);
++    printk("process[%ld].name: %s\n", i, process.name);   
++
++    process.uid = (long)(cur_task->cred->uid.val);
++    printk("process[%ld].uid: %ld\n", i, process.uid);   
++
++    process.state = cur_task->state;
++    printk("process[%ld].state: %ld\n", i, process.state);   
++
++    process.nvcsw = cur_task->nvcsw;
++    printk("process[%ld].nvcsw: %ld\n", i, process.nvcsw);   
++
++    process.nivcsw = cur_task->nivcsw;
++    printk("process[%ld].nivcsw: %ld\n", i, process.nivcsw);  
++
++    list_for_each(head, &cur_task->children) {
++      process.num_children += 1;
++    }
++    printk("process[%ld].num_children: %ld\n", i, process.num_children);  
++
++    list_for_each(head, &cur_task->sibling) {
++      process.num_siblings += 1;
++    }
++    printk("process[%ld].num_siblings: %ld\n", i, process.num_siblings);  
++
++    if (__copy_to_user(&info_array[i], &process, sizeof(process))) {
++      printk("error - bad address in info array\n");
++      return -EFAULT;
++    } 
++  }
++
++  if (__copy_to_user(num_filled, &i, sizeof(i))) {
++    printk("error - bad address in num_filled\n");
++    return -EFAULT;
++  }
++
++  return 0;
++}
+\ No newline at end of file
+diff --git a/cs300/process_ancestors.h b/cs300/process_ancestors.h
+new file mode 100644
+index 000000000000..ed733318dfba
+--- /dev/null
++++ b/cs300/process_ancestors.h
+@@ -0,0 +1,19 @@
++// Structure to hold values returned by process_ancestors sys-call
++
++#ifndef _PROCESS_ANCESTORS_H
++#define _PROCESS_ANCESTORS_H
++
++#define ANCESTOR_NAME_LEN 16
++
++struct process_info {
++  long pid;                     /* Process ID */
++  char name[ANCESTOR_NAME_LEN]; /* Program name of process */
++  long state;                   /* Current process state */
++  long uid;                     /* User ID of process owner */
++  long nvcsw;                   /* # voluntary context switches */
++  long nivcsw;                  /* # involuntary context switches */
++  long num_children;            /* # children process has */
++  long num_siblings;            /* # sibling process has */
++};
++
++#endif
+\ No newline at end of file
+-- 
+2.17.1
+
