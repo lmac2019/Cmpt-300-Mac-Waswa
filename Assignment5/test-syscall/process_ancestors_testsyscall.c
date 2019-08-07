@@ -137,15 +137,15 @@ void do_process_ancestors_syscall_working(long size) {
 
 	int result = do_process_ancestors_syscall(info_array, size, &num_filled);
 	
-  for(int i = 0; i < num_filled; i++){
-    printf("pid: %ld\n",info_array[i].pid );
-    printf("name: %s\n",info_array[i].name );
-    printf("state: %ld\n",info_array[i].state );
-    printf("uid: %ld\n",info_array[i].uid );
-    printf("nvscw: %ld\n",info_array[i].nvcsw );
-    printf("nivcsw: %ld\n",info_array[i].nivcsw );
-    printf("num_children: %ld\n",info_array[i].num_children );
-    printf("num_siblings: %ld\n",info_array[i].num_siblings );
+  for(long i = 0; i < num_filled; i++){
+    printf("pid[%ld]: %ld\n", i, info_array[i].pid);
+    printf("name[%ld]: %s\n", i, info_array[i].name);
+    printf("state[%ld]: %ld\n", i, info_array[i].state);
+    printf("uid[%ld]: %ld\n", i, info_array[i].uid);
+    printf("nvscw[%ld]: %ld\n", i, info_array[i].nvcsw);
+    printf("nivcsw[%ld]: %ld\n", i, info_array[i].nivcsw);
+    printf("num_children[%ld]: %ld\n", i, info_array[i].num_children);
+    printf("num_siblings[%ld]: %ld\n", i, info_array[i].num_siblings);
   }
 
 	PROCESS_ANCESTORS_TEST(result == 0);
@@ -189,6 +189,10 @@ int do_process_ancestors_syscall(
 ) {
 	current_syscall_test_num++;
 
+  if (current_syscall_test_num == 1) {
+    printf("Tests for process ancestors syscall\n");
+  }
+
 	printf("\nTest %d: ..Diving to kernel level\n", current_syscall_test_num);
 	
   int result = syscall(_PROCESS_ANCESTORS_, info_array, size, num_filled);
@@ -215,7 +219,7 @@ void test_process_ancestors_print_summary(void) {
   printf("\nExecution finished.\n");
   printf("%4d/%d tests passed.\n", numTestPassed, numTests);
   printf("%4d/%d tests FAILED.\n", numTests - numTestPassed, numTests);
-  printf("%4d/%d unique sys-call testing configurations FAILED.\n", 
+  printf("%4d/%d unique sys-call testing configurations FAILED.\n\n", 
   num_syscall_tests_failed, current_syscall_test_num);
 }
 

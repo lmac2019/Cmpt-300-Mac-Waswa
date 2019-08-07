@@ -1,8 +1,8 @@
+#include <asm/current.h>
 #include <linux/kernel.h>
 #include <linux/errno.h>
 #include <linux/uaccess.h>
 #include <linux/sched.h>
-#include <asm/current.h>
 #include <linux/cred.h>
 #include "process_ancestors.h"
 
@@ -31,7 +31,7 @@ asmlinkage long sys_process_ancestors(
     process.pid = cur_task->pid;
     printk("process[%ld].pid: %ld\n", i, process.pid);    
 
-    strcpy(process.name, cur_task->comm);
+    memcpy(process.name, cur_task->comm, TASK_COMM_LEN);
     printk("process[%ld].name: %s\n", i, process.name);   
 
     process.uid = (long)(cur_task->cred->uid.val);

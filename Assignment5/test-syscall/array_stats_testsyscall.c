@@ -193,6 +193,10 @@ int do_array_stats_syscall(
 ) {
 	current_syscall_test_num++;
 
+	if (current_syscall_test_num == 1) {
+    	printf("Tests for array stats syscall\n");
+  	}
+
 	printf("\nTest %d: ..Diving to kernel level\n", current_syscall_test_num);
 	
   int result = syscall(_ARRAY_STATS_, stats, data, size);
@@ -219,7 +223,7 @@ void test_array_stats_print_summary(void) {
   printf("\nExecution finished.\n");
   printf("%4d/%d tests passed.\n", numTestPassed, numTests);
   printf("%4d/%d tests FAILED.\n", numTests - numTestPassed, numTests);
-  printf("%4d/%d unique sys-call testing configurations FAILED.\n", 
+  printf("%4d/%d unique sys-call testing configurations FAILED.\n\n", 
   num_syscall_tests_failed, current_syscall_test_num);
 }
 
